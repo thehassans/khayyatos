@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -6,7 +6,7 @@ import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Input, Textarea } from '../../components/ui/Input';
-import { Plus, Upload, Trash2, X, Image as ImageIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Upload, Trash2, X, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const EmbroideryDesigns = () => {
@@ -22,6 +22,9 @@ const EmbroideryDesigns = () => {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [previewModal, setPreviewModal] = useState({ open: false, design: null });
   const [deleteModal, setDeleteModal] = useState({ open: false, design: null, loading: false });
+
+  const [previewIndex, setPreviewIndex] = useState(-1);
+  const swipeStartXRef = useRef(null);
 
   const [uploading, setUploading] = useState(false);
   const [newDesign, setNewDesign] = useState({ name: '', note: '', image: null, preview: null });
@@ -181,15 +184,52 @@ const EmbroideryDesigns = () => {
     }
   };
 
-  const openPreview = (design) => {
-    setNoteDraft(typeof design?.note === 'string' ? design.note : '');
-    setPreviewModal({ open: true, design });
+  const setPreviewByIndex = (idx) => {
+    const list = Array.isArray(sortedDesigns) ? sortedDesigns : [];
+    if (list.length === 0) return;
+    const nextIndex = ((idx % list.length) + list.length) % list.length;
+    const next = list[nextIndex];
+    setPreviewIndex(nextIndex);
+    setNoteDraft(typeof next?.note === 'string' ? next.note : '');
+    setPreviewModal({ open: true, design: next });
+  };
+
+  const openPreview = (design, idx) => {
+    if (typeof idx === 'number' && idx >= 0) {
+      setPreviewByIndex(idx);
+      return;
+    }
+    const list = Array.isArray(sortedDesigns) ? sortedDesigns : [];
+    const i = list.findIndex((x) => x?._id === design?._id);
+    setPreviewByIndex(i >= 0 ? i : 0);
   };
 
   const closePreview = () => {
     setSavingNote(false);
+    setPreviewIndex(-1);
     setPreviewModal({ open: false, design: null });
   };
+
+  const goPrev = () => {
+    if (!previewModal.open) return;
+    setPreviewByIndex((previewIndex >= 0 ? previewIndex : 0) - 1);
+  };
+
+  const goNext = () => {
+    if (!previewModal.open) return;
+    setPreviewByIndex((previewIndex >= 0 ? previewIndex : 0) + 1);
+  };
+
+  useEffect(() => {
+    if (!previewModal.open) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'ArrowLeft') goPrev();
+      if (e.key === 'ArrowRight') goNext();
+      if (e.key === 'Escape') closePreview();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [previewIndex, previewModal.open]);
 
   const saveDesignNote = async () => {
     const id = previewModal?.design?._id;
@@ -259,7 +299,7 @@ const EmbroideryDesigns = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedDesigns.map((d) => {
+          {sortedDesigns.map((d, idx) => {
             const imageUrl = d.image ? resolveUploadsUrl(d.image) : null;
             const imageSrc = imageUrl ? `${imageUrl}${d.imageUpdatedAt ? `?v=${d.imageUpdatedAt}` : ''}` : null;
             const displayName = d?.nameI18n?.[langKey] || d.name;
@@ -271,7 +311,7 @@ const EmbroideryDesigns = () => {
               >
                 <button
                   type="button"
-                  onClick={() => openPreview(d)}
+                  onClick={() => openPreview(d, idx)}
                   className="w-full text-left"
                 >
                   <div className="relative h-64 bg-gradient-to-br from-gray-50 via-amber-50/30 to-gray-100 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
@@ -411,7 +451,21 @@ const EmbroideryDesigns = () => {
       >
         <div className="grid gap-5 lg:grid-cols-5">
           <div className="lg:col-span-3">
-            <div className="rounded-3xl overflow-hidden border border-gray-200/70 dark:border-slate-700/70 bg-gray-950">
+            <div
+              className="relative rounded-3xl overflow-hidden border border-gray-200/70 dark:border-slate-700/70 bg-gray-950"
+              onPointerDown={(e) => {
+                swipeStartXRef.current = e.clientX;
+              }}
+              onPointerUp={(e) => {
+                const start = swipeStartXRef.current;
+                swipeStartXRef.current = null;
+                if (start == null) return;
+                const dx = e.clientX - start;
+                if (Math.abs(dx) < 60) return;
+                if (dx > 0) goPrev();
+                else goNext();
+              }}
+            >
               {previewModal.design?.image ? (
                 <img
                   src={`${resolveUploadsUrl(previewModal.design.image)}${previewModal.design.imageUpdatedAt ? `?v=${previewModal.design.imageUpdatedAt}` : ''}`}
@@ -423,6 +477,30 @@ const EmbroideryDesigns = () => {
                   <ImageIcon className="w-10 h-10" />
                 </div>
               )}
+
+              {sortedDesigns.length > 1 ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={goPrev}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 text-white hover:bg-black/55 transition-colors flex items-center justify-center"
+                    title="Previous"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 text-white hover:bg-black/55 transition-colors flex items-center justify-center"
+                    title="Next"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 text-white/80 text-xs tracking-widest">
+                    {(previewIndex >= 0 ? previewIndex + 1 : 1)}/{sortedDesigns.length}
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
 

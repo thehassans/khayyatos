@@ -216,6 +216,11 @@ router.put('/:id', async (req, res) => {
     if (!stitching) {
       return res.status(404).json({ error: 'Stitching not found' });
     }
+
+    const oldStatus = stitching.status;
+    const oldQty = Number(stitching.quantity) || 0;
+    const wasCredited = !!stitching.workerEarningsCredited;
+    const workerId = stitching.workerId;
     
     if (measurements) stitching.measurements = measurements;
     if (styleOptions) stitching.styleOptions = styleOptions;
@@ -243,11 +248,57 @@ router.put('/:id', async (req, res) => {
     if (dueDate !== undefined) stitching.dueDate = dueDate;
     if (thawbType) stitching.thawbType = thawbType;
     if (fabricColor !== undefined) stitching.fabricColor = fabricColor;
-    const oldStatus = stitching.status;
     if (status) {
       stitching.status = status;
       if (status === 'completed') stitching.completedDate = new Date();
       if (status === 'delivered') stitching.deliveredDate = new Date();
+    }
+
+    const newStatus = stitching.status;
+    const newQty = Number(stitching.quantity) || 0;
+
+    const rollbackWorkerEarnings = async (qtyToUse) => {
+      if (!workerId) return;
+      const worker = await Worker.findOne({ _id: workerId, userId: req.user._id });
+      if (!worker) return;
+      if (worker.paymentType !== 'per_stitching') return;
+      const q = Number(qtyToUse) || 0;
+      const delta = (Number(worker.paymentAmount) || 0) * q;
+      worker.totalEarnings = Math.max(0, (Number(worker.totalEarnings) || 0) - delta);
+      worker.completedStitchings = Math.max(0, (Number(worker.completedStitchings) || 0) - q);
+      await worker.save();
+    };
+
+    const creditWorkerEarnings = async (qtyToUse) => {
+      if (!workerId) return;
+      const worker = await Worker.findOne({ _id: workerId, userId: req.user._id });
+      if (!worker) return;
+      if (worker.paymentType !== 'per_stitching') return;
+      const q = Number(qtyToUse) || 0;
+      const delta = (Number(worker.paymentAmount) || 0) * q;
+      worker.totalEarnings = (Number(worker.totalEarnings) || 0) + delta;
+      worker.completedStitchings = (Number(worker.completedStitchings) || 0) + q;
+      await worker.save();
+    };
+
+    if (wasCredited && oldStatus === 'delivered' && newStatus !== 'delivered') {
+      await rollbackWorkerEarnings(oldQty);
+      stitching.workerEarningsCredited = false;
+    }
+
+    if (!wasCredited && newStatus === 'delivered') {
+      await creditWorkerEarnings(newQty);
+      stitching.workerEarningsCredited = true;
+    }
+
+    if (wasCredited && oldStatus === 'delivered' && newStatus === 'delivered' && oldQty !== newQty) {
+      const deltaQty = newQty - oldQty;
+      if (deltaQty > 0) {
+        await creditWorkerEarnings(deltaQty);
+      } else if (deltaQty < 0) {
+        await rollbackWorkerEarnings(Math.abs(deltaQty));
+      }
+      stitching.workerEarningsCredited = true;
     }
     
     await stitching.save();
@@ -295,6 +346,18 @@ router.put('/:id/assign', async (req, res) => {
     if (!stitching) {
       return res.status(404).json({ error: 'Stitching not found' });
     }
+
+    if (stitching.workerEarningsCredited && stitching.workerId) {
+      const oldWorker = await Worker.findOne({ _id: stitching.workerId, userId: req.user._id });
+      if (oldWorker && oldWorker.paymentType === 'per_stitching') {
+        const q = Number(stitching.quantity) || 0;
+        const delta = (Number(oldWorker.paymentAmount) || 0) * q;
+        oldWorker.totalEarnings = Math.max(0, (Number(oldWorker.totalEarnings) || 0) - delta);
+        oldWorker.completedStitchings = Math.max(0, (Number(oldWorker.completedStitchings) || 0) - q);
+        await oldWorker.save();
+      }
+      stitching.workerEarningsCredited = false;
+    }
     
     if (workerId) {
       const worker = await Worker.findOne({ 
@@ -333,6 +396,17 @@ router.delete('/:id', async (req, res) => {
     
     if (!stitching) {
       return res.status(404).json({ error: 'Stitching not found' });
+    }
+
+    if (stitching.workerEarningsCredited && stitching.workerId) {
+      const oldWorker = await Worker.findOne({ _id: stitching.workerId, userId: req.user._id });
+      if (oldWorker && oldWorker.paymentType === 'per_stitching') {
+        const q = Number(stitching.quantity) || 0;
+        const delta = (Number(oldWorker.paymentAmount) || 0) * q;
+        oldWorker.totalEarnings = Math.max(0, (Number(oldWorker.totalEarnings) || 0) - delta);
+        oldWorker.completedStitchings = Math.max(0, (Number(oldWorker.completedStitchings) || 0) - q);
+        await oldWorker.save();
+      }
     }
     
     const customer = await Customer.findById(stitching.customerId);

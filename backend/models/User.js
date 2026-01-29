@@ -233,8 +233,17 @@ userSchema.methods.isSubscriptionActive = function() {
 };
 
 userSchema.methods.generateReceiptNumber = function() {
+  const rawShop = typeof this.businessName === 'string' ? this.businessName : '';
+  const shop = rawShop.trim().replace(/\s+/g, '-');
+  const safeShop = shop.replace(/[^\p{L}\p{N}-]/gu, '').slice(0, 24);
+
+  const rawSuffix = typeof this.receiptPrefix === 'string' ? this.receiptPrefix : 'RCP';
+  const suffix = rawSuffix.trim().replace(/\s+/g, '-');
+  const safeSuffix = suffix.replace(/[^\p{L}\p{N}-]/gu, '').slice(0, 12) || 'RCP';
+
+  const finalPrefix = safeShop ? `${safeShop}-${safeSuffix}` : safeSuffix;
   this.receiptCounter += 1;
-  return `${this.receiptPrefix}-${this.receiptCounter}`;
+  return `${finalPrefix}-${this.receiptCounter}`;
 };
 
 module.exports = mongoose.model('User', userSchema);

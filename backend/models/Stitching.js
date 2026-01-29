@@ -118,6 +118,10 @@ const stitchingSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  workerEarningsCredited: {
+    type: Boolean,
+    default: false
+  },
   zatcaStatus: {
     type: String,
     enum: ['PENDING', 'REPORTED', 'CLEARED', 'FAILED', null],

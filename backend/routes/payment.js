@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Payment = require('../models/Payment');
 const Worker = require('../models/Worker');
+const Stitching = require('../models/Stitching');
 const { verifyToken, isUser } = require('../middleware/auth');
 
 router.use(verifyToken, isUser);
@@ -37,6 +38,42 @@ router.get('/', async (req, res) => {
 router.get('/summary', async (req, res) => {
   try {
     const workers = await Worker.find({ userId: req.user._id })
+      .select('name phone paymentType paymentAmount totalEarnings totalPaid pendingAmount completedStitchings');
+
+    const perStitchingWorkers = workers.filter((w) => w.paymentType === 'per_stitching');
+    if (perStitchingWorkers.length > 0) {
+      const ids = perStitchingWorkers.map((w) => w._id);
+      const rows = await Stitching.aggregate([
+        { $match: { workerId: { $in: ids }, status: 'delivered' } },
+        { $group: { _id: '$workerId', qty: { $sum: '$quantity' } } }
+      ]);
+
+      const qtyByWorker = new Map(rows.map((r) => [String(r._id), Number(r.qty) || 0]));
+
+      const ops = [];
+      perStitchingWorkers.forEach((w) => {
+        const qty = qtyByWorker.get(String(w._id)) || 0;
+        const totalEarnings = (Number(w.paymentAmount) || 0) * qty;
+        ops.push({
+          updateOne: {
+            filter: { _id: w._id },
+            update: {
+              $set: {
+                totalEarnings,
+                completedStitchings: qty,
+                pendingAmount: totalEarnings - (Number(w.totalPaid) || 0)
+              }
+            }
+          }
+        });
+      });
+
+      if (ops.length > 0) {
+        await Worker.bulkWrite(ops, { ordered: false });
+      }
+    }
+
+    const refreshedWorkers = await Worker.find({ userId: req.user._id })
       .select('name phone totalEarnings totalPaid pendingAmount');
     
     const totalPaid = await Payment.aggregate([
@@ -45,7 +82,7 @@ router.get('/summary', async (req, res) => {
     ]);
     
     res.json({
-      workers,
+      workers: refreshedWorkers,
       totalPaid: totalPaid[0]?.total || 0
     });
   } catch (error) {

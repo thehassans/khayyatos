@@ -251,20 +251,6 @@ const LoginPage = () => {
 
               <div className="mt-6 pt-5 border-t border-white/10">
                 <div className="flex flex-col items-center gap-3 text-center">
-                  <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-white/5 to-amber-500/15 backdrop-blur-2xl border border-amber-300/20 shadow-2xl">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-400" />
-                      <div className="text-[10px] sm:text-[11px] tracking-[0.22em] text-amber-200 font-medium">
-                        {t('auth.trustedCertified', { defaultValue: 'TRUSTED & CERTIFIED' })}
-                      </div>
-                    </div>
-                    <div className="h-4 w-px bg-white/10" />
-                    <div className="flex items-baseline gap-2">
-                      <div className="text-white/90 text-sm sm:text-base font-semibold tracking-[0.18em]">ZATCA</div>
-                      <div className="text-white/60 text-[10px] sm:text-[11px] tracking-[0.22em]">{t('auth.phase2', { defaultValue: 'PHASE 2' })}</div>
-                    </div>
-                  </div>
-
                   <div className="w-full rounded-2xl bg-black/20 backdrop-blur-2xl border border-white/10 px-4 py-3">
                     <div className="text-white/60 text-[11px] sm:text-xs tracking-wide">
                       {t('auth.noAccount', { defaultValue: "Don't have an account?" })}{' '}
@@ -277,6 +263,10 @@ const LoginPage = () => {
                         {t('auth.contactSales', { defaultValue: 'Contact Sales' })}
                       </a>
                     </div>
+                  </div>
+
+                  <div className="text-[10px] sm:text-[11px] tracking-[0.24em] text-white/55">
+                    ZATCA PHASE 1 &amp; 2 INTEGRATED
                   </div>
                 </div>
               </div>

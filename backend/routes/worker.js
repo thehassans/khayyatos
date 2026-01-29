@@ -205,14 +205,16 @@ router.put('/panel/stitchings/:id/status', verifyToken, isWorker, async (req, re
     if (!stitching) {
       return res.status(404).json({ error: 'Stitching not found' });
     }
-    
-    if (status === 'completed' && stitching.status !== 'completed') {
-      stitching.completedDate = new Date();
-      
-      if (req.worker.paymentType === 'per_stitching') {
-        req.worker.totalEarnings += req.worker.paymentAmount * stitching.quantity;
-        req.worker.completedStitchings += stitching.quantity;
+
+    if (status === 'delivered' && stitching.status !== 'delivered') {
+      stitching.deliveredDate = new Date();
+
+      if (req.worker.paymentType === 'per_stitching' && !stitching.workerEarningsCredited) {
+        const q = Number(stitching.quantity) || 0;
+        req.worker.totalEarnings += req.worker.paymentAmount * q;
+        req.worker.completedStitchings += q;
         await req.worker.save();
+        stitching.workerEarningsCredited = true;
       }
     }
     
