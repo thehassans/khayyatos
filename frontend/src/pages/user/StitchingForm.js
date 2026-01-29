@@ -54,7 +54,8 @@ const StitchingForm = () => {
     status: 'pending',
     thawbType: 'saudi',
     fabricColor: '',
-    measurements: {}
+    measurements: {},
+    styleOptions: {}
   });
 
   const FABRIC_COLORS = [
@@ -104,7 +105,8 @@ const StitchingForm = () => {
         status: stitch.status || 'pending',
         thawbType: stitch.thawbType || 'saudi',
         fabricColor: stitch.fabricColor || '',
-        measurements: stitch.measurements || {}
+        measurements: stitch.measurements || {},
+        styleOptions: stitch.styleOptions || {}
       });
     } catch (error) {
       toast.error('Failed to load');
@@ -311,6 +313,16 @@ const StitchingForm = () => {
     });
   };
 
+  const handleStyleOptionChange = (group, value) => {
+    setFormData({
+      ...formData,
+      styleOptions: {
+        ...(formData.styleOptions || {}),
+        [group]: value
+      }
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedCustomer) {
@@ -335,7 +347,8 @@ const StitchingForm = () => {
         status: formData.status,
         thawbType: formData.thawbType,
         fabricColor: formData.fabricColor || null,
-        measurements: formData.measurements
+        measurements: formData.measurements,
+        styleOptions: formData.styleOptions
       };
 
       if (isEdit) {
@@ -344,7 +357,7 @@ const StitchingForm = () => {
         navigate('/user/stitchings');
       } else {
         const response = await api.post('/stitchings', data);
-        const order = response.data;
+        const order = response.data?.stitching || response.data;
         setCreatedOrder(order);
         toast.success('Order created! You can print the label now.');
       }
@@ -358,11 +371,17 @@ const StitchingForm = () => {
     { key: 'length', label: t('measurements.length') },
     { key: 'shoulderWidth', label: t('measurements.shoulderWidth') },
     { key: 'chest', label: t('measurements.chest') },
+    { key: 'waist', label: t('measurements.waist') },
+    { key: 'hips', label: t('measurements.hips') },
     { key: 'sleeveLength', label: t('measurements.sleeveLength') },
+    { key: 'bicep', label: t('measurements.bicep') },
+    { key: 'forearm', label: t('measurements.forearm') },
     { key: 'neck', label: t('measurements.neck') },
     { key: 'wrist', label: t('measurements.wrist') },
+    { key: 'cuffWidth', label: t('measurements.cuffWidth') },
     { key: 'expansion', label: t('measurements.expansion') },
-    { key: 'armhole', label: t('measurements.armhole') }
+    { key: 'armhole', label: t('measurements.armhole') },
+    { key: 'bottom', label: t('measurements.bottom') }
   ];
 
   // If order created, show print option
@@ -385,7 +404,7 @@ const StitchingForm = () => {
             <Button variant="outline" onClick={() => navigate('/user/stitchings')} className="w-full">
               Back to Orders
             </Button>
-            <Button variant="secondary" onClick={() => { setCreatedOrder(null); setSelectedCustomer(null); setSelectedRelation(null); setCustomerSearch(''); setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', thawbType: 'saudi', fabricColor: '', measurements: {} }); }} className="w-full">
+            <Button variant="secondary" onClick={() => { setCreatedOrder(null); setSelectedCustomer(null); setSelectedRelation(null); setCustomerSearch(''); setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', thawbType: 'saudi', fabricColor: '', measurements: {}, styleOptions: {} }); }} className="w-full">
               Create Another Order
             </Button>
           </div>
@@ -474,6 +493,126 @@ const StitchingForm = () => {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('styleOptions.title')}</h3>
+              </div>
+
+              <div className="space-y-5">
+                {[
+                  {
+                    key: 'collar',
+                    title: t('styleOptions.collar'),
+                    options: [
+                      { value: 'classic', label: t('styleOptions.options.collar.classic') },
+                      { value: 'round', label: t('styleOptions.options.collar.round') },
+                      { value: 'mandarin', label: t('styleOptions.options.collar.mandarin') },
+                      { value: 'open', label: t('styleOptions.options.collar.open') }
+                    ]
+                  },
+                  {
+                    key: 'bain',
+                    title: t('styleOptions.bain'),
+                    options: [
+                      { value: 'hidden', label: t('styleOptions.options.bain.hidden') },
+                      { value: 'visible', label: t('styleOptions.options.bain.visible') },
+                      { value: 'zip', label: t('styleOptions.options.bain.zip') },
+                      { value: 'half', label: t('styleOptions.options.bain.half') }
+                    ]
+                  },
+                  {
+                    key: 'cuff',
+                    title: t('styleOptions.cuff'),
+                    options: [
+                      { value: 'single', label: t('styleOptions.options.cuff.single') },
+                      { value: 'double', label: t('styleOptions.options.cuff.double') },
+                      { value: 'round', label: t('styleOptions.options.cuff.round') },
+                      { value: 'angled', label: t('styleOptions.options.cuff.angled') }
+                    ]
+                  },
+                  {
+                    key: 'pocket',
+                    title: t('styleOptions.pocket'),
+                    options: [
+                      { value: 'none', label: t('styleOptions.options.pocket.none') },
+                      { value: 'chest', label: t('styleOptions.options.pocket.chest') },
+                      { value: 'side', label: t('styleOptions.options.pocket.side') },
+                      { value: 'both', label: t('styleOptions.options.pocket.both') }
+                    ]
+                  },
+                  {
+                    key: 'buttons',
+                    title: t('styleOptions.buttons'),
+                    options: [
+                      { value: 'classic', label: t('styleOptions.options.buttons.classic') },
+                      { value: 'hidden', label: t('styleOptions.options.buttons.hidden') },
+                      { value: 'snap', label: t('styleOptions.options.buttons.snap') },
+                      { value: 'premium', label: t('styleOptions.options.buttons.premium') }
+                    ]
+                  },
+                  {
+                    key: 'embroidery',
+                    title: t('styleOptions.embroidery'),
+                    options: [
+                      { value: 'none', label: t('styleOptions.options.embroidery.none') },
+                      { value: 'name', label: t('styleOptions.options.embroidery.name') },
+                      { value: 'logo', label: t('styleOptions.options.embroidery.logo') },
+                      { value: 'premium', label: t('styleOptions.options.embroidery.premium') }
+                    ]
+                  }
+                ].map((group) => (
+                  <div key={group.key}>
+                    <div className="mb-3 text-sm font-semibold text-gray-700 dark:text-slate-200">{group.title}</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {group.options.map((opt) => {
+                        const selected = (formData.styleOptions || {})[group.key] === opt.value;
+                        const base = `/images/style/${group.key}/${opt.value}`;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => handleStyleOptionChange(group.key, opt.value)}
+                            className={`group relative overflow-hidden rounded-2xl border transition-all duration-200 hover:shadow-lg hover:scale-[1.01] ${
+                              selected
+                                ? 'border-primary-500 ring-2 ring-primary-500 bg-primary-50/70 dark:bg-primary-900/20'
+                                : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 hover:border-gray-300 dark:hover:border-slate-600'
+                            }`}
+                          >
+                            <div className="p-3">
+                              <div className="relative h-20 w-full rounded-xl bg-gradient-to-br from-gray-100 to-white dark:from-slate-800 dark:to-slate-900 overflow-hidden">
+                                <img
+                                  src={`${base}.webp`}
+                                  alt={opt.label}
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                  onError={(e) => {
+                                    if (e.currentTarget.src.endsWith('.webp')) {
+                                      e.currentTarget.src = `${base}.png`;
+                                      return;
+                                    }
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-slate-600 pointer-events-none">
+                                  <svg viewBox="0 0 64 64" fill="currentColor" className="w-10 h-10 opacity-80">
+                                    <path d="M14 18h36v28H14z" opacity="0.35" />
+                                    <path d="M20 26h24v4H20z" />
+                                    <path d="M20 34h16v4H20z" opacity="0.8" />
+                                  </svg>
+                                </div>
+                              </div>
+                              <div className="mt-3 text-center">
+                                <div className={`text-sm font-semibold ${selected ? 'text-primary-700 dark:text-primary-200' : 'text-gray-800 dark:text-slate-100'}`}>{opt.label}</div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

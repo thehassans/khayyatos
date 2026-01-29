@@ -107,11 +107,64 @@
     "length": "Length (Height)",
     "shoulderWidth": "Shoulder Width",
     "chest": "Chest",
+    "waist": "Waist",
+    "hips": "Hips",
     "sleeveLength": "Sleeve Length",
+    "bicep": "Bicep",
+    "forearm": "Forearm",
     "neck": "Neck",
     "wrist": "Wrist/Cuff",
+    "cuffWidth": "Cuff Width",
     "expansion": "Expansion (Gera/Bottom Flare)",
-    "armhole": "Armhole"
+    "armhole": "Armhole",
+    "bottom": "Bottom (Hem)"
+  },
+  "styleOptions": {
+    "title": "Style Options",
+    "collar": "Collar",
+    "bain": "Bain / Placket",
+    "cuff": "Cuff",
+    "pocket": "Pocket",
+    "buttons": "Buttons",
+    "embroidery": "Embroidery",
+    "options": {
+      "collar": {
+        "classic": "Classic",
+        "round": "Round",
+        "mandarin": "Mandarin",
+        "open": "Open"
+      },
+      "bain": {
+        "hidden": "Hidden",
+        "visible": "Visible",
+        "zip": "Zip",
+        "half": "Half"
+      },
+      "cuff": {
+        "single": "Single",
+        "double": "Double",
+        "round": "Round",
+        "angled": "Angled"
+      },
+      "pocket": {
+        "none": "None",
+        "chest": "Chest",
+        "side": "Side",
+        "both": "Both"
+      },
+      "buttons": {
+        "classic": "Classic",
+        "hidden": "Hidden",
+        "snap": "Snap",
+        "premium": "Premium"
+      },
+      "embroidery": {
+        "none": "None",
+        "name": "Name",
+        "logo": "Logo",
+        "premium": "Premium"
+      }
+    }
   },
   "stitchings": {
     "title": "Stitchings",

@@ -37,11 +37,17 @@ const CustomerForm = () => {
       length: '',
       shoulderWidth: '',
       chest: '',
+      waist: '',
+      hips: '',
       sleeveLength: '',
+      bicep: '',
+      forearm: '',
       neck: '',
       wrist: '',
+      cuffWidth: '',
       expansion: '',
-      armhole: ''
+      armhole: '',
+      bottom: ''
     }
   });
   const [newRelation, setNewRelation] = useState({ customerId: '', relationType: 'brother' });
@@ -154,11 +160,17 @@ const CustomerForm = () => {
     { key: 'length', label: t('measurements.length') },
     { key: 'shoulderWidth', label: t('measurements.shoulderWidth') },
     { key: 'chest', label: t('measurements.chest') },
+    { key: 'waist', label: t('measurements.waist') },
+    { key: 'hips', label: t('measurements.hips') },
     { key: 'sleeveLength', label: t('measurements.sleeveLength') },
+    { key: 'bicep', label: t('measurements.bicep') },
+    { key: 'forearm', label: t('measurements.forearm') },
     { key: 'neck', label: t('measurements.neck') },
     { key: 'wrist', label: t('measurements.wrist') },
+    { key: 'cuffWidth', label: t('measurements.cuffWidth') },
     { key: 'expansion', label: t('measurements.expansion') },
-    { key: 'armhole', label: t('measurements.armhole') }
+    { key: 'armhole', label: t('measurements.armhole') },
+    { key: 'bottom', label: t('measurements.bottom') }
   ];
 
   return (

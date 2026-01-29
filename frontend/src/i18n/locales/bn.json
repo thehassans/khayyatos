@@ -107,11 +107,64 @@
     "length": "দৈর্ঘ্য",
     "shoulderWidth": "কাঁধের প্রস্থ",
     "chest": "বুক",
+    "waist": "কোমর",
+    "hips": "নিতম্ব",
     "sleeveLength": "হাতার দৈর্ঘ্য",
+    "bicep": "বাইসেপ",
+    "forearm": "ফোরআর্ম",
     "neck": "গলা",
     "wrist": "কব্জি",
+    "cuffWidth": "কাফ প্রস্থ",
     "expansion": "ঘের",
-    "armhole": "বগলের ছিদ্র"
+    "armhole": "বগলের ছিদ্র",
+    "bottom": "নিচের ঘের"
+  },
+  "styleOptions": {
+    "title": "স্টাইল অপশন",
+    "collar": "কলার",
+    "bain": "বেইন / প্ল্যাকেট",
+    "cuff": "কাফ",
+    "pocket": "পকেট",
+    "buttons": "বোতাম",
+    "embroidery": "এম্ব্রয়ডারি",
+    "options": {
+      "collar": {
+        "classic": "ক্লাসিক",
+        "round": "গোল",
+        "mandarin": "ম্যানডারিন",
+        "open": "ওপেন"
+      },
+      "bain": {
+        "hidden": "লুকানো",
+        "visible": "দৃশ্যমান",
+        "zip": "জিপ",
+        "half": "অর্ধেক"
+      },
+      "cuff": {
+        "single": "সিঙ্গেল",
+        "double": "ডাবল",
+        "round": "গোল",
+        "angled": "এঙ্গেলড"
+      },
+      "pocket": {
+        "none": "কিছু নেই",
+        "chest": "বুক",
+        "side": "সাইড",
+        "both": "দুটোই"
+      },
+      "buttons": {
+        "classic": "ক্লাসিক",
+        "hidden": "হিডেন",
+        "snap": "স্ন্যাপ",
+        "premium": "প্রিমিয়াম"
+      },
+      "embroidery": {
+        "none": "কিছু নেই",
+        "name": "নাম",
+        "logo": "লোগো",
+        "premium": "প্রিমিয়াম"
+      }
+    }
   },
   "stitchings": {
     "title": "সেলাই",

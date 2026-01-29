@@ -4,11 +4,26 @@ const measurementSchema = new mongoose.Schema({
   length: { type: Number, default: null },
   shoulderWidth: { type: Number, default: null },
   chest: { type: Number, default: null },
+  waist: { type: Number, default: null },
+  hips: { type: Number, default: null },
   sleeveLength: { type: Number, default: null },
+  bicep: { type: Number, default: null },
+  forearm: { type: Number, default: null },
   neck: { type: Number, default: null },
   wrist: { type: Number, default: null },
+  cuffWidth: { type: Number, default: null },
   expansion: { type: Number, default: null },
-  armhole: { type: Number, default: null }
+  armhole: { type: Number, default: null },
+  bottom: { type: Number, default: null }
+}, { _id: false });
+
+const styleOptionsSchema = new mongoose.Schema({
+  collar: { type: String, default: null },
+  bain: { type: String, default: null },
+  cuff: { type: String, default: null },
+  pocket: { type: String, default: null },
+  buttons: { type: String, default: null },
+  embroidery: { type: String, default: null }
 }, { _id: false });
 
 const stitchingSchema = new mongoose.Schema({
@@ -43,6 +58,10 @@ const stitchingSchema = new mongoose.Schema({
   },
   measurements: {
     type: measurementSchema,
+    default: () => ({})
+  },
+  styleOptions: {
+    type: styleOptionsSchema,
     default: () => ({})
   },
   quantity: {

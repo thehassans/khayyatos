@@ -95,6 +95,7 @@ router.post('/', async (req, res) => {
     const { 
       customerId, 
       measurements, 
+      styleOptions,
       quantity, 
       price, 
       paidAmount,
@@ -128,6 +129,7 @@ router.post('/', async (req, res) => {
       thawbType: thawbType || 'saudi',
       fabricColor: fabricColor || null,
       measurements: measurements || customer.measurements,
+      styleOptions: styleOptions || {},
       quantity: quantity || 1,
       price,
       paidAmount: paidAmount || 0,
@@ -175,6 +177,7 @@ router.put('/:id', async (req, res) => {
   try {
     const { 
       measurements, 
+      styleOptions,
       quantity, 
       price, 
       paidAmount,
@@ -195,6 +198,7 @@ router.put('/:id', async (req, res) => {
     }
     
     if (measurements) stitching.measurements = measurements;
+    if (styleOptions) stitching.styleOptions = styleOptions;
     if (quantity) stitching.quantity = quantity;
     if (price !== undefined) stitching.price = price;
     if (paidAmount !== undefined) stitching.paidAmount = paidAmount;

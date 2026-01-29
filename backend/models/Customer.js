@@ -4,11 +4,17 @@ const measurementSchema = new mongoose.Schema({
   length: { type: Number, default: null },
   shoulderWidth: { type: Number, default: null },
   chest: { type: Number, default: null },
+  waist: { type: Number, default: null },
+  hips: { type: Number, default: null },
   sleeveLength: { type: Number, default: null },
+  bicep: { type: Number, default: null },
+  forearm: { type: Number, default: null },
   neck: { type: Number, default: null },
   wrist: { type: Number, default: null },
+  cuffWidth: { type: Number, default: null },
   expansion: { type: Number, default: null },
-  armhole: { type: Number, default: null }
+  armhole: { type: Number, default: null },
+  bottom: { type: Number, default: null }
 }, { _id: false });
 
 const customerSchema = new mongoose.Schema({

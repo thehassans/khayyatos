@@ -107,11 +107,64 @@
     "length": "لمبائی",
     "shoulderWidth": "کندھے کی چوڑائی",
     "chest": "سینہ",
+    "waist": "کمر",
+    "hips": "کولہا",
     "sleeveLength": "آستین کی لمبائی",
+    "bicep": "بازو (اوپر)",
+    "forearm": "بازو (نیچے)",
     "neck": "گردن",
     "wrist": "کلائی",
+    "cuffWidth": "کف کی چوڑائی",
     "expansion": "گھیرا",
-    "armhole": "بازو کا سوراخ"
+    "armhole": "بازو کا سوراخ",
+    "bottom": "نیچے کا گھیر"
+  },
+  "styleOptions": {
+    "title": "اسٹائل آپشنز",
+    "collar": "کالر",
+    "bain": "بَین / پلیکٹ",
+    "cuff": "کف",
+    "pocket": "جیب",
+    "buttons": "بٹن",
+    "embroidery": "کڑھائی",
+    "options": {
+      "collar": {
+        "classic": "کلاسک",
+        "round": "گول",
+        "mandarin": "مانڈرین",
+        "open": "اوپن"
+      },
+      "bain": {
+        "hidden": "چھپا ہوا",
+        "visible": "نمایاں",
+        "zip": "زِپ",
+        "half": "آدھا"
+      },
+      "cuff": {
+        "single": "سنگل",
+        "double": "ڈبل",
+        "round": "گول",
+        "angled": "کونا دار"
+      },
+      "pocket": {
+        "none": "کوئی نہیں",
+        "chest": "سینہ",
+        "side": "سائیڈ",
+        "both": "دونوں"
+      },
+      "buttons": {
+        "classic": "کلاسک",
+        "hidden": "چھپے ہوئے",
+        "snap": "اسنیپ",
+        "premium": "پریمیم"
+      },
+      "embroidery": {
+        "none": "کوئی نہیں",
+        "name": "نام",
+        "logo": "لوگو",
+        "premium": "پریمیم"
+      }
+    }
   },
   "stitchings": {
     "title": "سلائی",

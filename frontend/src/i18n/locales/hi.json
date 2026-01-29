@@ -107,11 +107,64 @@
     "length": "लंबाई",
     "shoulderWidth": "कंधे की चौड़ाई",
     "chest": "छाती",
+    "waist": "कमर",
+    "hips": "कूल्हा",
     "sleeveLength": "आस्तीन की लंबाई",
+    "bicep": "बाइसेप",
+    "forearm": "फोरआर्म",
     "neck": "गर्दन",
     "wrist": "कलाई",
+    "cuffWidth": "कफ चौड़ाई",
     "expansion": "घेरा",
-    "armhole": "बाजू का छेद"
+    "armhole": "बाजू का छेद",
+    "bottom": "नीचे का घेर"
+  },
+  "styleOptions": {
+    "title": "स्टाइल विकल्प",
+    "collar": "कॉलर",
+    "bain": "बैन / प्लैकेट",
+    "cuff": "कफ",
+    "pocket": "जेब",
+    "buttons": "बटन",
+    "embroidery": "कढ़ाई",
+    "options": {
+      "collar": {
+        "classic": "क्लासिक",
+        "round": "गोल",
+        "mandarin": "मैंडरिन",
+        "open": "ओपन"
+      },
+      "bain": {
+        "hidden": "छुपा",
+        "visible": "दिखाई दे",
+        "zip": "ज़िप",
+        "half": "आधा"
+      },
+      "cuff": {
+        "single": "सिंगल",
+        "double": "डबल",
+        "round": "गोल",
+        "angled": "एंगल्ड"
+      },
+      "pocket": {
+        "none": "कोई नहीं",
+        "chest": "छाती",
+        "side": "साइड",
+        "both": "दोनों"
+      },
+      "buttons": {
+        "classic": "क्लासिक",
+        "hidden": "हिडन",
+        "snap": "स्नैप",
+        "premium": "प्रीमियम"
+      },
+      "embroidery": {
+        "none": "कोई नहीं",
+        "name": "नाम",
+        "logo": "लोगो",
+        "premium": "प्रीमियम"
+      }
+    }
   },
   "stitchings": {
     "title": "सिलाई",

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 // SVG illustrations for each measurement type
 const MeasurementIcons = {
@@ -138,7 +138,13 @@ const MeasurementIcons = {
       {/* Dotted curve indicator */}
       <path d="M14 14 Q10 20 14 26" fill="none" stroke="#ef4444" strokeWidth="1" strokeDasharray="2,2" />
     </svg>
-  )
+  ),
+  waist: () => <MeasurementIcons.chest />,
+  hips: () => <MeasurementIcons.chest />,
+  bicep: () => <MeasurementIcons.sleeveLength />,
+  forearm: () => <MeasurementIcons.wrist />,
+  cuffWidth: () => <MeasurementIcons.wrist />,
+  bottom: () => <MeasurementIcons.expansion />
 };
 
 const MeasurementCard = ({ 
@@ -149,34 +155,81 @@ const MeasurementCard = ({
   unit = 'cm' 
 }) => {
   const IconComponent = MeasurementIcons[measurementKey] || MeasurementIcons.length;
+
+  const base = useMemo(() => `/images/measurements/${measurementKey}`, [measurementKey]);
+  const [imgSrc, setImgSrc] = useState(`${base}.webp`);
+  const [imgOk, setImgOk] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(`${base}.webp`);
+    setImgOk(false);
+    setImgFailed(false);
+  }, [base]);
   
   const colorMap = {
     length: 'from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-indigo-200 dark:border-indigo-700',
     shoulderWidth: 'from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 border-pink-200 dark:border-pink-700',
     chest: 'from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-700',
+    waist: 'from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-800/20 border-teal-200 dark:border-teal-700',
+    hips: 'from-cyan-50 to-cyan-100 dark:from-cyan-900/20 dark:to-cyan-800/20 border-cyan-200 dark:border-cyan-700',
     sleeveLength: 'from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-700',
+    bicep: 'from-lime-50 to-lime-100 dark:from-lime-900/20 dark:to-lime-800/20 border-lime-200 dark:border-lime-700',
+    forearm: 'from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700',
     neck: 'from-violet-50 to-violet-100 dark:from-violet-900/20 dark:to-violet-800/20 border-violet-200 dark:border-violet-700',
     wrist: 'from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700',
+    cuffWidth: 'from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700',
     expansion: 'from-sky-50 to-sky-100 dark:from-sky-900/20 dark:to-sky-800/20 border-sky-200 dark:border-sky-700',
-    armhole: 'from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-700'
+    armhole: 'from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-700',
+    bottom: 'from-sky-50 to-sky-100 dark:from-sky-900/20 dark:to-sky-800/20 border-sky-200 dark:border-sky-700'
   };
 
   const inputColorMap = {
     length: 'focus:ring-indigo-500 focus:border-indigo-500',
     shoulderWidth: 'focus:ring-pink-500 focus:border-pink-500',
     chest: 'focus:ring-emerald-500 focus:border-emerald-500',
+    waist: 'focus:ring-teal-500 focus:border-teal-500',
+    hips: 'focus:ring-cyan-500 focus:border-cyan-500',
     sleeveLength: 'focus:ring-amber-500 focus:border-amber-500',
+    bicep: 'focus:ring-lime-500 focus:border-lime-500',
+    forearm: 'focus:ring-orange-500 focus:border-orange-500',
     neck: 'focus:ring-violet-500 focus:border-violet-500',
     wrist: 'focus:ring-orange-500 focus:border-orange-500',
+    cuffWidth: 'focus:ring-orange-500 focus:border-orange-500',
     expansion: 'focus:ring-sky-500 focus:border-sky-500',
-    armhole: 'focus:ring-red-500 focus:border-red-500'
+    armhole: 'focus:ring-red-500 focus:border-red-500',
+    bottom: 'focus:ring-sky-500 focus:border-sky-500'
   };
 
   return (
     <div className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br ${colorMap[measurementKey] || colorMap.length} p-4 transition-all hover:shadow-lg hover:scale-[1.02]`}>
       {/* Icon */}
-      <div className="w-16 h-16 mx-auto mb-3 opacity-90">
-        <IconComponent />
+      <div className="relative w-16 h-16 mx-auto mb-3">
+        {!imgFailed && (
+          <img
+            src={imgSrc}
+            alt={label}
+            className={`absolute inset-0 w-full h-full object-contain transition-opacity ${imgOk ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setImgOk(true)}
+            onError={() => {
+              if (imgSrc.endsWith('.webp')) {
+                setImgSrc(`${base}.png`);
+                setImgOk(false);
+                return;
+              }
+              if (imgSrc.endsWith('.png')) {
+                setImgSrc('/images/measurements/placeholder.svg');
+                setImgOk(false);
+                return;
+              }
+              setImgFailed(true);
+              setImgOk(false);
+            }}
+          />
+        )}
+        <div className={`w-full h-full opacity-90 transition-opacity ${imgOk ? 'opacity-0' : 'opacity-100'}`}>
+          <IconComponent />
+        </div>
       </div>
       
       {/* Label */}

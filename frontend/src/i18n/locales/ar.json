@@ -107,11 +107,64 @@
     "length": "الطول",
     "shoulderWidth": "عرض الكتف",
     "chest": "الصدر",
+    "waist": "الخصر",
+    "hips": "الورك",
     "sleeveLength": "طول الكم",
+    "bicep": "محيط العضد",
+    "forearm": "محيط الساعد",
     "neck": "الرقبة",
     "wrist": "المعصم",
+    "cuffWidth": "عرض الكفة",
     "expansion": "التوسيع",
-    "armhole": "فتحة الذراع"
+    "armhole": "فتحة الذراع",
+    "bottom": "أسفل الثوب"
+  },
+  "styleOptions": {
+    "title": "خيارات التصميم",
+    "collar": "الياقة",
+    "bain": "البَين / البلاكيت",
+    "cuff": "الكفة",
+    "pocket": "الجيب",
+    "buttons": "الأزرار",
+    "embroidery": "التطريز",
+    "options": {
+      "collar": {
+        "classic": "كلاسيك",
+        "round": "دائري",
+        "mandarin": "ماندرين",
+        "open": "مفتوح"
+      },
+      "bain": {
+        "hidden": "مخفي",
+        "visible": "ظاهر",
+        "zip": "سحاب",
+        "half": "نصف"
+      },
+      "cuff": {
+        "single": "مفردة",
+        "double": "مزدوجة",
+        "round": "دائرية",
+        "angled": "مائلة"
+      },
+      "pocket": {
+        "none": "بدون",
+        "chest": "صدر",
+        "side": "جانبي",
+        "both": "كلاهما"
+      },
+      "buttons": {
+        "classic": "كلاسيك",
+        "hidden": "مخفي",
+        "snap": "كبّاس",
+        "premium": "فاخر"
+      },
+      "embroidery": {
+        "none": "بدون",
+        "name": "الاسم",
+        "logo": "شعار",
+        "premium": "فاخر"
+      }
+    }
   },
   "stitchings": {
     "title": "الخياطة",
