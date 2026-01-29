@@ -4,7 +4,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Textarea } from '../../components/ui/Input';
+import { Select, Textarea } from '../../components/ui/Input';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import { ArrowLeft, ChevronDown, Calendar, Printer, Users, Image as ImageIcon } from 'lucide-react';
 import MeasurementCard from '../../components/ui/MeasurementCard';
@@ -78,7 +78,7 @@ const StitchingForm = () => {
   const filteredCustomers = allCustomers.filter(customer => {
     if (!customerSearch) return true;
     const search = customerSearch.toLowerCase();
-    return customer.name?.toLowerCase().includes(search) || 
+    return (customer.nameI18n?.[langKey] || customer.name || '')?.toLowerCase().includes(search) || 
            customer.phone?.includes(search);
   });
 
@@ -452,12 +452,15 @@ const StitchingForm = () => {
   };
 
   const handleStyleOptionChange = (group, value) => {
+    const current = { ...(formData.styleOptions || {}) };
+    if (!value) {
+      delete current[group];
+    } else {
+      current[group] = value;
+    }
     setFormData({
       ...formData,
-      styleOptions: {
-        ...(formData.styleOptions || {}),
-        [group]: value
-      }
+      styleOptions: current
     });
   };
 
@@ -656,10 +659,10 @@ const StitchingForm = () => {
                   {selectedCustomer ? (
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
-                        <span className="text-primary-700 dark:text-primary-200 font-medium text-sm">{selectedCustomer.name?.charAt(0)}</span>
+                        <span className="text-primary-700 dark:text-primary-200 font-medium text-sm">{(selectedCustomer.nameI18n?.[langKey] || selectedCustomer.name || '')?.charAt(0)}</span>
                       </div>
                       <div className="text-left">
-                        <p className="font-medium text-gray-900 dark:text-slate-100">{selectedCustomer.name}</p>
+                        <p className="font-medium text-gray-900 dark:text-slate-100">{selectedCustomer.nameI18n?.[langKey] || selectedCustomer.name}</p>
                         <p className="text-xs text-gray-500 dark:text-slate-400">{selectedCustomer.phone}</p>
                       </div>
                     </div>
@@ -689,15 +692,15 @@ const StitchingForm = () => {
                             key={customer._id}
                             type="button"
                             onClick={() => { handleCustomerSelect(customer); setCustomerSearch(''); }}
-                            className={`w-full p-3 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center gap-3 text-left transition-colors ${
+                            className={`w-full p-3 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center gap-3 text-left transition-colors border-b border-gray-100 dark:border-slate-700 last:border-b-0 ${
                               selectedCustomer?._id === customer._id ? 'bg-primary-50 dark:bg-primary-900/20' : ''
                             }`}
                           >
                             <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
-                              <span className="text-primary-700 dark:text-primary-200 font-medium">{customer.name?.charAt(0)}</span>
+                              <span className="text-primary-700 dark:text-primary-200 font-medium">{(customer.nameI18n?.[langKey] || customer.name || '')?.charAt(0)}</span>
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900 dark:text-slate-100">{customer.name}</p>
+                              <p className="font-medium text-gray-900 dark:text-slate-100">{customer.nameI18n?.[langKey] || customer.name}</p>
                               <p className="text-sm text-gray-500 dark:text-slate-400">{customer.phone}</p>
                             </div>
                           </button>
@@ -765,148 +768,34 @@ const StitchingForm = () => {
                     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
                     .map((group) => {
                       const groupTitle = group.nameI18n?.[langKey] || group.name || t(`styleOptions.${group.key}`, { defaultValue: group.key });
+                      const groupOptions = (group.options || [])
+                        .filter((o) => o && o.enabled !== false)
+                        .slice()
+                        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                        .map((opt) => {
+                          const label = opt.nameI18n?.[langKey] || opt.name || t(`styleOptions.options.${group.key}.${opt.key}`, { defaultValue: opt.key });
+                          return { value: opt.key, label };
+                        });
+
+                      const selectedValue = (formData.styleOptions || {})[group.key] || '';
                       return (
                         <div key={group.key}>
-                          <div className="mb-3 text-sm font-semibold text-gray-700 dark:text-slate-200">{groupTitle}</div>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            {(group.options || [])
-                              .filter((o) => o && o.enabled !== false)
-                              .slice()
-                              .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-                              .map((opt) => {
-                                const selected = (formData.styleOptions || {})[group.key] === opt.key;
-                                const fallbackBase = `/images/style/${group.key}/${opt.key}`;
-
-                                const uploadUrl = opt.image ? resolveUploadsUrl(opt.image) : null;
-                                const imgSrc = uploadUrl
-                                  ? `${uploadUrl}${opt.imageUpdatedAt ? `?v=${opt.imageUpdatedAt}` : ''}`
-                                  : `${fallbackBase}.webp`;
-
-                                const label = opt.nameI18n?.[langKey] || opt.name || t(`styleOptions.options.${group.key}.${opt.key}`, { defaultValue: opt.key });
-
-                                return (
-                                  <button
-                                    key={opt.key}
-                                    type="button"
-                                    onClick={() => handleStyleOptionChange(group.key, opt.key)}
-                                    className={`group relative overflow-hidden rounded-2xl border transition-all duration-200 hover:shadow-lg hover:scale-[1.01] ${
-                                      selected
-                                        ? 'border-primary-500 ring-2 ring-primary-500 bg-primary-50/70 dark:bg-primary-900/20'
-                                        : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 hover:border-gray-300 dark:hover:border-slate-600'
-                                    }`}
-                                  >
-                                    <div className="p-3">
-                                      <div className="relative h-20 w-full rounded-xl bg-gradient-to-br from-gray-100 to-white dark:from-slate-800 dark:to-slate-900 overflow-hidden">
-                                        <img
-                                          src={imgSrc}
-                                          alt={label}
-                                          className="absolute inset-0 w-full h-full object-cover"
-                                          onError={(e) => {
-                                            const src = e.currentTarget.src || '';
-                                            if (!uploadUrl && src.endsWith('.webp')) {
-                                              e.currentTarget.src = `${fallbackBase}.png`;
-                                              return;
-                                            }
-                                            e.currentTarget.style.display = 'none';
-                                          }}
-                                        />
-                                        <div className="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-slate-600 pointer-events-none">
-                                          <svg viewBox="0 0 64 64" fill="currentColor" className="w-10 h-10 opacity-80">
-                                            <path d="M14 18h36v28H14z" opacity="0.35" />
-                                            <path d="M20 26h24v4H20z" />
-                                            <path d="M20 34h16v4H20z" opacity="0.8" />
-                                          </svg>
-                                        </div>
-                                      </div>
-                                      <div className="mt-3 text-center">
-                                        <div className={`text-sm font-semibold ${selected ? 'text-primary-700 dark:text-primary-200' : 'text-gray-800 dark:text-slate-100'}`}>{label}</div>
-                                      </div>
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                          </div>
+                          <Select
+                            label={groupTitle}
+                            value={selectedValue}
+                            onChange={(e) => handleStyleOptionChange(group.key, e.target.value)}
+                            options={[
+                              { value: '', label: t('common.select', { defaultValue: 'Select' }) },
+                              ...groupOptions
+                            ]}
+                            className="rounded-2xl bg-white/70 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700"
+                          />
                         </div>
                       );
                     })
                 )}
               </div>
             </div>
-
-            {/* Order For - Relation/Sibling Selector */}
-            {selectedCustomer && (
-              <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Users className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                  <label className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                    Order For (Son / Brother / Relation)
-                  </label>
-                </div>
-                
-                {selectedRelation ? (
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-700">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                        <span className="text-amber-700 dark:text-amber-200 font-medium">{selectedRelation.name?.charAt(0)}</span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-slate-100">{selectedRelation.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-slate-400 capitalize">{selectedRelation.type}</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={clearRelation}
-                      className="text-sm text-rose-600 dark:text-rose-400 hover:underline"
-                    >
-                      Use Customer Instead
-                    </button>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setRelationDropdownOpen(!relationDropdownOpen)}
-                      className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
-                    >
-                      <span className="text-gray-600 dark:text-slate-300">
-                        For {selectedCustomer.name} (Main Customer)
-                      </span>
-                      <ChevronDown className={`w-4 h-4 text-amber-500 transition-transform ${relationDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    {relationDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-amber-200 dark:border-amber-700 z-50 max-h-48 overflow-y-auto">
-                        {selectedCustomer.relations && selectedCustomer.relations.length > 0 ? (
-                          selectedCustomer.relations.map((relation, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => handleRelationSelect(relation)}
-                              className="w-full p-3 hover:bg-amber-50 dark:hover:bg-amber-900/30 flex items-center gap-3 text-left transition-colors border-b border-gray-100 dark:border-slate-700 last:border-b-0"
-                            >
-                              <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                                <span className="text-amber-700 dark:text-amber-200 font-medium text-sm">{relation.name?.charAt(0)}</span>
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-900 dark:text-slate-100">{relation.name}</p>
-                                <p className="text-xs text-gray-500 dark:text-slate-400 capitalize">{relation.type}</p>
-                              </div>
-                            </button>
-                          ))
-                        ) : (
-                          <div className="p-4 text-center text-gray-500 dark:text-slate-400 text-sm">
-                            No relations added for this customer.
-                            <br />
-                            <span className="text-xs">Add relations in Customer edit page</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Thawb Type Selector */}
             <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-5">
@@ -916,69 +805,19 @@ const StitchingForm = () => {
               {thawbTypesCatalogLoading && (
                 <div className="text-sm text-gray-500 dark:text-slate-400 mb-4">Loading…</div>
               )}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {thawbTypes.map((thawb) => {
-                  const isSelected = formData.thawbType === thawb.key;
-                  const uploadUrl = thawb.image ? resolveUploadsUrl(thawb.image) : null;
-                  const thawbImage = uploadUrl
-                    ? `${uploadUrl}${thawb.imageUpdatedAt ? `?v=${thawb.imageUpdatedAt}` : ''}`
-                    : (thawb.fallbackImage || '');
+              <Select
+                value={formData.thawbType}
+                onChange={(e) => setFormData({ ...formData, thawbType: e.target.value })}
+                options={thawbTypes.map((thawb) => {
                   const title = thawb.name || t(`thawbTypes.${thawb.key}`, { defaultValue: thawb.fallbackLabel || thawb.key });
                   const subtitle = thawb.fallbackLabelAr || '';
-                  return (
-                    <button
-                      key={thawb.key}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, thawbType: thawb.key })}
-                      className={`relative p-3 rounded-xl border-2 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
-                        isSelected 
-                          ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 ring-2 ring-amber-500 shadow-md' 
-                          : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-gray-300 dark:hover:border-slate-500'
-                      }`}
-                    >
-                      {/* Thawb Image */}
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-16 h-24 sm:w-20 sm:h-28 relative overflow-hidden rounded-lg bg-gray-100 dark:bg-slate-700">
-                          <img 
-                            src={thawbImage}
-                            alt={title}
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
-                            }}
-                          />
-                          {/* Fallback icon if image not found */}
-                          <div className="absolute inset-0 items-center justify-center text-gray-400 dark:text-slate-500 hidden">
-                            <svg viewBox="0 0 40 60" fill="currentColor" className="w-10 h-14">
-                              <path d="M20 0 L8 8 L8 20 L4 20 L4 26 L8 26 L8 58 L16 58 L16 40 L24 40 L24 58 L32 58 L32 26 L36 26 L36 20 L32 20 L32 8 Z" opacity="0.9"/>
-                              <circle cx="20" cy="12" r="3" fill="currentColor" opacity="0.6"/>
-                            </svg>
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <p className={`text-sm font-semibold ${isSelected ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-slate-200'}`}>
-                            {title}
-                          </p>
-                          {subtitle ? (
-                            <p className={`text-xs ${isSelected ? 'text-amber-500 dark:text-amber-300' : 'text-gray-500 dark:text-slate-400'}`}>
-                              {subtitle}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                      {/* Selected checkmark */}
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center shadow-md">
-                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      )}
-                    </button>
-                  );
+                  return {
+                    value: thawb.key,
+                    label: subtitle ? `${title} / ${subtitle}` : title
+                  };
                 })}
-              </div>
+                className="rounded-2xl bg-white/70 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700"
+              />
             </div>
 
             {/* Fabric Color Selector (Optional) */}
@@ -1120,6 +959,81 @@ const StitchingForm = () => {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
+
+            {/* Order For - Relation/Sibling Selector */}
+            {selectedCustomer && (
+              <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  <label className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    Order For (Son / Brother / Relation)
+                  </label>
+                </div>
+                
+                {selectedRelation ? (
+                  <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-700">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+                        <span className="text-amber-700 dark:text-amber-200 font-medium">{selectedRelation.name?.charAt(0)}</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-slate-100">{selectedRelation.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400 capitalize">{selectedRelation.type}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearRelation}
+                      className="text-sm text-rose-600 dark:text-rose-400 hover:underline"
+                    >
+                      Use Customer Instead
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setRelationDropdownOpen(!relationDropdownOpen)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
+                    >
+                      <span className="text-gray-600 dark:text-slate-300">
+                        For {selectedCustomer.nameI18n?.[langKey] || selectedCustomer.name} (Main Customer)
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-amber-500 transition-transform ${relationDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {relationDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-amber-200 dark:border-amber-700 z-50 max-h-48 overflow-y-auto">
+                        {selectedCustomer.relations && selectedCustomer.relations.length > 0 ? (
+                          selectedCustomer.relations.map((relation, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleRelationSelect(relation)}
+                              className="w-full p-3 hover:bg-amber-50 dark:hover:bg-amber-900/30 flex items-center gap-3 text-left transition-colors border-b border-gray-100 dark:border-slate-700 last:border-b-0"
+                            >
+                              <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+                                <span className="text-amber-700 dark:text-amber-200 font-medium text-sm">{relation.name?.charAt(0)}</span>
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-slate-100">{relation.name}</p>
+                                <p className="text-xs text-gray-500 dark:text-slate-400 capitalize">{relation.type}</p>
+                              </div>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-gray-500 dark:text-slate-400 text-sm">
+                            No relations added for this customer.
+                            <br />
+                            <span className="text-xs">Add relations in Customer edit page</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" variant={isEdit ? 'primary' : 'success'} loading={loading} className="flex-1" disabled={isDemo}>

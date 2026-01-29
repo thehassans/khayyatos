@@ -8,10 +8,12 @@ import { Scissors, CheckCircle, Clock } from 'lucide-react';
 import SARIcon from '../../components/ui/SARIcon';
 
 const WorkerDashboard = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { api } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const langKey = (i18n?.language || 'en').split('-')[0];
 
   useEffect(() => {
     fetchDashboard();
@@ -91,7 +93,7 @@ const WorkerDashboard = () => {
                   <Td className="font-medium">{stitch.receiptNumber}</Td>
                   <Td>
                     <div>
-                      <p>{stitch.customerId?.name || '-'}</p>
+                      <p>{stitch.customerId?.nameI18n?.[langKey] || stitch.customerId?.name || '-'}</p>
                       <p className="text-xs text-gray-500">{stitch.customerId?.phone}</p>
                     </div>
                   </Td>

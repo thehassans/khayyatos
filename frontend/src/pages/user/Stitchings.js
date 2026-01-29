@@ -15,7 +15,7 @@ import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 
 const Stitchings = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { api, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -29,6 +29,7 @@ const Stitchings = () => {
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
 
   const isDemo = !!user?.isDemoSession;
+  const langKey = (i18n?.language || 'en').split('-')[0];
 
   useEffect(() => {
     const q = searchParams.get('search') || '';
@@ -128,6 +129,16 @@ const Stitchings = () => {
   const handlePrintLabel = async (stitch) => {
     const logoSrc = user?.logo && user.logo !== 'null' && user.logo !== 'undefined' ? user.logo : '';
     const labelLang = user?.labelLanguage || 'both';
+    const customerNameEn = stitch.customerId?.nameI18n?.en || stitch.customerId?.name || '-';
+    const customerNameAr = stitch.customerId?.nameI18n?.ar || stitch.customerId?.name || '-';
+    const customerDisplayName =
+      labelLang === 'en'
+        ? customerNameEn
+        : labelLang === 'ar'
+          ? customerNameAr
+          : `${customerNameEn} / ${customerNameAr}`;
+
+    const sarSvg = `<svg viewBox="0 0 1124.14 1256.39" width="14" height="14" style="display:inline;vertical-align:middle;margin:0 2px;" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z" /><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z" /></svg>`;
     
     // Generate QR code
     let qrCodeUrl = '';
@@ -241,12 +252,12 @@ const Stitchings = () => {
           ${user?.businessAddress ? `<div class="shop-address">${user.businessAddress}</div>` : ''}
         </div>
         <div class="receipt-no">#${stitch.receiptNumber || stitch._id?.slice(-6) || 'N/A'}</div>
-        <div class="info-row"><span class="label">${getLabel('customer')}</span><span class="value">${stitch.customerId?.name || '-'}</span></div>
+        <div class="info-row"><span class="label">${getLabel('customer')}</span><span class="value">${customerDisplayName}</span></div>
         <div class="info-row"><span class="label">${getLabel('phone')}</span><span class="value">${stitch.customerId?.phone || '-'}</span></div>
         <div class="info-row"><span class="label">${getLabel('quantity')}</span><span class="value">${stitch.quantity}</span></div>
-        <div class="info-row"><span class="label">${getLabel('price')}</span><span class="value">${stitch.price} SAR</span></div>
-        <div class="info-row"><span class="label">${getLabel('paid')}</span><span class="value">${stitch.paidAmount || 0} SAR</span></div>
-        <div class="info-row"><span class="label">${getLabel('balance')}</span><span class="value" style="color: ${balance > 0 ? '#dc2626' : '#16a34a'}">${balance} SAR</span></div>
+        <div class="info-row"><span class="label">${getLabel('price')}</span><span class="value">${stitch.price} ${sarSvg}</span></div>
+        <div class="info-row"><span class="label">${getLabel('paid')}</span><span class="value">${stitch.paidAmount || 0} ${sarSvg}</span></div>
+        <div class="info-row"><span class="label">${getLabel('balance')}</span><span class="value" style="color: ${balance > 0 ? '#dc2626' : '#16a34a'}">${balance} ${sarSvg}</span></div>
         <div class="info-row"><span class="label">${getLabel('dueDate')}</span><span class="value">${stitch.dueDate ? new Date(stitch.dueDate).toLocaleDateString() : '-'}</span></div>
         <div class="info-row"><span class="label">${getLabel('status')}</span><span class="value">${getStatusLabel(stitch.status)}</span></div>
         ${zatcaQrUrl && qrCodeUrl ? `
@@ -337,7 +348,7 @@ const Stitchings = () => {
                   <Td className="font-medium">{stitch.receiptNumber}</Td>
                   <Td>
                     <div>
-                      <p className="font-medium">{stitch.customerName || stitch.customerId?.name || '-'}</p>
+                      <p className="font-medium">{stitch.customerId?.nameI18n?.[langKey] || stitch.customerName || stitch.customerId?.name || '-'}</p>
                       {stitch.orderFor && stitch.orderFor !== (stitch.customerName || stitch.customerId?.name) && (
                         <p className="text-xs text-amber-600 dark:text-amber-400">For: {stitch.orderFor}</p>
                       )}
@@ -351,9 +362,9 @@ const Stitchings = () => {
                         title="Click to change worker"
                       >
                         <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-bold text-white">{stitch.workerId.name?.charAt(0)}</span>
+                          <span className="text-xs font-bold text-white">{(stitch.workerId.nameI18n?.[langKey] || stitch.workerId.name || '')?.charAt(0)}</span>
                         </div>
-                        <span className="text-emerald-700 dark:text-emerald-300 font-medium text-sm">{stitch.workerId.name}</span>
+                        <span className="text-emerald-700 dark:text-emerald-300 font-medium text-sm">{stitch.workerId.nameI18n?.[langKey] || stitch.workerId.name}</span>
                       </button>
                     ) : (
                       <button
@@ -469,10 +480,10 @@ const Stitchings = () => {
               className="w-full p-4 bg-gray-50 dark:bg-slate-800/40 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-3 transition-colors"
             >
               <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
-                <span className="text-emerald-700 dark:text-emerald-200 font-medium">{worker.name?.charAt(0)}</span>
+                <span className="text-emerald-700 dark:text-emerald-200 font-medium">{(worker.nameI18n?.[langKey] || worker.name || '')?.charAt(0)}</span>
               </div>
               <div className="text-left">
-                <p className="font-medium">{worker.name}</p>
+                <p className="font-medium">{worker.nameI18n?.[langKey] || worker.name}</p>
                 <p className="text-sm text-gray-500 dark:text-slate-400">{worker.phone}</p>
               </div>
             </button>
@@ -495,7 +506,7 @@ const Stitchings = () => {
         loading={deleteModal.loading}
         onConfirm={confirmDelete}
         previewTitle={`#${deleteModal?.stitching?.receiptNumber || deleteModal?.stitching?._id?.slice(-6) || ''}`}
-        previewSubtitle={`${deleteModal?.stitching?.customerId?.name || ''}${deleteModal?.stitching?.customerId?.phone ? ` • ${deleteModal.stitching.customerId.phone}` : ''}`}
+        previewSubtitle={`${deleteModal?.stitching?.customerId?.nameI18n?.[langKey] || deleteModal?.stitching?.customerId?.name || ''}${deleteModal?.stitching?.customerId?.phone ? ` • ${deleteModal.stitching.customerId.phone}` : ''}`}
       />
 
       <DemoBlockedModal

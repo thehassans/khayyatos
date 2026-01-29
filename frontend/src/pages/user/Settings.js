@@ -14,6 +14,8 @@ const Settings = () => {
   const { api, user, updateUser } = useAuth();
   const [activeSection, setActiveSection] = useState('general');
   const [loading, setLoading] = useState(false);
+  const langKey = (i18n?.language || 'en').split('-')[0];
+  const isRtl = langKey === 'ar' || langKey === 'ur';
   const [logoPreview, setLogoPreview] = useState(user?.logo || null);
   const [settings, setSettings] = useState({
     language: user?.language || 'en',
@@ -872,13 +874,9 @@ const Settings = () => {
                                           <div className="text-[11px] text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
                                         ) : null}
                                       </div>
-                                      {catalogNameI18nPreview[`m:${field.key}`] ? (
-                                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-gray-700 dark:text-slate-200">
-                                          <div><span className="font-semibold">EN:</span> {catalogNameI18nPreview[`m:${field.key}`]?.en || ''}</div>
-                                          <div><span className="font-semibold">AR:</span> {catalogNameI18nPreview[`m:${field.key}`]?.ar || ''}</div>
-                                          <div><span className="font-semibold">UR:</span> {catalogNameI18nPreview[`m:${field.key}`]?.ur || ''}</div>
-                                          <div><span className="font-semibold">HI:</span> {catalogNameI18nPreview[`m:${field.key}`]?.hi || ''}</div>
-                                          <div className="md:col-span-2"><span className="font-semibold">BN:</span> {catalogNameI18nPreview[`m:${field.key}`]?.bn || ''}</div>
+                                      {catalogNameI18nPreview[`m:${field.key}`]?.[langKey] ? (
+                                        <div className="mt-2 text-[11px] text-gray-700 dark:text-slate-200" dir={isRtl ? 'rtl' : 'ltr'}>
+                                          {catalogNameI18nPreview[`m:${field.key}`]?.[langKey] || ''}
                                         </div>
                                       ) : null}
                                     </div>
@@ -964,13 +962,9 @@ const Settings = () => {
                                           <div className="text-[11px] text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
                                         ) : null}
                                       </div>
-                                      {catalogNameI18nPreview[`t:${type.key}`] ? (
-                                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-gray-700 dark:text-slate-200">
-                                          <div><span className="font-semibold">EN:</span> {catalogNameI18nPreview[`t:${type.key}`]?.en || ''}</div>
-                                          <div><span className="font-semibold">AR:</span> {catalogNameI18nPreview[`t:${type.key}`]?.ar || ''}</div>
-                                          <div><span className="font-semibold">UR:</span> {catalogNameI18nPreview[`t:${type.key}`]?.ur || ''}</div>
-                                          <div><span className="font-semibold">HI:</span> {catalogNameI18nPreview[`t:${type.key}`]?.hi || ''}</div>
-                                          <div className="md:col-span-2"><span className="font-semibold">BN:</span> {catalogNameI18nPreview[`t:${type.key}`]?.bn || ''}</div>
+                                      {catalogNameI18nPreview[`t:${type.key}`]?.[langKey] ? (
+                                        <div className="mt-2 text-[11px] text-gray-700 dark:text-slate-200" dir={isRtl ? 'rtl' : 'ltr'}>
+                                          {catalogNameI18nPreview[`t:${type.key}`]?.[langKey] || ''}
                                         </div>
                                       ) : null}
                                     </div>
@@ -1043,13 +1037,9 @@ const Settings = () => {
                                         <div className="text-[11px] text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
                                       ) : null}
                                     </div>
-                                    {catalogNameI18nPreview[`c:${c.key}`] ? (
-                                      <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-gray-700 dark:text-slate-200">
-                                        <div><span className="font-semibold">EN:</span> {catalogNameI18nPreview[`c:${c.key}`]?.en || ''}</div>
-                                        <div><span className="font-semibold">AR:</span> {catalogNameI18nPreview[`c:${c.key}`]?.ar || ''}</div>
-                                        <div><span className="font-semibold">UR:</span> {catalogNameI18nPreview[`c:${c.key}`]?.ur || ''}</div>
-                                        <div><span className="font-semibold">HI:</span> {catalogNameI18nPreview[`c:${c.key}`]?.hi || ''}</div>
-                                        <div className="md:col-span-2"><span className="font-semibold">BN:</span> {catalogNameI18nPreview[`c:${c.key}`]?.bn || ''}</div>
+                                    {catalogNameI18nPreview[`c:${c.key}`]?.[langKey] ? (
+                                      <div className="mt-2 text-[11px] text-gray-700 dark:text-slate-200" dir={isRtl ? 'rtl' : 'ltr'}>
+                                        {catalogNameI18nPreview[`c:${c.key}`]?.[langKey] || ''}
                                       </div>
                                     ) : null}
                                   </div>
@@ -1124,13 +1114,9 @@ const Settings = () => {
                                       <div className="text-[11px] text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
                                     ) : null}
                                   </div>
-                                  {catalogNameI18nPreview[`g:${group.key}`] ? (
-                                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-gray-700 dark:text-slate-200">
-                                      <div><span className="font-semibold">EN:</span> {catalogNameI18nPreview[`g:${group.key}`]?.en || ''}</div>
-                                      <div><span className="font-semibold">AR:</span> {catalogNameI18nPreview[`g:${group.key}`]?.ar || ''}</div>
-                                      <div><span className="font-semibold">UR:</span> {catalogNameI18nPreview[`g:${group.key}`]?.ur || ''}</div>
-                                      <div><span className="font-semibold">HI:</span> {catalogNameI18nPreview[`g:${group.key}`]?.hi || ''}</div>
-                                      <div className="md:col-span-2"><span className="font-semibold">BN:</span> {catalogNameI18nPreview[`g:${group.key}`]?.bn || ''}</div>
+                                  {catalogNameI18nPreview[`g:${group.key}`]?.[langKey] ? (
+                                    <div className="mt-2 text-[11px] text-gray-700 dark:text-slate-200" dir={isRtl ? 'rtl' : 'ltr'}>
+                                      {catalogNameI18nPreview[`g:${group.key}`]?.[langKey] || ''}
                                     </div>
                                   ) : null}
                                 </div>
@@ -1187,13 +1173,9 @@ const Settings = () => {
                                               <div className="text-[11px] text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
                                             ) : null}
                                           </div>
-                                          {catalogNameI18nPreview[`o:${group.key}:${opt.key}`] ? (
-                                            <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-gray-700 dark:text-slate-200">
-                                              <div><span className="font-semibold">EN:</span> {catalogNameI18nPreview[`o:${group.key}:${opt.key}`]?.en || ''}</div>
-                                              <div><span className="font-semibold">AR:</span> {catalogNameI18nPreview[`o:${group.key}:${opt.key}`]?.ar || ''}</div>
-                                              <div><span className="font-semibold">UR:</span> {catalogNameI18nPreview[`o:${group.key}:${opt.key}`]?.ur || ''}</div>
-                                              <div><span className="font-semibold">HI:</span> {catalogNameI18nPreview[`o:${group.key}:${opt.key}`]?.hi || ''}</div>
-                                              <div className="md:col-span-2"><span className="font-semibold">BN:</span> {catalogNameI18nPreview[`o:${group.key}:${opt.key}`]?.bn || ''}</div>
+                                          {catalogNameI18nPreview[`o:${group.key}:${opt.key}`]?.[langKey] ? (
+                                            <div className="mt-2 text-[11px] text-gray-700 dark:text-slate-200" dir={isRtl ? 'rtl' : 'ltr'}>
+                                              {catalogNameI18nPreview[`o:${group.key}:${opt.key}`]?.[langKey] || ''}
                                             </div>
                                           ) : null}
                                         </div>

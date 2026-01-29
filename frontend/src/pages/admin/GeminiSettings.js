@@ -8,7 +8,7 @@ import { Key, Sparkles, Send, Save, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const GeminiSettings = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { api } = useAuth();
 
   const [loading, setLoading] = useState(true);
@@ -213,12 +213,8 @@ const GeminiSettings = () => {
 
           {testTranslations ? (
             <div className="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                <div><span className="font-semibold">EN:</span> {testTranslations.en || ''}</div>
-                <div><span className="font-semibold">AR:</span> {testTranslations.ar || ''}</div>
-                <div><span className="font-semibold">UR:</span> {testTranslations.ur || ''}</div>
-                <div><span className="font-semibold">HI:</span> {testTranslations.hi || ''}</div>
-                <div className="md:col-span-2"><span className="font-semibold">BN:</span> {testTranslations.bn || ''}</div>
+              <div className="text-sm">
+                {testTranslations[(i18n?.language || 'en').split('-')[0]] || ''}
               </div>
             </div>
           ) : null}

@@ -160,14 +160,14 @@ const CustomerProfile = () => {
                 <div className="space-y-2">
                   {customer.relations.map((rel) => (
                     <button
-                      key={String(rel.customerId)}
+                      key={String(rel.customerId?._id || rel.customerId)}
                       type="button"
-                      onClick={() => navigate(`/user/customers/${rel.customerId}`)}
+                      onClick={() => navigate(`/user/customers/${rel.customerId?._id || rel.customerId}`)}
                       className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-colors"
                     >
                       <div className="min-w-0 text-left">
-                        <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{rel.customerName || '—'}</div>
-                        <div className="text-xs text-gray-500 dark:text-slate-400 truncate">{rel.customerPhone || ''}</div>
+                        <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{rel.customerId?.nameI18n?.[langKey] || rel.customerId?.name || rel.customerName || '—'}</div>
+                        <div className="text-xs text-gray-500 dark:text-slate-400 truncate">{rel.customerId?.phone || rel.customerPhone || ''}</div>
                       </div>
                       <span className="text-xs px-2 py-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-200 whitespace-nowrap">
                         {relationLabel(rel.relationType)}
@@ -210,7 +210,7 @@ const CustomerProfile = () => {
                             <span className="inline-flex items-center gap-1"><Calendar className="w-4 h-4" />{o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '—'}</span>
                             <span className="inline-flex items-center gap-1"><SARIcon className="w-4 h-4" />{o.price || 0}</span>
                             <span className="inline-flex items-center gap-1">Paid: {o.paidAmount || 0}</span>
-                            {o.workerId?.name ? <span className="inline-flex items-center gap-1">Worker: {o.workerId.name}</span> : null}
+                            {o.workerId?.name ? <span className="inline-flex items-center gap-1">Worker: {o.workerId?.nameI18n?.[langKey] || o.workerId.name}</span> : null}
                           </div>
                         </div>
                         <div className="text-xs text-gray-400 dark:text-slate-500 whitespace-nowrap">Edit</div>

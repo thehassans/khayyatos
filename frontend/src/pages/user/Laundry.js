@@ -9,7 +9,7 @@ import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import { Input } from '../../components/ui/Input';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
 import SARIcon from '../../components/ui/SARIcon';
-import { Droplets, Edit, Plus, Trash2 } from 'lucide-react';
+import { Droplets, Edit, Plus, Trash2, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Laundry = () => {
@@ -30,13 +30,26 @@ const Laundry = () => {
   const [editForm, setEditForm] = useState({ id: null, name: '', pricePerPiece: '' });
   const [assignForm, setAssignForm] = useState({ id: null, pieces: '' });
 
+  const [paymentsModal, setPaymentsModal] = useState({
+    open: false,
+    laundry: null,
+    loading: false,
+    paying: false,
+    payments: [],
+    summary: null,
+    amount: '',
+    description: ''
+  });
+
   const [deleteModal, setDeleteModal] = useState({ open: false, laundry: null, loading: false });
 
   const computed = useMemo(() => {
     const list = Array.isArray(laundries) ? laundries : [];
     const totalAssigned = list.reduce((sum, x) => sum + (Number(x.totalAssigned) || 0), 0);
     const totalAmount = list.reduce((sum, x) => sum + ((Number(x.totalAssigned) || 0) * (Number(x.pricePerPiece) || 0)), 0);
-    return { totalAssigned, totalAmount };
+    const totalPaid = list.reduce((sum, x) => sum + (Number(x.totalPaid) || 0), 0);
+    const pendingAmount = Math.max(0, totalAmount - totalPaid);
+    return { totalAssigned, totalAmount, totalPaid, pendingAmount };
   }, [laundries]);
 
   const fetchLaundries = async () => {
@@ -49,6 +62,80 @@ const Laundry = () => {
       toast.error(t('common.error', { defaultValue: 'Error' }));
     }
     setLoading(false);
+  };
+
+  const openPayments = async (l) => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
+    const id = l?._id;
+    if (!id) return;
+    setPaymentsModal({
+      open: true,
+      laundry: l,
+      loading: true,
+      paying: false,
+      payments: [],
+      summary: null,
+      amount: '',
+      description: ''
+    });
+    try {
+      const res = await api.get(`/laundry/${id}/payments`);
+      setPaymentsModal((p) => ({
+        ...p,
+        loading: false,
+        payments: Array.isArray(res.data?.payments) ? res.data.payments : [],
+        summary: res.data?.summary || null,
+        laundry: res.data?.laundry || l
+      }));
+    } catch (e) {
+      toast.error(e?.response?.data?.error || t('common.error', { defaultValue: 'Error' }));
+      setPaymentsModal((p) => ({ ...p, loading: false }));
+    }
+  };
+
+  const closePayments = () => {
+    setPaymentsModal({
+      open: false,
+      laundry: null,
+      loading: false,
+      paying: false,
+      payments: [],
+      summary: null,
+      amount: '',
+      description: ''
+    });
+  };
+
+  const submitPayment = async () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
+    const id = paymentsModal?.laundry?._id;
+    if (!id) return;
+
+    const amount = Number(paymentsModal.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error(t('common.invalidAmount', { defaultValue: 'Invalid amount' }));
+      return;
+    }
+
+    setPaymentsModal((p) => ({ ...p, paying: true }));
+    try {
+      await api.post(`/laundry/${id}/payments`, {
+        amount,
+        description: paymentsModal.description || ''
+      });
+      toast.success(t('common.success', { defaultValue: 'Success' }));
+      await fetchLaundries();
+      await openPayments({ _id: id });
+    } catch (e) {
+      toast.error(e?.response?.data?.error || t('common.error', { defaultValue: 'Error' }));
+      setPaymentsModal((p) => ({ ...p, paying: false }));
+    }
   };
 
   useEffect(() => {
@@ -242,6 +329,18 @@ const Laundry = () => {
             {computed.totalAmount.toFixed(2)} <SARIcon className="w-5 h-5" />
           </div>
         </Card>
+        <Card className="p-6">
+          <div className="text-sm text-gray-500 dark:text-slate-400">{t('laundry.totalPaid', { defaultValue: 'Total Paid' })}</div>
+          <div className="mt-2 text-3xl font-bold text-gray-900 dark:text-slate-100 flex items-center gap-2">
+            {computed.totalPaid.toFixed(2)} <SARIcon className="w-5 h-5" />
+          </div>
+        </Card>
+        <Card className="p-6">
+          <div className="text-sm text-gray-500 dark:text-slate-400">{t('laundry.pendingAmount', { defaultValue: 'Pending' })}</div>
+          <div className="mt-2 text-3xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
+            {computed.pendingAmount.toFixed(2)} <SARIcon className="w-5 h-5" />
+          </div>
+        </Card>
       </div>
 
       <Card>
@@ -281,6 +380,15 @@ const Laundry = () => {
                     </Td>
                     <Td>
                       <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => openPayments(l)}
+                          className="rounded-xl px-4 py-2"
+                          disabled={isDemo}
+                          icon={CreditCard}
+                        >
+                          {t('laundry.payments', { defaultValue: 'Payments' })}
+                        </Button>
                         <Button variant="outline" onClick={() => openAssign(l)} className="rounded-xl px-4 py-2">
                           {t('laundry.assign', { defaultValue: 'Assign' })}
                         </Button>
@@ -403,6 +511,107 @@ const Laundry = () => {
         </div>
       </Modal>
 
+      <Modal
+        isOpen={paymentsModal.open}
+        onClose={closePayments}
+        title={t('laundry.payments', { defaultValue: 'Payments' })}
+        size="lg"
+      >
+        <div className="space-y-4">
+          {paymentsModal.loading ? (
+            <div className="flex items-center justify-center h-40">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
+            </div>
+          ) : (
+            <>
+              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 p-4">
+                <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
+                  {paymentsModal.laundry?.name || ''}
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-3 text-xs text-gray-600 dark:text-slate-300">
+                  <div className="rounded-xl bg-white/70 dark:bg-slate-900/30 border border-gray-200 dark:border-slate-700 p-3">
+                    <div className="text-gray-500 dark:text-slate-400">{t('laundry.totalAmount', { defaultValue: 'Total Amount' })}</div>
+                    <div className="mt-1 font-semibold inline-flex items-center gap-1">
+                      {(Number(paymentsModal.summary?.totalAmount) || 0).toFixed(2)} <SARIcon className="w-3 h-3" />
+                    </div>
+                  </div>
+                  <div className="rounded-xl bg-white/70 dark:bg-slate-900/30 border border-gray-200 dark:border-slate-700 p-3">
+                    <div className="text-gray-500 dark:text-slate-400">{t('laundry.totalPaid', { defaultValue: 'Total Paid' })}</div>
+                    <div className="mt-1 font-semibold inline-flex items-center gap-1">
+                      {(Number(paymentsModal.summary?.totalPaid) || 0).toFixed(2)} <SARIcon className="w-3 h-3" />
+                    </div>
+                  </div>
+                  <div className="rounded-xl bg-white/70 dark:bg-slate-900/30 border border-gray-200 dark:border-slate-700 p-3">
+                    <div className="text-gray-500 dark:text-slate-400">{t('laundry.pendingAmount', { defaultValue: 'Pending' })}</div>
+                    <div className="mt-1 font-semibold text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
+                      {(Number(paymentsModal.summary?.pendingAmount) || 0).toFixed(2)} <SARIcon className="w-3 h-3" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 p-4">
+                <div className="text-sm font-semibold text-gray-900 dark:text-slate-100">{t('laundry.addPayment', { defaultValue: 'Add Payment' })}</div>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Input
+                    label={t('common.amount', { defaultValue: 'Amount' })}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={paymentsModal.amount}
+                    onChange={(e) => setPaymentsModal((p) => ({ ...p, amount: e.target.value }))}
+                  />
+                  <Input
+                    label={t('common.description', { defaultValue: 'Description' })}
+                    value={paymentsModal.description}
+                    onChange={(e) => setPaymentsModal((p) => ({ ...p, description: e.target.value }))}
+                    placeholder={t('laundry.paymentNote', { defaultValue: 'Optional note' })}
+                  />
+                </div>
+                <div className="mt-3 flex gap-3">
+                  <Button onClick={submitPayment} loading={paymentsModal.paying} className="flex-1 rounded-2xl" disabled={isDemo}>
+                    {t('common.save', { defaultValue: 'Save' })}
+                  </Button>
+                  <Button variant="secondary" onClick={closePayments} className="flex-1 rounded-2xl" disabled={paymentsModal.paying}>
+                    {t('common.close', { defaultValue: 'Close' })}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <div className="px-4 py-3 bg-gray-50 dark:bg-slate-900/40 border-b border-gray-200 dark:border-slate-700 text-sm font-semibold text-gray-900 dark:text-slate-100">
+                  {t('laundry.paymentHistory', { defaultValue: 'Payment History' })}
+                </div>
+                {paymentsModal.payments?.length ? (
+                  <Table>
+                    <Thead>
+                      <Tr>
+                        <Th>{t('common.date', { defaultValue: 'Date' })}</Th>
+                        <Th>{t('common.amount', { defaultValue: 'Amount' })}</Th>
+                        <Th>{t('common.description', { defaultValue: 'Description' })}</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {paymentsModal.payments.map((p) => (
+                        <Tr key={p._id}>
+                          <Td>{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '-'}</Td>
+                          <Td className="font-medium text-emerald-600 dark:text-emerald-400">
+                            <span className="inline-flex items-center gap-1">{Number(p.amount || 0).toFixed(2)} <SARIcon className="w-3 h-3" /></span>
+                          </Td>
+                          <Td className="text-gray-600 dark:text-slate-300">{p.description || '-'}</Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                ) : (
+                  <div className="p-8 text-center text-sm text-gray-500 dark:text-slate-400">{t('common.noData', { defaultValue: 'No data' })}</div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
+
       <ConfirmModal
         isOpen={deleteModal.open}
         onClose={closeDelete}
@@ -415,7 +624,11 @@ const Laundry = () => {
         loading={deleteModal.loading}
         onConfirm={confirmDelete}
         previewTitle={deleteModal?.laundry?.name || ''}
-        previewSubtitle={deleteModal?.laundry ? `${Number(deleteModal.laundry.pricePerPiece || 0).toFixed(2)} SAR / piece` : ''}
+        previewSubtitle={deleteModal?.laundry ? (
+          <span className="inline-flex items-center gap-1">
+            {Number(deleteModal.laundry.pricePerPiece || 0).toFixed(2)} <SARIcon className="w-3 h-3" /> / piece
+          </span>
+        ) : ''}
       />
 
       <DemoBlockedModal

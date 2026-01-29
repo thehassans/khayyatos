@@ -34,7 +34,7 @@ router.get('/profile/:id', verifyToken, isUser, async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(100)
       .populate('customerId', 'name phone nameI18n')
-      .populate('workerId', 'name phone');
+      .populate('workerId', 'name phone nameI18n');
 
     const stats = {
       total: 0,
@@ -76,7 +76,7 @@ router.get('/:id([0-9a-fA-F]{24})', verifyToken, isUser, async (req, res) => {
     const stitchings = await Stitching.find({ workerId: worker._id })
       .sort({ createdAt: -1 })
       .limit(10)
-      .populate('customerId', 'name phone');
+      .populate('customerId', 'name phone nameI18n');
     
     const payments = await Payment.find({ workerId: worker._id })
       .sort({ createdAt: -1 })
@@ -201,7 +201,7 @@ router.get('/panel/dashboard', verifyToken, isWorker, async (req, res) => {
     const recentStitchings = await Stitching.find({ workerId })
       .sort({ createdAt: -1 })
       .limit(5)
-      .populate('customerId', 'name phone');
+      .populate('customerId', 'name phone nameI18n');
     
     res.json({
       stats: {
@@ -229,7 +229,7 @@ router.get('/panel/stitchings', verifyToken, isWorker, async (req, res) => {
     
     const stitchings = await Stitching.find(query)
       .sort({ createdAt: -1 })
-      .populate('customerId', 'name phone');
+      .populate('customerId', 'name phone nameI18n');
     
     res.json({ stitchings });
   } catch (error) {

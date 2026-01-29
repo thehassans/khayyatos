@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
-      .populate('workerId', 'name phone');
+      .populate('workerId', 'name phone nameI18n');
     
     const total = await Payment.countDocuments(query);
     
@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
 router.get('/summary', async (req, res) => {
   try {
     const workers = await Worker.find({ userId: req.user._id })
-      .select('name phone paymentType paymentAmount totalEarnings totalPaid pendingAmount completedStitchings');
+      .select('name phone nameI18n paymentType paymentAmount totalEarnings totalPaid pendingAmount completedStitchings');
 
     const perStitchingWorkers = workers.filter((w) => w.paymentType === 'per_stitching');
     if (perStitchingWorkers.length > 0) {
@@ -74,7 +74,7 @@ router.get('/summary', async (req, res) => {
     }
 
     const refreshedWorkers = await Worker.find({ userId: req.user._id })
-      .select('name phone totalEarnings totalPaid pendingAmount');
+      .select('name phone nameI18n totalEarnings totalPaid pendingAmount');
     
     const totalPaid = await Payment.aggregate([
       { $match: { userId: req.user._id } },
@@ -122,7 +122,7 @@ router.post('/', async (req, res) => {
     worker.pendingAmount = worker.totalEarnings - worker.totalPaid;
     await worker.save();
     
-    await payment.populate('workerId', 'name phone');
+    await payment.populate('workerId', 'name phone nameI18n');
     
     res.status(201).json({ 
       message: 'Payment sent successfully',

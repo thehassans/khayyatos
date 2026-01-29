@@ -54,8 +54,8 @@ router.get('/', async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
-      .populate('customerId', 'name phone')
-      .populate('workerId', 'name phone');
+      .populate('customerId', 'name phone nameI18n')
+      .populate('workerId', 'name phone nameI18n');
     
     const total = await Stitching.countDocuments(query);
     
@@ -104,7 +104,7 @@ router.get('/search', async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(20)
       .populate('customerId', 'name phone nameI18n')
-      .populate('workerId', 'name');
+      .populate('workerId', 'name phone nameI18n');
 
     if (phone) {
       const p = canonicalSaudiMobile(phone);
@@ -215,7 +215,7 @@ router.post('/', blockDemoWrites, async (req, res) => {
     }
     await customer.save();
     
-    await stitching.populate('customerId', 'name phone');
+    await stitching.populate('customerId', 'name phone nameI18n');
     
     // Send WhatsApp notification for new order
     const user = await User.findById(req.user._id);
@@ -351,8 +351,8 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
     }
     
     await stitching.save();
-    await stitching.populate('customerId', 'name phone');
-    await stitching.populate('workerId', 'name');
+    await stitching.populate('customerId', 'name phone nameI18n');
+    await stitching.populate('workerId', 'name phone nameI18n');
     
     // Send WhatsApp notification on status change
     if (status && status !== oldStatus) {
@@ -426,8 +426,8 @@ router.put('/:id/assign', blockDemoWrites, async (req, res) => {
     }
     
     await stitching.save();
-    await stitching.populate('customerId', 'name phone');
-    await stitching.populate('workerId', 'name');
+    await stitching.populate('customerId', 'name phone nameI18n');
+    await stitching.populate('workerId', 'name phone nameI18n');
     
     res.json({ message: 'Worker assigned successfully', stitching });
   } catch (error) {

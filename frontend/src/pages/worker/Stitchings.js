@@ -9,8 +9,9 @@ import { Scissors, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const WorkerStitchings = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { api } = useAuth();
+  const langKey = (i18n?.language || 'en').split('-')[0];
   const [stitchings, setStitchings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
@@ -93,7 +94,7 @@ const WorkerStitchings = () => {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="font-semibold text-gray-900">{stitch.receiptNumber}</p>
-                  <p className="text-sm text-gray-500">{stitch.customerId?.name}</p>
+                  <p className="text-sm text-gray-500">{stitch.customerId?.nameI18n?.[langKey] || stitch.customerId?.name}</p>
                 </div>
                 <StatusBadge status={stitch.status} />
               </div>
@@ -141,7 +142,7 @@ const WorkerStitchings = () => {
             {/* Customer Info */}
             <div className="bg-gray-50 rounded-lg p-4">
               <h4 className="font-medium text-gray-900 mb-2">{t('stitchings.customer')}</h4>
-              <p>{detailModal.stitching.customerId?.name}</p>
+              <p>{detailModal.stitching.customerId?.nameI18n?.[langKey] || detailModal.stitching.customerId?.name}</p>
               <p className="text-sm text-gray-500">{detailModal.stitching.customerId?.phone}</p>
             </div>
 

@@ -136,7 +136,7 @@ router.get('/:id', async (req, res) => {
     const customer = await Customer.findOne({ 
       _id: req.params.id, 
       userId: req.user._id 
-    });
+    }).populate('relations.customerId', 'name phone nameI18n');
     
     if (!customer) {
       return res.status(404).json({ error: 'Customer not found' });
@@ -144,7 +144,7 @@ router.get('/:id', async (req, res) => {
     
     const stitchings = await Stitching.find({ customerId: customer._id })
       .sort({ createdAt: -1 })
-      .populate('workerId', 'name');
+      .populate('workerId', 'name phone nameI18n');
     
     res.json({ customer, stitchings });
   } catch (error) {

@@ -31,6 +31,7 @@ const CustomerForm = () => {
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
 
   const langKey = (i18n?.language || 'en').split('-')[0];
+  const isRtl = langKey === 'ar' || langKey === 'ur';
 
   const [loading, setLoading] = useState(false);
   const [allCustomers, setAllCustomers] = useState([]);
@@ -150,11 +151,25 @@ const CustomerForm = () => {
     try {
       const response = await api.get(`/customers/${id}`);
       const customer = response.data.customer || response.data;
+      const normalizedRelations = Array.isArray(customer.relations)
+        ? customer.relations.map((r) => {
+            const ref = r?.customerId;
+            const refId = typeof ref === 'object' && ref ? ref._id : ref;
+            const refName = typeof ref === 'object' && ref ? (ref.nameI18n?.[langKey] || ref.name) : null;
+            const refPhone = typeof ref === 'object' && ref ? ref.phone : null;
+            return {
+              ...r,
+              customerId: refId,
+              customerName: refName || r.customerName || '',
+              customerPhone: refPhone || r.customerPhone || ''
+            };
+          })
+        : [];
       setFormData({
         name: customer.name || '',
         phone: customer.phone || '+966',
         notes: customer.notes || '',
-        relations: customer.relations || [],
+        relations: normalizedRelations,
         measurements: customer.measurements || {}
       });
     } catch (error) {
@@ -181,7 +196,7 @@ const CustomerForm = () => {
       ...formData,
       relations: [...formData.relations, {
         customerId: newRelation.customerId,
-        customerName: customer.name,
+        customerName: customer.nameI18n?.[langKey] || customer.name,
         customerPhone: customer.phone,
         relationType: newRelation.relationType
       }]
@@ -284,12 +299,19 @@ const CustomerForm = () => {
         <CardBody>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label={t('customers.name')}
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
+              <div className="space-y-1">
+                <Input
+                  label={t('customers.name')}
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+                {nameI18nPreview?.[langKey] ? (
+                  <div className="text-xs text-gray-500 dark:text-slate-400" dir={isRtl ? 'rtl' : 'ltr'}>
+                    {nameI18nPreview[langKey]}
+                  </div>
+                ) : null}
+              </div>
               <Input
                 label={t('customers.phone')}
                 type="tel"
@@ -300,7 +322,7 @@ const CustomerForm = () => {
               />
             </div>
 
-            {(nameTranslating || nameI18nPreview) ? (
+            {(nameTranslating || nameI18nPreview?.[langKey]) ? (
               <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="text-sm font-semibold text-gray-900 dark:text-slate-100">{t('common.translation', { defaultValue: 'Translation' })}</div>
@@ -308,13 +330,9 @@ const CustomerForm = () => {
                     <div className="text-xs text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
                   ) : null}
                 </div>
-                {nameI18nPreview ? (
-                  <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-700 dark:text-slate-200">
-                    <div><span className="font-semibold">EN:</span> {nameI18nPreview.en || ''}</div>
-                    <div><span className="font-semibold">AR:</span> {nameI18nPreview.ar || ''}</div>
-                    <div><span className="font-semibold">UR:</span> {nameI18nPreview.ur || ''}</div>
-                    <div><span className="font-semibold">HI:</span> {nameI18nPreview.hi || ''}</div>
-                    <div className="md:col-span-2"><span className="font-semibold">BN:</span> {nameI18nPreview.bn || ''}</div>
+                {nameI18nPreview?.[langKey] ? (
+                  <div className="mt-3 text-xs text-gray-700 dark:text-slate-200" dir={isRtl ? 'rtl' : 'ltr'}>
+                    {nameI18nPreview[langKey] || ''}
                   </div>
                 ) : null}
               </div>
@@ -337,7 +355,7 @@ const CustomerForm = () => {
                   <option value="">Select existing customer...</option>
                   {allCustomers.filter(c => c._id !== id).map((customer) => (
                     <option key={customer._id} value={customer._id}>
-                      {customer.name} ({customer.phone})
+                      {customer.nameI18n?.[langKey] || customer.name} ({customer.phone})
                     </option>
                   ))}
                 </select>

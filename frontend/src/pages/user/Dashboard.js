@@ -514,7 +514,7 @@ const UserDashboard = () => {
                       <div className="min-w-0">
                         <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">#{stitch.receiptNumber || ''}</div>
                         <div className="text-xs text-gray-500 dark:text-slate-400 truncate">
-                          {stitch.customerId?.name || '-'}
+                          {stitch.customerId?.nameI18n?.[langKey] || stitch.customerId?.name || '-'}
                           {stitch.customerId?.phone ? ` • ${stitch.customerId.phone}` : ''}
                         </div>
                       </div>
@@ -564,8 +564,8 @@ const UserDashboard = () => {
                 {data.recentStitchings.map((stitch) => (
                   <Tr key={stitch._id} onClick={() => navigate(`/user/stitchings/${stitch._id}/edit`)}>
                     <Td className="font-medium">{stitch.receiptNumber}</Td>
-                    <Td>{stitch.customerId?.name || '-'}</Td>
-                    <Td>{stitch.workerId?.name || '-'}</Td>
+                    <Td>{stitch.customerId?.nameI18n?.[langKey] || stitch.customerId?.name || '-'}</Td>
+                    <Td>{stitch.workerId?.nameI18n?.[langKey] || stitch.workerId?.name || '-'}</Td>
                     <Td><StatusBadge status={stitch.status} /></Td>
                     <Td className="flex items-center gap-1">{stitch.price} <SARIcon className="w-3 h-3" /></Td>
                   </Tr>

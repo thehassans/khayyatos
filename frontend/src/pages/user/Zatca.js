@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
+import SARIcon from '../../components/ui/SARIcon';
 
 const Zatca = () => {
   const { t } = useTranslation();
@@ -485,7 +486,9 @@ const Zatca = () => {
                         </div>
                         <div className="text-right">
                           <div className="font-bold text-emerald-600 dark:text-emerald-400">
-                            {stitching.price} SAR
+                            <span className="inline-flex items-center gap-1">
+                              {stitching.price} <SARIcon className="w-4 h-4" />
+                            </span>
                           </div>
                           <div className="text-xs text-gray-400">
                             {new Date(stitching.createdAt).toLocaleDateString()}
@@ -530,11 +533,15 @@ const Zatca = () => {
                     </div>
                     <div className="text-sm">
                       <span className="text-gray-500 dark:text-slate-400">{t('zatca.total')}:</span>
-                      <span className="ml-2 font-medium text-gray-900 dark:text-slate-100">{qrCodeData?.invoiceData?.invoiceTotal} SAR</span>
+                      <span className="ml-2 font-medium text-gray-900 dark:text-slate-100 inline-flex items-center gap-1">
+                        {qrCodeData?.invoiceData?.invoiceTotal} <SARIcon className="w-4 h-4" />
+                      </span>
                     </div>
                     <div className="text-sm">
                       <span className="text-gray-500 dark:text-slate-400">{t('zatca.vat')}:</span>
-                      <span className="ml-2 font-medium text-gray-900 dark:text-slate-100">{qrCodeData?.invoiceData?.vatTotal} SAR</span>
+                      <span className="ml-2 font-medium text-gray-900 dark:text-slate-100 inline-flex items-center gap-1">
+                        {qrCodeData?.invoiceData?.vatTotal} <SARIcon className="w-4 h-4" />
+                      </span>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -604,7 +611,9 @@ const Zatca = () => {
                     >
                       <div className="flex justify-between">
                         <span className="font-medium">{stitching.receiptNumber}</span>
-                        <span className="text-emerald-600 font-bold">{stitching.price} SAR</span>
+                        <span className="text-emerald-600 font-bold inline-flex items-center gap-1">
+                          {stitching.price} <SARIcon className="w-4 h-4" />
+                        </span>
                       </div>
                     </button>
                   ))}
@@ -818,7 +827,9 @@ const Zatca = () => {
                           {invoice.customer?.name || '-'}
                         </td>
                         <td className="py-3 font-medium text-emerald-600 dark:text-emerald-400">
-                          {invoice.price} SAR
+                          <span className="inline-flex items-center gap-1">
+                            {invoice.price} <SARIcon className="w-4 h-4" />
+                          </span>
                         </td>
                         <td className="py-3">
                           <StatusBadge status={invoice.zatcaStatus} />

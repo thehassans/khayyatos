@@ -10,11 +10,14 @@ import { ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const WorkerForm = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { api, user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
+
+  const langKey = (i18n?.language || 'en').split('-')[0];
+  const isRtl = langKey === 'ar' || langKey === 'ur';
 
   const isDemo = !!user?.isDemoSession;
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
@@ -135,12 +138,19 @@ const WorkerForm = () => {
         <CardBody>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label={t('workers.name')}
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
+              <div className="space-y-1">
+                <Input
+                  label={t('workers.name')}
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+                {nameI18nPreview?.[langKey] ? (
+                  <div className="text-xs text-gray-500 dark:text-slate-400" dir={isRtl ? 'rtl' : 'ltr'}>
+                    {nameI18nPreview[langKey]}
+                  </div>
+                ) : null}
+              </div>
               <Input
                 label={t('workers.phone')}
                 type="tel"
@@ -151,7 +161,7 @@ const WorkerForm = () => {
               />
             </div>
 
-            {(nameTranslating || nameI18nPreview) ? (
+            {(nameTranslating || nameI18nPreview?.[langKey]) ? (
               <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="text-sm font-semibold text-gray-900 dark:text-slate-100">{t('common.translation', { defaultValue: 'Translation' })}</div>
@@ -159,13 +169,9 @@ const WorkerForm = () => {
                     <div className="text-xs text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
                   ) : null}
                 </div>
-                {nameI18nPreview ? (
-                  <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-700 dark:text-slate-200">
-                    <div><span className="font-semibold">EN:</span> {nameI18nPreview.en || ''}</div>
-                    <div><span className="font-semibold">AR:</span> {nameI18nPreview.ar || ''}</div>
-                    <div><span className="font-semibold">UR:</span> {nameI18nPreview.ur || ''}</div>
-                    <div><span className="font-semibold">HI:</span> {nameI18nPreview.hi || ''}</div>
-                    <div className="md:col-span-2"><span className="font-semibold">BN:</span> {nameI18nPreview.bn || ''}</div>
+                {nameI18nPreview?.[langKey] ? (
+                  <div className="mt-3 text-xs text-gray-700 dark:text-slate-200" dir={isRtl ? 'rtl' : 'ltr'}>
+                    {nameI18nPreview[langKey] || ''}
                   </div>
                 ) : null}
               </div>

@@ -63,34 +63,6 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-[100svh] min-h-[100dvh] relative overflow-hidden bg-black">
-      {/* Video Background - Saudi Thawb/Dishdasha Tailoring (Lazy loaded) */}
-      {videoReady && (
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          playsInline
-          loop
-          disablePictureInPicture
-          preload="metadata"
-          className="absolute inset-0 w-full h-full object-cover opacity-0 animate-[fadeInVideo_1.5s_ease-out_forwards]"
-        >
-          <source src="/videos/Thawb.webm" type="video/webm" />
-          <source src="/videos/Thawb.mp4" type="video/mp4" />
-        </video>
-      )}
-
-      {/* Elegant Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/70" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
-
-      {/* Subtle Grain Texture */}
-      <div 
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-        }}
-      />
 
       {/* Language Selector - Premium Glass */}
       <div className="absolute top-4 right-4 sm:top-6 sm:right-6 md:top-8 md:right-8 z-50">
@@ -127,44 +99,55 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="relative z-10 min-h-[100svh] min-h-[100dvh] flex items-center justify-center px-4 py-8 sm:p-6 md:p-8">
-        <div className={`w-full max-w-[340px] sm:max-w-sm md:max-w-md transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          
-          {/* Logo & Brand - Ultra Minimal */}
-          <div className="text-center mb-8 sm:mb-10 md:mb-12">
-            {/* Animated Scissors Icon */}
-            <div className="relative inline-flex items-center justify-center mb-6 sm:mb-8">
-              <div className="absolute w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-amber-500/20 rounded-full blur-2xl animate-pulse" />
-              <svg 
-                className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-white relative" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="1"
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <circle cx="6" cy="6" r="3" className="animate-[spin_8s_linear_infinite]" style={{ transformOrigin: '6px 6px' }} />
-                <circle cx="6" cy="18" r="3" className="animate-[spin_8s_linear_infinite_reverse]" style={{ transformOrigin: '6px 18px' }} />
-                <line x1="20" y1="4" x2="8.12" y2="15.88" />
-                <line x1="14.47" y1="14.48" x2="20" y2="20" />
-                <line x1="8.12" y1="8.12" x2="12" y2="12" />
-              </svg>
-            </div>
+      <div className="relative z-10 min-h-[100svh] min-h-[100dvh] flex flex-col md:flex-row">
+        <div className="relative w-full md:w-1/2 h-[50svh] md:h-auto overflow-hidden">
+          {videoReady && (
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              loop
+              disablePictureInPicture
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-cover object-top md:object-center opacity-0 animate-[fadeInVideo_1.5s_ease-out_forwards]"
+            >
+              <source src="/videos/Thawb.webm" type="video/webm" />
+              <source src="/videos/Thawb.mp4" type="video/mp4" />
+            </video>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/30 to-black/70" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+            }}
+          />
+        </div>
 
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extralight text-white tracking-[0.2em] sm:tracking-[0.3em] mb-2 sm:mb-3">
-              KHAYYAT
-            </h1>
-            <div className="flex items-center justify-center gap-3 sm:gap-4 mb-2">
-              <div className="w-8 sm:w-10 md:w-12 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
-              <span className="text-amber-400/80 text-[8px] sm:text-[10px] font-medium tracking-[0.3em] sm:tracking-[0.4em]">OS</span>
-              <div className="w-8 sm:w-10 md:w-12 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+        <div className="relative w-full md:w-1/2 flex items-center justify-center px-4 py-8 sm:p-6 md:p-10 bg-black">
+          <div className={`w-full max-w-[340px] sm:max-w-sm md:max-w-md transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+
+            <div className="text-center mb-8 sm:mb-10 md:mb-12">
+              <div className="flex items-center justify-center">
+                <img
+                  src="/khayatoslogo.webp"
+                  alt="KhayyatOS"
+                  className="h-14 sm:h-16 md:h-20 w-auto object-contain"
+                  loading="eager"
+                  onError={(e) => {
+                    const el = e.currentTarget;
+                    if (el.dataset.fallbackApplied === '1') {
+                      el.style.display = 'none';
+                      return;
+                    }
+                    el.dataset.fallbackApplied = '1';
+                    el.src = '/khayatoslogo.png';
+                  }}
+                />
+              </div>
             </div>
-            <p className="text-white/40 text-[10px] sm:text-xs font-light tracking-[0.15em] sm:tracking-[0.25em]">
-              TAILORING EXCELLENCE
-            </p>
-          </div>
 
           {/* Login Form - Glassmorphism */}
           <div className="relative">
@@ -264,6 +247,7 @@ const LoginPage = () => {
             <div className="text-white/20">© {new Date().getFullYear()} KHAYYAT OS</div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Floating Particles */}

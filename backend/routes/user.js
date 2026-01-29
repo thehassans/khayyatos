@@ -37,8 +37,8 @@ router.get('/dashboard', async (req, res) => {
     const recentStitchings = await Stitching.find({ userId: req.user._id })
       .sort({ createdAt: -1 })
       .limit(5)
-      .populate('customerId', 'name phone')
-      .populate('workerId', 'name');
+      .populate('customerId', 'name phone nameI18n')
+      .populate('workerId', 'name phone nameI18n');
 
     const upcomingDueStitchings = await Stitching.find({
       userId: req.user._id,
@@ -47,8 +47,8 @@ router.get('/dashboard', async (req, res) => {
     })
       .sort({ dueDate: 1 })
       .limit(8)
-      .populate('customerId', 'name phone')
-      .populate('workerId', 'name');
+      .populate('customerId', 'name phone nameI18n')
+      .populate('workerId', 'name phone nameI18n');
     
     const pendingStitchings = await Stitching.countDocuments({ userId: req.user._id, status: { $in: ['pending', 'assigned'] } });
     const inProgressStitchings = await Stitching.countDocuments({ userId: req.user._id, status: 'in_progress' });

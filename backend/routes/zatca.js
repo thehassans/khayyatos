@@ -542,7 +542,7 @@ router.get('/invoices', verifyToken, isUser, async (req, res) => {
       userId: req.user._id,
       zatcaStatus: { $exists: true }
     })
-    .populate('customerId', 'name phone')
+    .populate('customerId', 'name phone nameI18n')
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(parseInt(limit));

@@ -11,8 +11,9 @@ import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
 
 const WorkerAmounts = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { api } = useAuth();
+  const langKey = (i18n?.language || 'en').split('-')[0];
   const [workers, setWorkers] = useState([]);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,10 +80,10 @@ const WorkerAmounts = () => {
               <div>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
-                    <span className="text-emerald-700 dark:text-emerald-200 font-medium">{worker.name?.charAt(0)}</span>
+                    <span className="text-emerald-700 dark:text-emerald-200 font-medium">{(worker.nameI18n?.[langKey] || worker.name || '')?.charAt(0)}</span>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-slate-100">{worker.name}</p>
+                    <p className="font-medium text-gray-900 dark:text-slate-100">{worker.nameI18n?.[langKey] || worker.name}</p>
                     <p className="text-sm text-gray-500 dark:text-slate-400">{worker.phone}</p>
                   </div>
                 </div>
@@ -136,7 +137,7 @@ const WorkerAmounts = () => {
             <Tbody>
               {payments.map((payment) => (
                 <Tr key={payment._id}>
-                  <Td>{payment.workerId?.name}</Td>
+                  <Td>{payment.workerId?.nameI18n?.[langKey] || payment.workerId?.name}</Td>
                   <Td className="font-medium text-emerald-600 flex items-center gap-1">{payment.amount} <SARIcon className="w-3 h-3" /></Td>
                   <Td className="text-gray-500 dark:text-slate-400">{payment.description || '-'}</Td>
                   <Td>{new Date(payment.createdAt).toLocaleDateString()}</Td>
@@ -154,7 +155,7 @@ const WorkerAmounts = () => {
         <div className="space-y-4">
           {selectedWorker && (
             <div className="bg-gray-50 dark:bg-slate-800/40 rounded-lg p-4">
-              <p className="font-medium text-gray-900 dark:text-slate-100">{selectedWorker.name}</p>
+              <p className="font-medium text-gray-900 dark:text-slate-100">{selectedWorker.nameI18n?.[langKey] || selectedWorker.name}</p>
               <p className="text-sm text-amber-600 dark:text-amber-300">
                 {t('workers.pendingAmount')}: {selectedWorker.pendingAmount || 0}
               </p>
