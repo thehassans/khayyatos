@@ -37,6 +37,7 @@
     "logout": "Logout",
     "phone": "Phone Number",
     "email": "Email",
+    "identifierPlaceholder": "Enter email or phone",
     "password": "Password",
     "loginAsAdmin": "Admin Login",
     "loginAsUser": "Shop Owner Login",
@@ -49,6 +50,7 @@
     "workers": "Workers",
     "workerAmounts": "Worker Amounts",
     "customers": "Customers",
+    "embroideryDesigns": "Embroidery Designs",
     "stitchings": "Stitchings",
     "loyalty": "Customer Loyalty",
     "whatsapp": "WhatsApp",
@@ -102,6 +104,21 @@
     "loyaltyPoints": "Loyalty Points",
     "orderHistory": "Order History",
     "notes": "Notes"
+  },
+  "embroideryDesigns": {
+    "title": "Embroidery Designs",
+    "subtitle": "Upload your library and create orders faster.",
+    "uploadNew": "Upload New Design",
+    "empty": "No designs yet. Upload your first design.",
+    "clickToView": "Click to preview",
+    "createOrder": "Create Order",
+    "preview": "Preview",
+    "designName": "Design Name",
+    "designImage": "Design Image",
+    "chooseFile": "Choose File",
+    "deleteConfirmTitle": "Delete this design?",
+    "deleteConfirmSubtitle": "This action cannot be undone.",
+    "deleteConfirmHint": "Removing it will not delete existing orders that used this design."
   },
   "measurements": {
     "length": "Length (Height)",
@@ -212,6 +229,8 @@
   },
   "settings": {
     "title": "Settings",
+    "subtitle": "Manage your account preferences",
+    "businessProfile": "Business Profile",
     "businessName": "Business Name",
     "logo": "Logo",
     "uploadLogo": "Upload Logo",
@@ -219,7 +238,110 @@
     "receiptSettings": "Receipt Settings",
     "receiptPrefix": "Receipt Prefix",
     "receiptCounter": "Receipt Counter",
-    "saved": "Settings saved successfully"
+    "enabled": "Enabled",
+    "addOption": "Add option",
+    "deleteImage": "Delete image",
+    "deleteOption": "Delete option",
+    "pickColor": "Pick color",
+    "saveChanges": "Save Changes",
+    "placeholders": {
+      "businessName": "Your business name",
+      "receiptPrefix": "RCP",
+      "displayNameOptional": "Display name (optional)",
+      "hex": "#FFFFFF",
+      "groupNameOptional": "Group name (optional)",
+      "newOptionKey": "New option key",
+      "newOptionName": "New option name"
+    },
+    "security": {
+      "changePassword": "Change Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "updatePassword": "Update Password"
+    },
+    "data": {
+      "title": "Data Management",
+      "exportData": "Export Data",
+      "exportDesc": "Download all your data as JSON",
+      "storageUsed": "Storage Used",
+      "storageDesc": "Calculate your storage usage",
+      "clearCache": "Clear Cache",
+      "clearCacheDesc": "Clear temporary app data",
+      "cacheCleared": "Cache cleared"
+    },
+    "about": {
+      "title": "About KhayyatOS",
+      "version": "Version",
+      "versionDesc": "Current app version",
+      "help": "Help & Support",
+      "helpDesc": "Get help with the app",
+      "terms": "Terms of Service",
+      "termsDesc": "Read our terms",
+      "privacy": "Privacy Policy",
+      "privacyDesc": "How we protect your data",
+      "madeForTailors": "Made with ❤️ for tailors everywhere"
+    },
+    "saved": "Settings saved successfully",
+    "sections": {
+      "general": "General",
+      "styleOptions": "Style Options",
+      "measurements": "Measurements",
+      "thawbTypes": "Thawb Types",
+      "fabricColors": "Fabric Colors",
+      "appearance": "Appearance",
+      "notifications": "Notifications",
+      "security": "Security",
+      "data": "Data & Backup",
+      "about": "About"
+    }
+  },
+  "landing": {
+    "trackOrder": "Track Order",
+    "badge": "ULTRA‑PREMIUM TAILORING PLATFORM",
+    "heroTitle": "Run your tailor shop like a modern SaaS.",
+    "heroSubtitle": "Orders, customers, workers, catalogs, ZATCA, WhatsApp, embroidery designs, multi-language, and more — crafted with premium UX.",
+    "ctaPrimary": "Get Started",
+    "ctaSecondary": "Track an Order",
+    "zatcaReady": "ZATCA Ready",
+    "multiLang": "Multi‑Language + RTL",
+    "whatsInside": "WHAT’S INSIDE",
+    "featuresTitle": "A‑to‑Z FEATURES",
+    "contact": "Contact",
+    "features": {
+      "orders": {
+        "title": "Orders & Stitchings",
+        "desc": "Create, assign, track, and print receipts with a premium workflow."
+      },
+      "embroidery": {
+        "title": "Embroidery Designs",
+        "desc": "Upload design library, auto-WEBP, preview, and create orders with one click."
+      },
+      "customers": {
+        "title": "Customers & Profiles",
+        "desc": "Full customer profiles, relations, history timeline, and quick actions."
+      },
+      "loyalty": {
+        "title": "Customer Loyalty",
+        "desc": "Loyalty points, totals, and retention-focused tools built-in."
+      },
+      "whatsapp": {
+        "title": "WhatsApp Integration",
+        "desc": "Send order updates and notifications with templates and automation."
+      },
+      "zatca": {
+        "title": "ZATCA E‑Invoicing",
+        "desc": "Saudi ZATCA-ready workflow with QR and compliance features."
+      },
+      "languages": {
+        "title": "Multi‑Language",
+        "desc": "English, العربية, हिन्दी, اردو, বাংলা with RTL support."
+      },
+      "backup": {
+        "title": "Backup & Export",
+        "desc": "Export data safely and keep your shop protected."
+      }
+    }
   },
   "admin": {
     "title": "Admin Panel",

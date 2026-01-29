@@ -100,6 +100,7 @@ const CustomerProfile = () => {
 
         <div className="flex items-center gap-2 flex-shrink-0">
           <Button
+            variant="success"
             onClick={() => navigate(`/user/stitchings/new?customerId=${customer._id}`)}
             icon={Plus}
           >

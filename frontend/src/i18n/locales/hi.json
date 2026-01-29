@@ -37,6 +37,7 @@
     "logout": "लॉगआउट",
     "phone": "फोन नंबर",
     "email": "ईमेल",
+    "identifierPlaceholder": "ईमेल या फोन दर्ज करें",
     "password": "पासवर्ड",
     "loginAsAdmin": "एडमिन लॉगिन",
     "loginAsUser": "दुकान मालिक लॉगिन",
@@ -49,6 +50,7 @@
     "workers": "कर्मचारी",
     "workerAmounts": "कर्मचारी भुगतान",
     "customers": "ग्राहक",
+    "embroideryDesigns": "कढ़ाई डिज़ाइन्स",
     "stitchings": "सिलाई",
     "loyalty": "ग्राहक लॉयल्टी",
     "whatsapp": "व्हाट्सएप",
@@ -102,6 +104,21 @@
     "loyaltyPoints": "लॉयल्टी पॉइंट्स",
     "orderHistory": "ऑर्डर इतिहास",
     "notes": "नोट्स"
+  },
+  "embroideryDesigns": {
+    "title": "कढ़ाई डिज़ाइन्स",
+    "subtitle": "अपनी लाइब्रेरी अपलोड करें और तेज़ी से ऑर्डर बनाएं।",
+    "uploadNew": "नया डिज़ाइन अपलोड करें",
+    "empty": "अभी कोई डिज़ाइन नहीं। अपना पहला डिज़ाइन अपलोड करें।",
+    "clickToView": "प्रीव्यू के लिए क्लिक करें",
+    "createOrder": "ऑर्डर बनाएं",
+    "preview": "प्रीव्यू",
+    "designName": "डिज़ाइन नाम",
+    "designImage": "डिज़ाइन इमेज",
+    "chooseFile": "फाइल चुनें",
+    "deleteConfirmTitle": "यह डिज़ाइन हटाएं?",
+    "deleteConfirmSubtitle": "यह कार्रवाई वापस नहीं की जा सकती।",
+    "deleteConfirmHint": "इसे हटाने से पुराने ऑर्डर प्रभावित नहीं होंगे।"
   },
   "measurements": {
     "length": "लंबाई",
@@ -212,6 +229,8 @@
   },
   "settings": {
     "title": "सेटिंग्स",
+    "subtitle": "अपने खाते की प्राथमिकताएँ प्रबंधित करें",
+    "businessProfile": "बिज़नेस प्रोफ़ाइल",
     "businessName": "व्यापार का नाम",
     "logo": "लोगो",
     "uploadLogo": "लोगो अपलोड करें",
@@ -219,7 +238,63 @@
     "receiptSettings": "रसीद सेटिंग्स",
     "receiptPrefix": "रसीद प्रीफिक्स",
     "receiptCounter": "रसीद काउंटर",
-    "saved": "सेटिंग्स सहेजी गईं"
+    "enabled": "सक्रिय",
+    "addOption": "विकल्प जोड़ें",
+    "deleteImage": "छवि हटाएं",
+    "deleteOption": "विकल्प हटाएं",
+    "pickColor": "रंग चुनें",
+    "saveChanges": "परिवर्तन सहेजें",
+    "placeholders": {
+      "businessName": "व्यापार का नाम",
+      "receiptPrefix": "RCP",
+      "displayNameOptional": "डिस्प्ले नाम (वैकल्पिक)",
+      "hex": "#FFFFFF",
+      "groupNameOptional": "समूह नाम (वैकल्पिक)",
+      "newOptionKey": "नया विकल्प कुंजी",
+      "newOptionName": "नया विकल्प नाम"
+    },
+    "security": {
+      "changePassword": "पासवर्ड बदलें",
+      "currentPassword": "वर्तमान पासवर्ड",
+      "newPassword": "नया पासवर्ड",
+      "confirmPassword": "पासवर्ड पुष्टि",
+      "updatePassword": "पासवर्ड अपडेट करें"
+    },
+    "data": {
+      "title": "डेटा प्रबंधन",
+      "exportData": "डेटा एक्सपोर्ट",
+      "exportDesc": "सभी डेटा JSON में डाउनलोड करें",
+      "storageUsed": "स्टोरेज उपयोग",
+      "storageDesc": "स्टोरेज उपयोग की गणना करें",
+      "clearCache": "कैश साफ करें",
+      "clearCacheDesc": "अस्थायी ऐप डेटा हटाएं",
+      "cacheCleared": "कैश साफ हो गया"
+    },
+    "about": {
+      "title": "KhayyatOS के बारे में",
+      "version": "संस्करण",
+      "versionDesc": "वर्तमान ऐप संस्करण",
+      "help": "मदद और सपोर्ट",
+      "helpDesc": "ऐप के लिए मदद प्राप्त करें",
+      "terms": "सेवा की शर्तें",
+      "termsDesc": "हमारी शर्तें पढ़ें",
+      "privacy": "गोपनीयता नीति",
+      "privacyDesc": "हम आपका डेटा कैसे सुरक्षित रखते हैं",
+      "madeForTailors": "दर्जियों के लिए प्यार ❤️ के साथ बनाया गया"
+    },
+    "saved": "सेटिंग्स सहेजी गईं",
+    "sections": {
+      "general": "सामान्य",
+      "styleOptions": "स्टाइल विकल्प",
+      "measurements": "माप",
+      "thawbTypes": "थॉब प्रकार",
+      "fabricColors": "कपड़े के रंग",
+      "appearance": "दिखावट",
+      "notifications": "सूचनाएँ",
+      "security": "सुरक्षा",
+      "data": "डेटा और बैकअप",
+      "about": "परिचय"
+    }
   },
   "admin": {
     "title": "एडमिन पैनल",

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import i18n from '../i18n';
 
 const AuthContext = createContext(null);
 
@@ -40,7 +41,12 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           const response = await api.get('/auth/verify');
-          setUser(response.data.user);
+          const userData = response.data.user;
+          setUser(userData);
+          if (userData?.language) {
+            const lang = String(userData.language).split('-')[0];
+            if (lang) i18n.changeLanguage(lang);
+          }
         } catch (error) {
           localStorage.removeItem('token');
           setToken(null);
@@ -64,6 +70,10 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(userData);
+      if (userData?.language) {
+        const lang = String(userData.language).split('-')[0];
+        if (lang) i18n.changeLanguage(lang);
+      }
       return { success: true, user: userData, role };
     } catch (error) {
       return { 
@@ -94,6 +104,10 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (userData) => {
     setUser(prev => ({ ...prev, ...userData }));
+    if (userData?.language) {
+      const lang = String(userData.language).split('-')[0];
+      if (lang) i18n.changeLanguage(lang);
+    }
   };
 
   return (

@@ -21,9 +21,10 @@ const EmbroideryDesigns = () => {
 
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [previewModal, setPreviewModal] = useState({ open: false, design: null });
+  const [deleteModal, setDeleteModal] = useState({ open: false, design: null, loading: false });
 
   const [uploading, setUploading] = useState(false);
-  const [newDesign, setNewDesign] = useState({ name: '', image: null });
+  const [newDesign, setNewDesign] = useState({ name: '', image: null, preview: null });
 
   const resolveUploadsUrl = useCallback((src) => {
     if (!src) return src;
@@ -64,13 +65,65 @@ const EmbroideryDesigns = () => {
   }, [designs]);
 
   const openUploadModal = () => {
-    setNewDesign({ name: '', image: null });
+    setNewDesign({ name: '', image: null, preview: null });
     setUploadModalOpen(true);
   };
 
   const closeUploadModal = () => {
     setUploadModalOpen(false);
-    setNewDesign({ name: '', image: null });
+    setNewDesign({ name: '', image: null, preview: null });
+  };
+
+  const convertImageToWebp = async (file, maxWidth = 1200, quality = 0.85) => {
+    if (!file) return { webpFile: null, previewDataUrl: null };
+
+    const readAsDataUrl = (f) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(f);
+    });
+
+    if (file.type === 'image/webp') {
+      const dataUrl = await readAsDataUrl(file);
+      return { webpFile: file, previewDataUrl: typeof dataUrl === 'string' ? dataUrl : null };
+    }
+
+    const inputDataUrl = await readAsDataUrl(file);
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error('Failed to load image'));
+      el.src = typeof inputDataUrl === 'string' ? inputDataUrl : '';
+    });
+
+    const scale = img.width ? Math.min(1, maxWidth / img.width) : 1;
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas is not available');
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
+    if (!blob) throw new Error('Failed to convert image');
+
+    const base = (file.name || 'image').replace(/\.[^/.]+$/, '');
+    const webpFile = new File([blob], `${base}.webp`, { type: 'image/webp' });
+    const previewDataUrl = canvas.toDataURL('image/webp', quality);
+    return { webpFile, previewDataUrl };
+  };
+
+  const handlePickDesignImage = async (file) => {
+    try {
+      const { webpFile, previewDataUrl } = await convertImageToWebp(file, 1200, 0.85);
+      setNewDesign((prev) => ({ ...prev, image: webpFile, preview: previewDataUrl }));
+    } catch (e) {
+      toast.error('Failed to prepare image');
+      setNewDesign((prev) => ({ ...prev, image: null, preview: null }));
+    }
   };
 
   const handleUpload = async () => {
@@ -98,14 +151,29 @@ const EmbroideryDesigns = () => {
     setUploading(false);
   };
 
-  const deleteDesign = async (designId) => {
-    if (!window.confirm('Delete this design?')) return;
+  const requestDelete = (design) => {
+    setDeleteModal({ open: true, design, loading: false });
+  };
+
+  const closeDelete = () => {
+    setDeleteModal({ open: false, design: null, loading: false });
+  };
+
+  const confirmDelete = async () => {
+    const id = deleteModal?.design?._id;
+    if (!id) {
+      closeDelete();
+      return;
+    }
+    setDeleteModal((p) => ({ ...p, loading: true }));
     try {
-      await api.delete(`/embroidery-designs/${designId}`);
+      await api.delete(`/embroidery-designs/${id}`);
       toast.success('Design deleted');
+      closeDelete();
       fetchDesigns();
     } catch (error) {
       toast.error('Failed to delete');
+      setDeleteModal((p) => ({ ...p, loading: false }));
     }
   };
 
@@ -190,12 +258,12 @@ const EmbroideryDesigns = () => {
                 </button>
 
                 <div className="p-4 flex items-center justify-between gap-3">
-                  <Button variant="outline" onClick={() => createOrderWithDesign(d)}>
+                  <Button variant="success" onClick={() => createOrderWithDesign(d)}>
                     {t('embroideryDesigns.createOrder', { defaultValue: 'Create Order' })}
                   </Button>
                   <button
                     type="button"
-                    onClick={() => deleteDesign(d._id)}
+                    onClick={() => requestDelete(d)}
                     className="p-2 rounded-xl border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
                     title={t('common.delete', { defaultValue: 'Delete' })}
                   >
@@ -228,7 +296,7 @@ const EmbroideryDesigns = () => {
               {newDesign.image ? (
                 <button
                   type="button"
-                  onClick={() => setNewDesign({ ...newDesign, image: null })}
+                  onClick={() => setNewDesign({ ...newDesign, image: null, preview: null })}
                   className="text-sm text-rose-600 dark:text-rose-400 hover:underline inline-flex items-center gap-1"
                 >
                   <X className="w-4 h-4" />
@@ -239,8 +307,8 @@ const EmbroideryDesigns = () => {
 
             <div className="mt-3 flex items-center gap-4">
               <div className="w-20 h-20 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 overflow-hidden flex items-center justify-center">
-                {newDesign.image ? (
-                  <img src={URL.createObjectURL(newDesign.image)} alt="preview" className="w-full h-full object-cover" />
+                {newDesign.preview ? (
+                  <img src={newDesign.preview} alt="preview" className="w-full h-full object-cover" />
                 ) : (
                   <Upload className="w-7 h-7 text-gray-300 dark:text-slate-600" />
                 )}
@@ -254,7 +322,14 @@ const EmbroideryDesigns = () => {
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setNewDesign({ ...newDesign, image: e.target.files?.[0] || null })}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] || null;
+                      if (!f) {
+                        setNewDesign({ ...newDesign, image: null, preview: null });
+                        return;
+                      }
+                      handlePickDesignImage(f);
+                    }}
                     className="hidden"
                   />
                 </label>
@@ -296,11 +371,60 @@ const EmbroideryDesigns = () => {
           </div>
 
           <div className="flex gap-3">
-            <Button onClick={() => previewModal.design && createOrderWithDesign(previewModal.design)} className="flex-1">
+            <Button variant="success" onClick={() => previewModal.design && createOrderWithDesign(previewModal.design)} className="flex-1">
               {t('embroideryDesigns.createOrder', { defaultValue: 'Create Order' })}
             </Button>
             <Button variant="secondary" onClick={closePreview} className="flex-1">
               {t('common.close', { defaultValue: 'Close' })}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={deleteModal.open}
+        onClose={closeDelete}
+        title={t('common.delete', { defaultValue: 'Delete' })}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/60 dark:bg-rose-900/10 p-4">
+            <div className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+              {t('embroideryDesigns.deleteConfirmTitle', { defaultValue: 'Delete this design?' })}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-slate-300 mt-1">
+              {t('embroideryDesigns.deleteConfirmSubtitle', { defaultValue: 'This action cannot be undone.' })}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 rounded-2xl border border-gray-200 dark:border-slate-700 p-4 bg-white/60 dark:bg-slate-900/30">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
+              {deleteModal?.design?.image ? (
+                <img
+                  src={`${resolveUploadsUrl(deleteModal.design.image)}${deleteModal.design.imageUpdatedAt ? `?v=${deleteModal.design.imageUpdatedAt}` : ''}`}
+                  alt={deleteModal?.design?.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <ImageIcon className="w-7 h-7 text-gray-300 dark:text-slate-600" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
+                {deleteModal?.design?.nameI18n?.[langKey] || deleteModal?.design?.name || '—'}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-slate-400 truncate">
+                {t('embroideryDesigns.deleteConfirmHint', { defaultValue: 'Removing it will not delete existing orders that used this design.' })}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button variant="danger" onClick={confirmDelete} loading={deleteModal.loading} className="flex-1">
+              {t('common.delete', { defaultValue: 'Delete' })}
+            </Button>
+            <Button variant="secondary" onClick={closeDelete} className="flex-1" disabled={deleteModal.loading}>
+              {t('common.cancel', { defaultValue: 'Cancel' })}
             </Button>
           </div>
         </div>

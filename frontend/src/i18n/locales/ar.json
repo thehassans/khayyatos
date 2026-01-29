@@ -37,6 +37,7 @@
     "logout": "تسجيل الخروج",
     "phone": "رقم الهاتف",
     "email": "البريد الإلكتروني",
+    "identifierPlaceholder": "أدخل البريد أو الهاتف",
     "password": "كلمة المرور",
     "loginAsAdmin": "دخول المسؤول",
     "loginAsUser": "دخول صاحب المحل",
@@ -49,6 +50,7 @@
     "workers": "العمال",
     "workerAmounts": "مبالغ العمال",
     "customers": "العملاء",
+    "embroideryDesigns": "تصاميم التطريز",
     "stitchings": "الخياطة",
     "loyalty": "ولاء العملاء",
     "whatsapp": "واتساب",
@@ -102,6 +104,21 @@
     "loyaltyPoints": "نقاط الولاء",
     "orderHistory": "سجل الطلبات",
     "notes": "ملاحظات"
+  },
+  "embroideryDesigns": {
+    "title": "تصاميم التطريز",
+    "subtitle": "ارفع مكتبتك وأنشئ الطلبات بسرعة.",
+    "uploadNew": "رفع تصميم جديد",
+    "empty": "لا توجد تصاميم بعد. ارفع أول تصميم لك.",
+    "clickToView": "انقر للمعاينة",
+    "createOrder": "إنشاء طلب",
+    "preview": "معاينة",
+    "designName": "اسم التصميم",
+    "designImage": "صورة التصميم",
+    "chooseFile": "اختر ملف",
+    "deleteConfirmTitle": "حذف هذا التصميم؟",
+    "deleteConfirmSubtitle": "لا يمكن التراجع عن هذا الإجراء.",
+    "deleteConfirmHint": "حذف التصميم لن يؤثر على الطلبات السابقة التي استخدمته."
   },
   "measurements": {
     "length": "الطول",
@@ -212,6 +229,8 @@
   },
   "settings": {
     "title": "الإعدادات",
+    "subtitle": "إدارة تفضيلات حسابك",
+    "businessProfile": "الملف التجاري",
     "businessName": "اسم المحل",
     "logo": "الشعار",
     "uploadLogo": "رفع الشعار",
@@ -219,7 +238,63 @@
     "receiptSettings": "إعدادات الإيصال",
     "receiptPrefix": "بادئة الإيصال",
     "receiptCounter": "عداد الإيصالات",
-    "saved": "تم حفظ الإعدادات بنجاح"
+    "enabled": "مفعّل",
+    "addOption": "إضافة خيار",
+    "deleteImage": "حذف الصورة",
+    "deleteOption": "حذف الخيار",
+    "pickColor": "اختر اللون",
+    "saveChanges": "حفظ التغييرات",
+    "placeholders": {
+      "businessName": "اسم المحل",
+      "receiptPrefix": "RCP",
+      "displayNameOptional": "اسم العرض (اختياري)",
+      "hex": "#FFFFFF",
+      "groupNameOptional": "اسم المجموعة (اختياري)",
+      "newOptionKey": "مفتاح خيار جديد",
+      "newOptionName": "اسم خيار جديد"
+    },
+    "security": {
+      "changePassword": "تغيير كلمة المرور",
+      "currentPassword": "كلمة المرور الحالية",
+      "newPassword": "كلمة المرور الجديدة",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "updatePassword": "تحديث كلمة المرور"
+    },
+    "data": {
+      "title": "إدارة البيانات",
+      "exportData": "تصدير البيانات",
+      "exportDesc": "تحميل جميع بياناتك بصيغة JSON",
+      "storageUsed": "المساحة المستخدمة",
+      "storageDesc": "حساب مساحة التخزين المستخدمة",
+      "clearCache": "مسح الذاكرة المؤقتة",
+      "clearCacheDesc": "مسح البيانات المؤقتة للتطبيق",
+      "cacheCleared": "تم مسح الذاكرة المؤقتة"
+    },
+    "about": {
+      "title": "حول KhayyatOS",
+      "version": "الإصدار",
+      "versionDesc": "إصدار التطبيق الحالي",
+      "help": "المساعدة والدعم",
+      "helpDesc": "احصل على مساعدة حول التطبيق",
+      "terms": "شروط الخدمة",
+      "termsDesc": "اقرأ الشروط",
+      "privacy": "سياسة الخصوصية",
+      "privacyDesc": "كيف نحمي بياناتك",
+      "madeForTailors": "صُنع بحب ❤️ للخياطين في كل مكان"
+    },
+    "saved": "تم حفظ الإعدادات بنجاح",
+    "sections": {
+      "general": "عام",
+      "styleOptions": "خيارات التصميم",
+      "measurements": "المقاسات",
+      "thawbTypes": "أنواع الثوب",
+      "fabricColors": "ألوان القماش",
+      "appearance": "المظهر",
+      "notifications": "الإشعارات",
+      "security": "الأمان",
+      "data": "النسخ الاحتياطي والبيانات",
+      "about": "حول"
+    }
   },
   "admin": {
     "title": "لوحة المسؤول",

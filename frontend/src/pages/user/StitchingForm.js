@@ -157,7 +157,7 @@ const StitchingForm = () => {
           }));
         }
       } catch (e) {
-        // ignore
+
       }
     };
 
@@ -186,7 +186,7 @@ const StitchingForm = () => {
           setFormData((prev) => ({ ...prev, embroideryDesignId: fetched._id }));
         }
       } catch (e) {
-        // ignore
+
       }
     };
 
@@ -1178,7 +1178,7 @@ const StitchingForm = () => {
             />
 
             <div className="flex gap-3 pt-4">
-              <Button type="submit" loading={loading} className="flex-1">
+              <Button type="submit" variant={isEdit ? 'primary' : 'success'} loading={loading} className="flex-1">
                 {isEdit ? t('common.save') : t('stitchings.createOrder')}
               </Button>
               <Button type="button" variant="secondary" onClick={() => navigate('/user/stitchings')}>

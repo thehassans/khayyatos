@@ -16,7 +16,7 @@ const UserDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [orderSearch, setOrderSearch] = useState('');
-  const isRTL = ['ar', 'ur'].includes(i18n.language);
+  const isRTL = ['ar', 'ur'].includes((i18n?.language || 'en').split('-')[0]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);

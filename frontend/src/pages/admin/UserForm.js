@@ -61,7 +61,11 @@ const AdminUserForm = () => {
     const file = e.target.files[0];
     if (file) {
       setFormData({ ...formData, logo: file });
-      setLogoPreview(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') setLogoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 

@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
@@ -16,6 +17,7 @@ const Workers = () => {
   const navigate = useNavigate();
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleteModal, setDeleteModal] = useState({ open: false, worker: null, loading: false });
 
   const langKey = (i18n?.language || 'en').split('-')[0];
 
@@ -35,14 +37,29 @@ const Workers = () => {
     setLoading(false);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure?')) return;
+  const requestDelete = (worker) => {
+    setDeleteModal({ open: true, worker, loading: false });
+  };
+
+  const closeDelete = () => {
+    setDeleteModal({ open: false, worker: null, loading: false });
+  };
+
+  const confirmDelete = async () => {
+    const id = deleteModal?.worker?._id;
+    if (!id) {
+      closeDelete();
+      return;
+    }
+    setDeleteModal((p) => ({ ...p, loading: true }));
     try {
       await api.delete(`/worker/${id}`);
       toast.success('Worker deleted');
+      closeDelete();
       fetchWorkers();
     } catch (error) {
       toast.error('Failed to delete');
+      setDeleteModal((p) => ({ ...p, loading: false }));
     }
   };
 
@@ -101,7 +118,7 @@ const Workers = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(worker._id)}
+                        onClick={() => requestDelete(worker)}
                         className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -118,6 +135,21 @@ const Workers = () => {
           </div>
         )}
       </Card>
+
+      <ConfirmModal
+        isOpen={deleteModal.open}
+        onClose={closeDelete}
+        title={t('common.delete', { defaultValue: 'Delete' })}
+        message={t('workers.deleteConfirmTitle', { defaultValue: 'Delete this worker?' })}
+        subtitle={t('workers.deleteConfirmSubtitle', { defaultValue: 'This action cannot be undone.' })}
+        confirmText={t('common.delete', { defaultValue: 'Delete' })}
+        cancelText={t('common.cancel', { defaultValue: 'Cancel' })}
+        confirmVariant="danger"
+        loading={deleteModal.loading}
+        onConfirm={confirmDelete}
+        previewTitle={deleteModal?.worker?.nameI18n?.[langKey] || deleteModal?.worker?.name || ''}
+        previewSubtitle={deleteModal?.worker?.phone || ''}
+      />
     </div>
   );
 };

@@ -13,6 +13,8 @@ import WorkerLayout from './layouts/WorkerLayout';
 // Auth Pages - Keep login fast
 import LoginPage from './pages/auth/LoginPage';
 
+import Landing from './pages/public/Landing';
+
 // Lazy load all other pages for faster initial load
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const AdminUsers = lazy(() => import('./pages/admin/Users'));
@@ -78,17 +80,35 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 const AppRoutes = () => {
   const { i18n } = useTranslation();
-  const isRTL = ['ar', 'ur'].includes(i18n.language);
+  const baseLang = (i18n?.language || 'en').split('-')[0];
+  const isRTL = ['ar', 'ur'].includes(baseLang);
+
+  const HomeRoute = () => {
+    const { isAuthenticated, user, loading } = useAuth();
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        </div>
+      );
+    }
+    if (isAuthenticated) {
+      if (user?.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+      if (user?.role === 'user') return <Navigate to="/user/dashboard" replace />;
+      if (user?.role === 'worker') return <Navigate to="/worker/dashboard" replace />;
+    }
+    return <Landing />;
+  };
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'}>
       <Routes>
         {/* Public Routes */}
+        <Route path="/" element={<HomeRoute />} />
         <Route path="/track-order" element={<LazyPage><TrackOrder /></LazyPage>} />
         
         {/* Auth Routes */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* Admin Routes */}
         <Route path="/admin" element={
@@ -143,7 +163,7 @@ const AppRoutes = () => {
         </Route>
 
         {/* Catch all */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
   );

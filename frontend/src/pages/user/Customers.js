@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { Plus, Search, Edit, Trash2, Users } from 'lucide-react';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
@@ -16,6 +17,7 @@ const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [deleteModal, setDeleteModal] = useState({ open: false, customer: null, loading: false });
 
   const langKey = (i18n?.language || 'en').split('-')[0];
 
@@ -36,14 +38,29 @@ const Customers = () => {
     setLoading(false);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete customer and all orders?')) return;
+  const requestDelete = (customer) => {
+    setDeleteModal({ open: true, customer, loading: false });
+  };
+
+  const closeDelete = () => {
+    setDeleteModal({ open: false, customer: null, loading: false });
+  };
+
+  const confirmDelete = async () => {
+    const id = deleteModal?.customer?._id;
+    if (!id) {
+      closeDelete();
+      return;
+    }
+    setDeleteModal((p) => ({ ...p, loading: true }));
     try {
       await api.delete(`/customers/${id}`);
       toast.success('Customer deleted');
+      closeDelete();
       fetchCustomers();
     } catch (error) {
       toast.error('Failed to delete');
+      setDeleteModal((p) => ({ ...p, loading: false }));
     }
   };
 
@@ -118,7 +135,7 @@ const Customers = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleDelete(customer._id); }}
+                        onClick={(e) => { e.stopPropagation(); requestDelete(customer); }}
                         className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -133,6 +150,21 @@ const Customers = () => {
           <div className="p-12 text-center text-gray-500 dark:text-slate-400">{t('common.noData')}</div>
         )}
       </Card>
+
+      <ConfirmModal
+        isOpen={deleteModal.open}
+        onClose={closeDelete}
+        title={t('common.delete', { defaultValue: 'Delete' })}
+        message={t('customers.deleteConfirmTitle', { defaultValue: 'Delete this customer?' })}
+        subtitle={t('customers.deleteConfirmSubtitle', { defaultValue: 'This will also delete all orders linked to this customer.' })}
+        confirmText={t('common.delete', { defaultValue: 'Delete' })}
+        cancelText={t('common.cancel', { defaultValue: 'Cancel' })}
+        confirmVariant="danger"
+        loading={deleteModal.loading}
+        onConfirm={confirmDelete}
+        previewTitle={deleteModal?.customer?.nameI18n?.[langKey] || deleteModal?.customer?.name || ''}
+        previewSubtitle={deleteModal?.customer?.phone || ''}
+      />
     </div>
   );
 };

@@ -239,6 +239,21 @@ const safeUnlink = (absPath) => {
   }
 };
 
+const moveFile = (from, to) => {
+  try {
+    fs.renameSync(from, to);
+  } catch (e) {
+    fs.copyFileSync(from, to);
+    safeUnlink(from);
+  }
+};
+
+const isWebpUpload = (file) => {
+  const mime = (file?.mimetype || '').toLowerCase();
+  const ext = path.extname(file?.originalname || '').toLowerCase();
+  return mime === 'image/webp' || ext === '.webp';
+};
+
 const findGroupAndOption = (catalog, groupKey, optionKey) => {
   const group = (catalog?.groups || []).find((g) => g.key === groupKey);
   if (!group) return { group: null, option: null };
@@ -319,10 +334,6 @@ router.put('/measurements-catalog', async (req, res) => {
 
 router.post('/measurements-catalog/image', upload.single('image'), async (req, res) => {
   try {
-    if (!sharp) {
-      return res.status(500).json({ error: 'Image processing is not available on this server' });
-    }
-
     const fieldKey = sanitizeExactKey(req.body.fieldKey);
     if (!fieldKey || !ALLOWED_MEASUREMENT_KEYS.includes(fieldKey)) {
       return res.status(400).json({ error: 'Unsupported fieldKey' });
@@ -343,13 +354,21 @@ router.post('/measurements-catalog/image', upload.single('image'), async (req, r
     const fileName = `${fieldKey}.webp`;
     const absTarget = path.join(dirPath, fileName);
 
-    await sharp(req.file.path)
-      .rotate()
-      .resize({ width: 720, withoutEnlargement: true })
-      .webp({ quality: 85 })
-      .toFile(absTarget);
+    if (sharp) {
+      await sharp(req.file.path)
+        .rotate()
+        .resize({ width: 720, withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .toFile(absTarget);
 
-    safeUnlink(req.file.path);
+      safeUnlink(req.file.path);
+    } else {
+      if (!isWebpUpload(req.file)) {
+        safeUnlink(req.file.path);
+        return res.status(500).json({ error: 'Image processing is not available on this server' });
+      }
+      moveFile(req.file.path, absTarget);
+    }
 
     field.image = `/uploads/${path.join(relPath, fileName).replace(/\\/g, '/')}`;
     field.imageUpdatedAt = Date.now();
@@ -445,10 +464,6 @@ router.put('/thawb-types-catalog', async (req, res) => {
 
 router.post('/thawb-types-catalog/image', upload.single('image'), async (req, res) => {
   try {
-    if (!sharp) {
-      return res.status(500).json({ error: 'Image processing is not available on this server' });
-    }
-
     const typeKey = sanitizeKey(req.body.typeKey);
     if (!typeKey || !ALLOWED_THAWB_TYPES.includes(typeKey)) {
       return res.status(400).json({ error: 'Unsupported typeKey' });
@@ -469,13 +484,21 @@ router.post('/thawb-types-catalog/image', upload.single('image'), async (req, re
     const fileName = `${typeKey}.webp`;
     const absTarget = path.join(dirPath, fileName);
 
-    await sharp(req.file.path)
-      .rotate()
-      .resize({ width: 720, withoutEnlargement: true })
-      .webp({ quality: 85 })
-      .toFile(absTarget);
+    if (sharp) {
+      await sharp(req.file.path)
+        .rotate()
+        .resize({ width: 720, withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .toFile(absTarget);
 
-    safeUnlink(req.file.path);
+      safeUnlink(req.file.path);
+    } else {
+      if (!isWebpUpload(req.file)) {
+        safeUnlink(req.file.path);
+        return res.status(500).json({ error: 'Image processing is not available on this server' });
+      }
+      moveFile(req.file.path, absTarget);
+    }
 
     type.image = `/uploads/${path.join(relPath, fileName).replace(/\\/g, '/')}`;
     type.imageUpdatedAt = Date.now();
@@ -655,9 +678,6 @@ router.put('/style-options', async (req, res) => {
 
 router.post('/style-options/image', upload.single('image'), async (req, res) => {
   try {
-    if (!sharp) {
-      return res.status(500).json({ error: 'Image processing is not available on this server' });
-    }
     const groupKey = sanitizeKey(req.body.groupKey);
     const optionKey = sanitizeKey(req.body.optionKey);
 
@@ -690,16 +710,20 @@ router.post('/style-options/image', upload.single('image'), async (req, res) => 
     const fileName = `${optionKey}.webp`;
     const absTarget = path.join(dirPath, fileName);
 
-    await sharp(req.file.path)
-      .rotate()
-      .resize({ width: 720, withoutEnlargement: true })
-      .webp({ quality: 85 })
-      .toFile(absTarget);
+    if (sharp) {
+      await sharp(req.file.path)
+        .rotate()
+        .resize({ width: 720, withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .toFile(absTarget);
 
-    try {
-      fs.unlinkSync(req.file.path);
-    } catch (e) {
-      null;
+      safeUnlink(req.file.path);
+    } else {
+      if (!isWebpUpload(req.file)) {
+        safeUnlink(req.file.path);
+        return res.status(500).json({ error: 'Image processing is not available on this server' });
+      }
+      moveFile(req.file.path, absTarget);
     }
 
     const urlPath = `/uploads/${path.join(relPath, fileName).replace(/\\/g, '/')}`;

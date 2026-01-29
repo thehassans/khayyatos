@@ -37,6 +37,7 @@
     "logout": "লগআউট",
     "phone": "ফোন নম্বর",
     "email": "ইমেইল",
+    "identifierPlaceholder": "ইমেইল বা ফোন লিখুন",
     "password": "পাসওয়ার্ড",
     "loginAsAdmin": "অ্যাডমিন লগইন",
     "loginAsUser": "দোকান মালিক লগইন",
@@ -49,6 +50,7 @@
     "workers": "কর্মী",
     "workerAmounts": "কর্মী পেমেন্ট",
     "customers": "গ্রাহক",
+    "embroideryDesigns": "কাঠি/কড়াই ডিজাইন",
     "stitchings": "সেলাই",
     "loyalty": "গ্রাহক আনুগত্য",
     "whatsapp": "হোয়াটসঅ্যাপ",
@@ -102,6 +104,21 @@
     "loyaltyPoints": "আনুগত্য পয়েন্ট",
     "orderHistory": "অর্ডার ইতিহাস",
     "notes": "নোট"
+  },
+  "embroideryDesigns": {
+    "title": "কড়াই ডিজাইন",
+    "subtitle": "আপনার লাইব্রেরি আপলোড করুন এবং দ্রুত অর্ডার তৈরি করুন।",
+    "uploadNew": "নতুন ডিজাইন আপলোড",
+    "empty": "এখনো কোনো ডিজাইন নেই। আপনার প্রথম ডিজাইন আপলোড করুন।",
+    "clickToView": "প্রিভিউ দেখতে ক্লিক করুন",
+    "createOrder": "অর্ডার তৈরি করুন",
+    "preview": "প্রিভিউ",
+    "designName": "ডিজাইনের নাম",
+    "designImage": "ডিজাইনের ছবি",
+    "chooseFile": "ফাইল নির্বাচন করুন",
+    "deleteConfirmTitle": "এই ডিজাইন মুছবেন?",
+    "deleteConfirmSubtitle": "এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।",
+    "deleteConfirmHint": "এটি মুছলেও আগের অর্ডারগুলোতে প্রভাব পড়বে না।"
   },
   "measurements": {
     "length": "দৈর্ঘ্য",
@@ -212,6 +229,8 @@
   },
   "settings": {
     "title": "সেটিংস",
+    "subtitle": "আপনার অ্যাকাউন্টের পছন্দসমূহ পরিচালনা করুন",
+    "businessProfile": "ব্যবসার প্রোফাইল",
     "businessName": "ব্যবসার নাম",
     "logo": "লোগো",
     "uploadLogo": "লোগো আপলোড করুন",
@@ -219,7 +238,63 @@
     "receiptSettings": "রসিদ সেটিংস",
     "receiptPrefix": "রসিদ প্রিফিক্স",
     "receiptCounter": "রসিদ কাউন্টার",
-    "saved": "সেটিংস সংরক্ষিত"
+    "enabled": "সক্রিয়",
+    "addOption": "অপশন যোগ করুন",
+    "deleteImage": "ছবি মুছুন",
+    "deleteOption": "অপশন মুছুন",
+    "pickColor": "রং বাছাই করুন",
+    "saveChanges": "পরিবর্তন সংরক্ষণ করুন",
+    "placeholders": {
+      "businessName": "ব্যবসার নাম",
+      "receiptPrefix": "RCP",
+      "displayNameOptional": "ডিসপ্লে নাম (ঐচ্ছিক)",
+      "hex": "#FFFFFF",
+      "groupNameOptional": "গ্রুপ নাম (ঐচ্ছিক)",
+      "newOptionKey": "নতুন অপশন কী",
+      "newOptionName": "নতুন অপশন নাম"
+    },
+    "security": {
+      "changePassword": "পাসওয়ার্ড পরিবর্তন",
+      "currentPassword": "বর্তমান পাসওয়ার্ড",
+      "newPassword": "নতুন পাসওয়ার্ড",
+      "confirmPassword": "পাসওয়ার্ড নিশ্চিত করুন",
+      "updatePassword": "পাসওয়ার্ড আপডেট করুন"
+    },
+    "data": {
+      "title": "ডেটা ব্যবস্থাপনা",
+      "exportData": "ডেটা এক্সপোর্ট",
+      "exportDesc": "সব ডেটা JSON হিসাবে ডাউনলোড করুন",
+      "storageUsed": "ব্যবহৃত স্টোরেজ",
+      "storageDesc": "স্টোরেজ ব্যবহারের হিসাব করুন",
+      "clearCache": "ক্যাশ পরিষ্কার করুন",
+      "clearCacheDesc": "অস্থায়ী অ্যাপ ডেটা পরিষ্কার করুন",
+      "cacheCleared": "ক্যাশ পরিষ্কার হয়েছে"
+    },
+    "about": {
+      "title": "KhayyatOS সম্পর্কে",
+      "version": "ভার্সন",
+      "versionDesc": "বর্তমান অ্যাপ ভার্সন",
+      "help": "সহায়তা ও সাপোর্ট",
+      "helpDesc": "অ্যাপ সম্পর্কে সহায়তা নিন",
+      "terms": "সেবার শর্তাবলী",
+      "termsDesc": "শর্তাবলী পড়ুন",
+      "privacy": "গোপনীয়তা নীতি",
+      "privacyDesc": "আপনার ডেটা কীভাবে সুরক্ষিত রাখি",
+      "madeForTailors": "দর্জিদের জন্য ভালোবাসা ❤️ দিয়ে তৈরি"
+    },
+    "saved": "সেটিংস সংরক্ষিত",
+    "sections": {
+      "general": "সাধারণ",
+      "styleOptions": "স্টাইল অপশন",
+      "measurements": "মাপ",
+      "thawbTypes": "থওব প্রকার",
+      "fabricColors": "কাপড়ের রং",
+      "appearance": "দেখানো",
+      "notifications": "নোটিফিকেশন",
+      "security": "নিরাপত্তা",
+      "data": "ডেটা ও ব্যাকআপ",
+      "about": "সম্বন্ধে"
+    }
   },
   "admin": {
     "title": "অ্যাডমিন প্যানেল",

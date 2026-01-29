@@ -69,16 +69,16 @@ const Settings = () => {
   ];
 
   const sections = [
-    { id: 'general', label: 'General', icon: SettingsIcon },
-    { id: 'styleOptions', label: 'Style Options', icon: FileText },
-    { id: 'measurements', label: 'Measurements', icon: Ruler },
-    { id: 'thawbTypes', label: 'Thawb Types', icon: Tag },
-    { id: 'fabricColors', label: 'Fabric Colors', icon: Palette },
-    { id: 'appearance', label: 'Appearance', icon: Sun },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'security', label: 'Security', icon: Shield },
-    { id: 'data', label: 'Data & Backup', icon: Database },
-    { id: 'about', label: 'About', icon: Info },
+    { id: 'general', label: t('settings.sections.general', { defaultValue: 'General' }), icon: SettingsIcon },
+    { id: 'styleOptions', label: t('settings.sections.styleOptions', { defaultValue: 'Style Options' }), icon: FileText },
+    { id: 'measurements', label: t('settings.sections.measurements', { defaultValue: 'Measurements' }), icon: Ruler },
+    { id: 'thawbTypes', label: t('settings.sections.thawbTypes', { defaultValue: 'Thawb Types' }), icon: Tag },
+    { id: 'fabricColors', label: t('settings.sections.fabricColors', { defaultValue: 'Fabric Colors' }), icon: Palette },
+    { id: 'appearance', label: t('settings.sections.appearance', { defaultValue: 'Appearance' }), icon: Sun },
+    { id: 'notifications', label: t('settings.sections.notifications', { defaultValue: 'Notifications' }), icon: Bell },
+    { id: 'security', label: t('settings.sections.security', { defaultValue: 'Security' }), icon: Shield },
+    { id: 'data', label: t('settings.sections.data', { defaultValue: 'Data & Backup' }), icon: Database },
+    { id: 'about', label: t('settings.sections.about', { defaultValue: 'About' }), icon: Info }
   ];
 
   useEffect(() => { fetchSettings(); }, []);
@@ -199,7 +199,11 @@ const Settings = () => {
     const file = e.target.files[0];
     if (file) {
       setSettings({ ...settings, logo: file });
-      setLogoPreview(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') setLogoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -313,13 +317,49 @@ const Settings = () => {
     });
   };
 
+  const convertImageToWebp = async (file, maxWidth = 720, quality = 0.85) => {
+    if (!file) return null;
+    if (file.type === 'image/webp') return file;
+
+    const inputDataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error('Failed to load image'));
+      el.src = typeof inputDataUrl === 'string' ? inputDataUrl : '';
+    });
+
+    const scale = img.width ? Math.min(1, maxWidth / img.width) : 1;
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas is not available');
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
+    if (!blob) throw new Error('Failed to convert image');
+
+    const base = (file.name || 'image').replace(/\.[^/.]+$/, '');
+    return new File([blob], `${base}.webp`, { type: 'image/webp' });
+  };
+
   const uploadMeasurementImage = async (fieldKey, file) => {
     if (!file) return;
     setMeasurementsCatalogSaving(true);
     try {
+      const webp = await convertImageToWebp(file, 720, 0.85);
       const data = new FormData();
       data.append('fieldKey', fieldKey);
-      data.append('image', file);
+      data.append('image', webp || file);
       const response = await api.post('/settings/measurements-catalog/image', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
@@ -357,9 +397,10 @@ const Settings = () => {
     if (!file) return;
     setThawbTypesCatalogSaving(true);
     try {
+      const webp = await convertImageToWebp(file, 720, 0.85);
       const data = new FormData();
       data.append('typeKey', typeKey);
-      data.append('image', file);
+      data.append('image', webp || file);
       const response = await api.post('/settings/thawb-types-catalog/image', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
@@ -423,10 +464,11 @@ const Settings = () => {
     if (!file) return;
     setStyleCatalogSaving(true);
     try {
+      const webp = await convertImageToWebp(file, 720, 0.85);
       const data = new FormData();
       data.append('groupKey', groupKey);
       data.append('optionKey', optionKey);
-      data.append('image', file);
+      data.append('image', webp || file);
 
       const response = await api.post('/settings/style-options/image', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -575,56 +617,34 @@ const Settings = () => {
     <div className="max-w-4xl mx-auto animate-fadeIn">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
-        <p className="text-gray-500 dark:text-slate-400 mt-1">Manage your account preferences</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('settings.title', { defaultValue: 'Settings' })}</h1>
+        <p className="text-gray-500 dark:text-slate-400 mt-1">{t('settings.subtitle', { defaultValue: 'Manage your account preferences' })}</p>
       </div>
 
-      <div className="flex gap-8">
-        {/* Sidebar Navigation */}
-        <div className="w-56 flex-shrink-0 hidden lg:block">
-          <nav className="space-y-1 sticky top-6">
-            {sections.map((section) => {
-              const Icon = section.icon;
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${
-                    activeSection === section.id
-                      ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg'
-                      : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{section.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+      <div className="space-y-6">
+        {/* Horizontal Section Tabs (all screens) */}
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {sections.map((section) => {
+            const Icon = section.icon;
+            return (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full whitespace-nowrap transition-all ${
+                  activeSection === section.id
+                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg'
+                    : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="text-sm font-medium">{section.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 min-w-0">
-          {/* Mobile Section Tabs */}
-          <div className="lg:hidden mb-6 flex gap-2 overflow-x-auto pb-2">
-            {sections.map((section) => {
-              const Icon = section.icon;
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-                    activeSection === section.id
-                      ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                      : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{section.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="min-w-0">
 
           {/* General Section */}
           {activeSection === 'general' && (
@@ -632,7 +652,7 @@ const Settings = () => {
               {/* Business Profile */}
               <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Business Profile</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('settings.businessProfile', { defaultValue: 'Business Profile' })}</h2>
                 </div>
                 <div className="p-6 space-y-6">
                   <div className="flex items-center gap-6">
@@ -650,13 +670,13 @@ const Settings = () => {
                       </label>
                     </div>
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Business Name</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">{t('settings.businessName', { defaultValue: 'Business Name' })}</label>
                       <input
                         type="text"
                         value={settings.businessName}
                         onChange={(e) => setSettings({ ...settings, businessName: e.target.value })}
                         className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-0 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
-                        placeholder="Your business name"
+                        placeholder={t('settings.placeholders.businessName', { defaultValue: 'Your business name' })}
                       />
                     </div>
                   </div>
@@ -666,7 +686,7 @@ const Settings = () => {
               {/* Language */}
               <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Language</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('settings.language', { defaultValue: 'Language' })}</h2>
                 </div>
                 <div className="p-6">
                   <div className="grid grid-cols-5 gap-3">
@@ -691,22 +711,22 @@ const Settings = () => {
               {/* Receipt Settings */}
               <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Receipt Settings</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('settings.receiptSettings', { defaultValue: 'Receipt Settings' })}</h2>
                 </div>
                 <div className="p-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Prefix</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">{t('settings.receiptPrefix', { defaultValue: 'Receipt Prefix' })}</label>
                       <input
                         type="text"
                         value={settings.receiptPrefix}
                         onChange={(e) => setSettings({ ...settings, receiptPrefix: e.target.value })}
                         className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-0 rounded-xl"
-                        placeholder="RCP"
+                        placeholder={t('settings.placeholders.receiptPrefix', { defaultValue: 'RCP' })}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Counter</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">{t('settings.receiptCounter', { defaultValue: 'Receipt Counter' })}</label>
                       <input
                         type="number"
                         value={settings.receiptCounter}
@@ -724,14 +744,14 @@ const Settings = () => {
             <div className="space-y-6">
               <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Measurements</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('settings.sections.measurements', { defaultValue: 'Measurements' })}</h2>
                 </div>
 
                 <div className="p-6">
                   {measurementsCatalogLoading ? (
-                    <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
                   ) : !measurementsCatalog?.fields?.length ? (
-                    <div className="text-sm text-gray-500 dark:text-slate-400">No measurements found</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">{t('common.noData', { defaultValue: 'No data available' })}</div>
                   ) : (
                     <div className="flex gap-4 overflow-x-auto pb-2">
                       {(measurementsCatalog.fields || [])
@@ -766,18 +786,18 @@ const Settings = () => {
                                     value={field.name || ''}
                                     onChange={(e) => updateMeasurementsField(field.key, { name: e.target.value })}
                                     className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
-                                    placeholder="Display name (optional)"
+                                    placeholder={t('settings.placeholders.displayNameOptional', { defaultValue: 'Display name (optional)' })}
                                   />
                                   <div className="mt-3 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500 dark:text-slate-400">Enabled</span>
+                                      <span className="text-xs text-gray-500 dark:text-slate-400">{t('settings.enabled', { defaultValue: 'Enabled' })}</span>
                                       <Toggle enabled={field.enabled !== false} onChange={(v) => updateMeasurementsField(field.key, { enabled: v })} />
                                     </div>
                                     <button
                                       type="button"
                                       onClick={() => deleteMeasurementImage(field.key)}
                                       className="p-2 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors"
-                                      title="Delete image"
+                                      title={t('settings.deleteImage', { defaultValue: 'Delete image' })}
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
@@ -798,13 +818,13 @@ const Settings = () => {
             <div className="space-y-6">
               <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Thawb Types</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('settings.sections.thawbTypes', { defaultValue: 'Thawb Types' })}</h2>
                 </div>
                 <div className="p-6">
                   {thawbTypesCatalogLoading ? (
-                    <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
                   ) : !thawbTypesCatalog?.types?.length ? (
-                    <div className="text-sm text-gray-500 dark:text-slate-400">No thawb types found</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">{t('common.noData', { defaultValue: 'No data available' })}</div>
                   ) : (
                     <div className="flex gap-4 overflow-x-auto pb-2">
                       {(thawbTypesCatalog.types || [])
@@ -839,18 +859,18 @@ const Settings = () => {
                                     value={type.name || ''}
                                     onChange={(e) => updateThawbType(type.key, { name: e.target.value })}
                                     className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
-                                    placeholder="Display name (optional)"
+                                    placeholder={t('settings.placeholders.displayNameOptional', { defaultValue: 'Display name (optional)' })}
                                   />
                                   <div className="mt-3 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500 dark:text-slate-400">Enabled</span>
+                                      <span className="text-xs text-gray-500 dark:text-slate-400">{t('settings.enabled', { defaultValue: 'Enabled' })}</span>
                                       <Toggle enabled={type.enabled !== false} onChange={(v) => updateThawbType(type.key, { enabled: v })} />
                                     </div>
                                     <button
                                       type="button"
                                       onClick={() => deleteThawbImage(type.key)}
                                       className="p-2 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors"
-                                      title="Delete image"
+                                      title={t('settings.deleteImage', { defaultValue: 'Delete image' })}
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
@@ -871,13 +891,13 @@ const Settings = () => {
             <div className="space-y-6">
               <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Fabric Colors</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('settings.sections.fabricColors', { defaultValue: 'Fabric Colors' })}</h2>
                 </div>
                 <div className="p-6">
                   {fabricColorsCatalogLoading ? (
-                    <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
                   ) : !fabricColorsCatalog?.colors?.length ? (
-                    <div className="text-sm text-gray-500 dark:text-slate-400">No fabric colors found</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">{t('common.noData', { defaultValue: 'No data available' })}</div>
                   ) : (
                     <div className="flex gap-4 overflow-x-auto pb-2">
                       {(fabricColorsCatalog.colors || [])
@@ -899,11 +919,11 @@ const Settings = () => {
                                   value={c.name || ''}
                                   onChange={(e) => updateFabricColor(c.key, { name: e.target.value })}
                                   className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
-                                  placeholder="Display name (optional)"
+                                  placeholder={t('settings.placeholders.displayNameOptional', { defaultValue: 'Display name (optional)' })}
                                 />
                                 <div className="mt-3 flex items-center justify-between gap-3">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500 dark:text-slate-400">Enabled</span>
+                                    <span className="text-xs text-gray-500 dark:text-slate-400">{t('settings.enabled', { defaultValue: 'Enabled' })}</span>
                                     <Toggle enabled={c.enabled !== false} onChange={(v) => updateFabricColor(c.key, { enabled: v })} />
                                   </div>
                                   <div className="flex items-center gap-2">
@@ -912,14 +932,14 @@ const Settings = () => {
                                       value={c.hex || '#e5e7eb'}
                                       onChange={(e) => updateFabricColor(c.key, { hex: e.target.value })}
                                       className="w-10 h-10 p-0 border-0 bg-transparent"
-                                      title="Pick color"
+                                      title={t('settings.pickColor', { defaultValue: 'Pick color' })}
                                     />
                                     <input
                                       type="text"
                                       value={c.hex || ''}
                                       onChange={(e) => updateFabricColor(c.key, { hex: e.target.value })}
                                       className="w-24 px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm"
-                                      placeholder="#FFFFFF"
+                                      placeholder={t('settings.placeholders.hex', { defaultValue: '#FFFFFF' })}
                                     />
                                   </div>
                                 </div>
@@ -938,14 +958,14 @@ const Settings = () => {
             <div className="space-y-6">
               <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Style Options</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('settings.sections.styleOptions', { defaultValue: 'Style Options' })}</h2>
                 </div>
 
                 <div className="p-6 space-y-6">
                   {styleCatalogLoading ? (
-                    <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
                   ) : !styleCatalog?.groups?.length ? (
-                    <div className="text-sm text-gray-500 dark:text-slate-400">No style options found</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">{t('common.noData', { defaultValue: 'No data available' })}</div>
                   ) : (
                     (styleCatalog.groups || [])
                       .filter((g) => g && g.enabled !== false)
@@ -961,7 +981,7 @@ const Settings = () => {
                                 value={group.name || ''}
                                 onChange={(e) => updateGroupName(group.key, e.target.value)}
                                 className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
-                                placeholder="Group name (optional)"
+                                placeholder={t('settings.placeholders.groupNameOptional', { defaultValue: 'Group name (optional)' })}
                               />
                             </div>
                           </div>
@@ -1005,7 +1025,7 @@ const Settings = () => {
                                         value={opt.name || ''}
                                         onChange={(e) => updateOptionName(group.key, opt.key, e.target.value)}
                                         className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
-                                        placeholder="Display name (optional)"
+                                        placeholder={t('settings.placeholders.displayNameOptional', { defaultValue: 'Display name (optional)' })}
                                       />
                                     </div>
 
@@ -1014,7 +1034,7 @@ const Settings = () => {
                                         type="button"
                                         onClick={() => deleteOptionImage(group.key, opt.key)}
                                         className="p-2 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors"
-                                        title="Delete image"
+                                        title={t('settings.deleteImage', { defaultValue: 'Delete image' })}
                                       >
                                         <Trash2 className="w-4 h-4" />
                                       </button>
@@ -1022,7 +1042,7 @@ const Settings = () => {
                                         type="button"
                                         onClick={() => deleteOption(group.key, opt.key)}
                                         className="p-2 rounded-xl border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-                                        title="Delete option"
+                                        title={t('settings.deleteOption', { defaultValue: 'Delete option' })}
                                       >
                                         <Trash2 className="w-4 h-4" />
                                       </button>
@@ -1038,14 +1058,14 @@ const Settings = () => {
                                 value={(newOptionDraft[group.key]?.key) || ''}
                                 onChange={(e) => setNewOptionDraft((prev) => ({ ...prev, [group.key]: { ...(prev[group.key] || { key: '', name: '' }), key: e.target.value } }))}
                                 className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl"
-                                placeholder="New option key"
+                                placeholder={t('settings.placeholders.newOptionKey', { defaultValue: 'New option key' })}
                               />
                               <input
                                 type="text"
                                 value={(newOptionDraft[group.key]?.name) || ''}
                                 onChange={(e) => setNewOptionDraft((prev) => ({ ...prev, [group.key]: { ...(prev[group.key] || { key: '', name: '' }), name: e.target.value } }))}
                                 className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl"
-                                placeholder="New option name"
+                                placeholder={t('settings.placeholders.newOptionName', { defaultValue: 'New option name' })}
                               />
                               <button
                                 type="button"
@@ -1053,7 +1073,7 @@ const Settings = () => {
                                 className="px-4 py-2.5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                               >
                                 <Plus className="w-4 h-4" />
-                                Add option
+                                {t('settings.addOption', { defaultValue: 'Add option' })}
                               </button>
                             </div>
                           </div>
@@ -1158,11 +1178,11 @@ const Settings = () => {
             <div className="space-y-6">
               <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Change Password</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('settings.security.changePassword', { defaultValue: 'Change Password' })}</h2>
                 </div>
                 <div className="p-6 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Current Password</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">{t('settings.security.currentPassword', { defaultValue: 'Current Password' })}</label>
                     <input
                       type="password"
                       value={passwordData.current}
@@ -1171,7 +1191,7 @@ const Settings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">New Password</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">{t('settings.security.newPassword', { defaultValue: 'New Password' })}</label>
                     <input
                       type="password"
                       value={passwordData.new}
@@ -1180,7 +1200,7 @@ const Settings = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Confirm Password</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">{t('settings.security.confirmPassword', { defaultValue: 'Confirm Password' })}</label>
                     <input
                       type="password"
                       value={passwordData.confirm}
@@ -1192,7 +1212,7 @@ const Settings = () => {
                     onClick={handlePasswordChange}
                     className="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-medium hover:opacity-90 transition-opacity"
                   >
-                    Update Password
+                    {t('settings.security.updatePassword', { defaultValue: 'Update Password' })}
                   </button>
                 </div>
               </div>
@@ -1203,14 +1223,14 @@ const Settings = () => {
           {activeSection === 'data' && (
             <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
               <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Data Management</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('settings.data.title', { defaultValue: 'Data Management' })}</h2>
               </div>
               <div className="divide-y divide-gray-100 dark:divide-slate-700">
-                <SettingRow icon={Download} title="Export Data" description="Download all your data as JSON" onClick={handleExportData} />
-                <SettingRow icon={Database} title="Storage Used" description="Calculate your storage usage">
+                <SettingRow icon={Download} title={t('settings.data.exportData', { defaultValue: 'Export Data' })} description={t('settings.data.exportDesc', { defaultValue: 'Download all your data as JSON' })} onClick={handleExportData} />
+                <SettingRow icon={Database} title={t('settings.data.storageUsed', { defaultValue: 'Storage Used' })} description={t('settings.data.storageDesc', { defaultValue: 'Calculate your storage usage' })}>
                   <span className="text-sm text-gray-500">— MB</span>
                 </SettingRow>
-                <SettingRow icon={Trash2} title="Clear Cache" description="Clear temporary app data" onClick={() => { localStorage.clear(); toast.success('Cache cleared'); }} />
+                <SettingRow icon={Trash2} title={t('settings.data.clearCache', { defaultValue: 'Clear Cache' })} description={t('settings.data.clearCacheDesc', { defaultValue: 'Clear temporary app data' })} onClick={() => { localStorage.clear(); toast.success(t('settings.data.cacheCleared', { defaultValue: 'Cache cleared' })); }} />
               </div>
             </div>
           )}
@@ -1219,18 +1239,18 @@ const Settings = () => {
           {activeSection === 'about' && (
             <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
               <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">About KhayyatOS</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('settings.about.title', { defaultValue: 'About KhayyatOS' })}</h2>
               </div>
               <div className="divide-y divide-gray-100 dark:divide-slate-700">
-                <SettingRow icon={Info} title="Version" description="Current app version">
+                <SettingRow icon={Info} title={t('settings.about.version', { defaultValue: 'Version' })} description={t('settings.about.versionDesc', { defaultValue: 'Current app version' })}>
                   <span className="text-sm font-mono text-gray-500">v2.0.0</span>
                 </SettingRow>
-                <SettingRow icon={HelpCircle} title="Help & Support" description="Get help with the app" onClick={() => window.open('mailto:support@khayyatos.com')} />
-                <SettingRow icon={FileText} title="Terms of Service" description="Read our terms" onClick={() => {}} />
-                <SettingRow icon={Shield} title="Privacy Policy" description="How we protect your data" onClick={() => {}} />
+                <SettingRow icon={HelpCircle} title={t('settings.about.help', { defaultValue: 'Help & Support' })} description={t('settings.about.helpDesc', { defaultValue: 'Get help with the app' })} onClick={() => window.open('mailto:support@khayyatos.com')} />
+                <SettingRow icon={FileText} title={t('settings.about.terms', { defaultValue: 'Terms of Service' })} description={t('settings.about.termsDesc', { defaultValue: 'Read our terms' })} onClick={() => {}} />
+                <SettingRow icon={Shield} title={t('settings.about.privacy', { defaultValue: 'Privacy Policy' })} description={t('settings.about.privacyDesc', { defaultValue: 'How we protect your data' })} onClick={() => {}} />
               </div>
               <div className="p-6 text-center text-sm text-gray-500 dark:text-slate-400">
-                Made with ❤️ for tailors everywhere
+                {t('settings.about.madeForTailors', { defaultValue: 'Made with ❤️ for tailors everywhere' })}
               </div>
             </div>
           )}
@@ -1247,7 +1267,7 @@ const Settings = () => {
               ) : (
                 <Check className="w-5 h-5" />
               )}
-              Save Changes
+              {t('settings.saveChanges', { defaultValue: 'Save Changes' })}
             </button>
           </div>
         </div>

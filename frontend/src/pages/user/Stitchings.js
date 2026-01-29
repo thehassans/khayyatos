@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
 import { Plus, Search, UserPlus, Trash2, Printer } from 'lucide-react';
 import SARIcon from '../../components/ui/SARIcon';
@@ -23,6 +24,7 @@ const Stitchings = () => {
   const [search, setSearch] = useState(() => searchParams.get('search') || '');
   const [statusFilter, setStatusFilter] = useState('');
   const [assignModal, setAssignModal] = useState({ open: false, stitching: null });
+  const [deleteModal, setDeleteModal] = useState({ open: false, stitching: null, loading: false });
 
   useEffect(() => {
     const q = searchParams.get('search') || '';
@@ -66,14 +68,29 @@ const Stitchings = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this order?')) return;
+  const requestDelete = (stitching) => {
+    setDeleteModal({ open: true, stitching, loading: false });
+  };
+
+  const closeDelete = () => {
+    setDeleteModal({ open: false, stitching: null, loading: false });
+  };
+
+  const confirmDelete = async () => {
+    const id = deleteModal?.stitching?._id;
+    if (!id) {
+      closeDelete();
+      return;
+    }
+    setDeleteModal((p) => ({ ...p, loading: true }));
     try {
       await api.delete(`/stitchings/${id}`);
       toast.success('Deleted');
+      closeDelete();
       fetchData();
     } catch (error) {
       toast.error('Failed to delete');
+      setDeleteModal((p) => ({ ...p, loading: false }));
     }
   };
 
@@ -241,7 +258,7 @@ const Stitchings = () => {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('stitchings.title')}</h1>
-        <Button onClick={() => navigate('/user/stitchings/new')} icon={Plus}>
+        <Button variant="success" onClick={() => navigate('/user/stitchings/new')} icon={Plus}>
           {t('stitchings.createOrder')}
         </Button>
       </div>
@@ -381,7 +398,7 @@ const Stitchings = () => {
                         <Printer className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(stitch._id)}
+                        onClick={() => requestDelete(stitch)}
                         className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg"
                         title="Delete"
                       >
@@ -425,6 +442,21 @@ const Stitchings = () => {
           )}
         </div>
       </Modal>
+
+      <ConfirmModal
+        isOpen={deleteModal.open}
+        onClose={closeDelete}
+        title={t('common.delete', { defaultValue: 'Delete' })}
+        message={t('stitchings.deleteConfirmTitle', { defaultValue: 'Delete this order?' })}
+        subtitle={t('stitchings.deleteConfirmSubtitle', { defaultValue: 'This action cannot be undone.' })}
+        confirmText={t('common.delete', { defaultValue: 'Delete' })}
+        cancelText={t('common.cancel', { defaultValue: 'Cancel' })}
+        confirmVariant="danger"
+        loading={deleteModal.loading}
+        onConfirm={confirmDelete}
+        previewTitle={`#${deleteModal?.stitching?.receiptNumber || deleteModal?.stitching?._id?.slice(-6) || ''}`}
+        previewSubtitle={`${deleteModal?.stitching?.customerId?.name || ''}${deleteModal?.stitching?.customerId?.phone ? ` • ${deleteModal.stitching.customerId.phone}` : ''}`}
+      />
     </div>
   );
 };

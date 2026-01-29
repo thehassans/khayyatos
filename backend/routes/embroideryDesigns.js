@@ -30,6 +30,25 @@ const safeUnlink = (absPath) => {
   }
 };
 
+const moveFile = (from, to) => {
+  try {
+    fs.renameSync(from, to);
+  } catch (e) {
+    try {
+      fs.copyFileSync(from, to);
+      safeUnlink(from);
+    } catch (err) {
+      throw err;
+    }
+  }
+};
+
+const isWebpUpload = (file) => {
+  const mime = (file?.mimetype || '').toLowerCase();
+  const ext = path.extname(file?.originalname || '').toLowerCase();
+  return mime === 'image/webp' || ext === '.webp';
+};
+
 router.get('/', async (req, res) => {
   try {
     const designs = await EmbroideryDesign.find({ userId: req.user._id })
@@ -73,10 +92,6 @@ router.post('/', upload.single('image'), async (req, res) => {
     await design.save();
 
     if (req.file) {
-      if (!sharp) {
-        return res.status(500).json({ error: 'Image processing is not available on this server' });
-      }
-
       const relPath = path.join('embroidery-designs', String(req.user._id));
       const dirPath = path.join(uploadsBaseDir, relPath);
       ensureDir(dirPath);
@@ -84,13 +99,21 @@ router.post('/', upload.single('image'), async (req, res) => {
       const fileName = `${String(design._id)}.webp`;
       const absTarget = path.join(dirPath, fileName);
 
-      await sharp(req.file.path)
-        .rotate()
-        .resize({ width: 1200, withoutEnlargement: true })
-        .webp({ quality: 85 })
-        .toFile(absTarget);
+      if (sharp) {
+        await sharp(req.file.path)
+          .rotate()
+          .resize({ width: 1200, withoutEnlargement: true })
+          .webp({ quality: 85 })
+          .toFile(absTarget);
 
-      safeUnlink(req.file.path);
+        safeUnlink(req.file.path);
+      } else {
+        if (!isWebpUpload(req.file)) {
+          safeUnlink(req.file.path);
+          return res.status(500).json({ error: 'Image processing is not available on this server' });
+        }
+        moveFile(req.file.path, absTarget);
+      }
 
       design.image = `/uploads/${path.join(relPath, fileName).replace(/\\/g, '/')}`;
       design.imageUpdatedAt = Date.now();
@@ -118,10 +141,6 @@ router.put('/:id', upload.single('image'), async (req, res) => {
     }
 
     if (req.file) {
-      if (!sharp) {
-        return res.status(500).json({ error: 'Image processing is not available on this server' });
-      }
-
       const relPath = path.join('embroidery-designs', String(req.user._id));
       const dirPath = path.join(uploadsBaseDir, relPath);
       ensureDir(dirPath);
@@ -129,13 +148,21 @@ router.put('/:id', upload.single('image'), async (req, res) => {
       const fileName = `${String(design._id)}.webp`;
       const absTarget = path.join(dirPath, fileName);
 
-      await sharp(req.file.path)
-        .rotate()
-        .resize({ width: 1200, withoutEnlargement: true })
-        .webp({ quality: 85 })
-        .toFile(absTarget);
+      if (sharp) {
+        await sharp(req.file.path)
+          .rotate()
+          .resize({ width: 1200, withoutEnlargement: true })
+          .webp({ quality: 85 })
+          .toFile(absTarget);
 
-      safeUnlink(req.file.path);
+        safeUnlink(req.file.path);
+      } else {
+        if (!isWebpUpload(req.file)) {
+          safeUnlink(req.file.path);
+          return res.status(500).json({ error: 'Image processing is not available on this server' });
+        }
+        moveFile(req.file.path, absTarget);
+      }
 
       design.image = `/uploads/${path.join(relPath, fileName).replace(/\\/g, '/')}`;
       design.imageUpdatedAt = Date.now();

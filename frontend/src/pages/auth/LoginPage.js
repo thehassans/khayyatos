@@ -33,6 +33,8 @@ const LoginPage = () => {
     { code: 'bn', label: 'বাংলা' }
   ];
 
+  const currentLang = (i18n?.language || 'en').split('-')[0];
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -88,6 +90,7 @@ const LoginPage = () => {
           }}
           className="absolute inset-0 w-full h-full object-cover opacity-0 animate-[fadeInVideo_1.5s_ease-out_forwards]"
         >
+          <source src="/videos/Thawb.webm" type="video/webm" />
           <source src="/videos/Thawb.mp4" type="video/mp4" />
         </video>
       )}
@@ -112,7 +115,7 @@ const LoginPage = () => {
             className="flex items-center gap-2 px-5 py-2.5 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 hover:bg-white/20 transition-all duration-300"
           >
             <span className="text-sm font-light text-white/90 tracking-wide">
-              {languages.find(l => l.code === i18n.language)?.label || 'English'}
+              {languages.find(l => l.code === currentLang)?.label || 'English'}
             </span>
             <ChevronDown className={`w-4 h-4 text-white/60 transition-transform duration-300 ${langOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -126,7 +129,7 @@ const LoginPage = () => {
                     setLangOpen(false);
                   }}
                   className={`w-full px-5 py-3 text-left text-sm tracking-wide transition-all duration-200 ${
-                    i18n.language === lang.code 
+                    currentLang === lang.code 
                       ? 'text-amber-400 bg-white/5' 
                       : 'text-white/70 hover:text-white hover:bg-white/5'
                   }`}
@@ -176,6 +179,16 @@ const LoginPage = () => {
             <p className="text-white/40 text-[10px] sm:text-xs font-light tracking-[0.15em] sm:tracking-[0.25em]">
               TAILORING EXCELLENCE
             </p>
+
+            <div className="mt-5 flex items-center justify-center gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-200 text-[10px] tracking-widest">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                TRUSTED & CERTIFIED BY ZATCA
+              </div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/60 text-[10px] tracking-widest">
+                {languages.map((l) => l.label).join(' • ')}
+              </div>
+            </div>
           </div>
 
           {/* Login Form - Glassmorphism */}
@@ -187,21 +200,21 @@ const LoginPage = () => {
               <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
                 <div className="space-y-2">
                   <label className="block text-xs font-light text-white/50 tracking-widest uppercase">
-                    Email / Phone
+                    {t('auth.email', { defaultValue: 'Email' })} / {t('auth.phone', { defaultValue: 'Phone' })}
                   </label>
                   <input
                     type="text"
                     value={credentials.identifier}
                     onChange={(e) => setCredentials({ ...credentials, identifier: e.target.value })}
                     className="w-full px-0 py-3 sm:py-4 bg-transparent border-0 border-b border-white/20 text-white text-base sm:text-lg font-light placeholder-white/30 focus:outline-none focus:border-amber-500/50 transition-colors duration-300"
-                    placeholder="Enter your credentials"
+                    placeholder={t('auth.identifierPlaceholder', { defaultValue: 'Enter email or phone' })}
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-xs font-light text-white/50 tracking-widest uppercase">
-                    Password
+                    {t('auth.password', { defaultValue: 'Password' })}
                   </label>
                   <input
                     type="password"
@@ -231,11 +244,11 @@ const LoginPage = () => {
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                           </svg>
-                          <span>AUTHENTICATING</span>
+                          <span>{t('common.loading', { defaultValue: 'Loading...' }).toUpperCase()}</span>
                         </>
                       ) : (
                         <>
-                          <span>ENTER</span>
+                          <span>{t('auth.login', { defaultValue: 'Login' }).toUpperCase()}</span>
                           <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                           </svg>
@@ -249,9 +262,10 @@ const LoginPage = () => {
           </div>
 
           {/* Footer */}
-          <p className="text-center text-white/20 text-[10px] sm:text-xs font-light tracking-wider sm:tracking-widest mt-6 sm:mt-8 md:mt-10">
-            © 2024 KHAYYAT OS
-          </p>
+          <div className="text-center text-white/30 text-[10px] sm:text-xs font-light tracking-wider sm:tracking-widest mt-6 sm:mt-8 md:mt-10 space-y-2">
+            <div>Made for Khayyat by <a className="underline hover:text-white" href="https://hassanscode.com" target="_blank" rel="noreferrer">Hassan Sarwar</a></div>
+            <div className="text-white/20">© {new Date().getFullYear()} KHAYYAT OS</div>
+          </div>
         </div>
       </div>
 

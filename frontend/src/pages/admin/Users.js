@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { Plus, Search, LogIn, Edit, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -18,6 +19,7 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState({ status: '', subscription: '' });
+  const [deleteModal, setDeleteModal] = useState({ open: false, user: null, loading: false });
 
   useEffect(() => {
     fetchUsers();
@@ -49,14 +51,29 @@ const AdminUsers = () => {
     }
   };
 
-  const handleDelete = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return;
+  const requestDelete = (u) => {
+    setDeleteModal({ open: true, user: u, loading: false });
+  };
+
+  const closeDelete = () => {
+    setDeleteModal({ open: false, user: null, loading: false });
+  };
+
+  const confirmDelete = async () => {
+    const id = deleteModal?.user?._id;
+    if (!id) {
+      closeDelete();
+      return;
+    }
+    setDeleteModal((p) => ({ ...p, loading: true }));
     try {
-      await api.delete(`/admin/users/${userId}`);
+      await api.delete(`/admin/users/${id}`);
       toast.success('User deleted successfully');
+      closeDelete();
       fetchUsers();
     } catch (error) {
       toast.error('Failed to delete user');
+      setDeleteModal((p) => ({ ...p, loading: false }));
     }
   };
 
@@ -162,7 +179,7 @@ const AdminUsers = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(user._id)}
+                        onClick={() => requestDelete(user)}
                         className="p-2 hover:bg-rose-50 text-rose-600 rounded-lg"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -180,6 +197,21 @@ const AdminUsers = () => {
           </div>
         )}
       </Card>
+
+      <ConfirmModal
+        isOpen={deleteModal.open}
+        onClose={closeDelete}
+        title={t('common.delete', { defaultValue: 'Delete' })}
+        message={t('admin.deleteConfirmTitle', { defaultValue: 'Delete this user?' })}
+        subtitle={t('admin.deleteConfirmSubtitle', { defaultValue: 'This will remove the shop and all related data.' })}
+        confirmText={t('common.delete', { defaultValue: 'Delete' })}
+        cancelText={t('common.cancel', { defaultValue: 'Cancel' })}
+        confirmVariant="danger"
+        loading={deleteModal.loading}
+        onConfirm={confirmDelete}
+        previewTitle={deleteModal?.user?.businessName || ''}
+        previewSubtitle={deleteModal?.user?.phone || ''}
+      />
     </div>
   );
 };

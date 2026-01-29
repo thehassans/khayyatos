@@ -31,7 +31,8 @@ const UserLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(user?.sidebarCollapsed || false);
   const [langOpen, setLangOpen] = useState(false);
   
-  const isRTL = ['ar', 'ur'].includes(i18n.language);
+  const currentLang = (i18n?.language || 'en').split('-')[0];
+  const isRTL = ['ar', 'ur'].includes(currentLang);
 
   // Theme customization
   const primaryColor = user?.primaryColor || 'sky';
@@ -285,8 +286,8 @@ const UserLayout = () => {
                   }`}
                 >
                   <Globe className={`w-4 h-4 ${headerStyle === 'colored' || headerStyle === 'gradient' ? 'text-white/80' : 'text-gray-500 dark:text-slate-300'}`} />
-                  <span className="text-lg">{languages.find(l => l.code === i18n.language)?.flag}</span>
-                  <span className={`text-sm font-medium hidden sm:block ${headerStyle === 'colored' || headerStyle === 'gradient' ? 'text-white' : 'text-gray-700 dark:text-slate-100'}`}>{languages.find(l => l.code === i18n.language)?.label || 'English'}</span>
+                  <span className="text-lg">{languages.find(l => l.code === currentLang)?.flag}</span>
+                  <span className={`text-sm font-medium hidden sm:block ${headerStyle === 'colored' || headerStyle === 'gradient' ? 'text-white' : 'text-gray-700 dark:text-slate-100'}`}>{languages.find(l => l.code === currentLang)?.label || 'English'}</span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${langOpen ? 'rotate-180' : ''} ${headerStyle === 'colored' || headerStyle === 'gradient' ? 'text-white/60' : 'text-gray-400 dark:text-slate-400'}`} />
                 </button>
                 {langOpen && (
@@ -304,15 +305,15 @@ const UserLayout = () => {
                             setLangOpen(false);
                           }}
                           className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors ${
-                            i18n.language === lang.code ? 'bg-primary-50 dark:bg-primary-900/20' : ''
+                            currentLang === lang.code ? 'bg-primary-50 dark:bg-primary-900/20' : ''
                           }`}
                         >
                           <span className="text-2xl">{lang.flag}</span>
                           <div className="flex-1 text-left">
-                            <p className={`text-sm font-medium ${i18n.language === lang.code ? 'text-primary-700 dark:text-primary-200' : 'text-gray-900 dark:text-slate-100'}`}>{lang.label}</p>
+                            <p className={`text-sm font-medium ${currentLang === lang.code ? 'text-primary-700 dark:text-primary-200' : 'text-gray-900 dark:text-slate-100'}`}>{lang.label}</p>
                             <p className="text-xs text-gray-500 dark:text-slate-400">{lang.native}</p>
                           </div>
-                          {i18n.language === lang.code && (
+                          {currentLang === lang.code && (
                             <Check className="w-5 h-5 text-primary-600" />
                           )}
                         </button>
