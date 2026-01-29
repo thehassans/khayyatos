@@ -16,6 +16,7 @@ const LoginPage = () => {
   const [mounted, setMounted] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef(null);
+  const segmentEndRef = useRef(5);
 
   useEffect(() => {
     setMounted(true);
@@ -23,6 +24,35 @@ const LoginPage = () => {
     const timer = setTimeout(() => setVideoReady(true), 100);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!videoReady || !video) return;
+
+    const handleTimeUpdate = () => {
+      if (video.currentTime >= segmentEndRef.current) {
+        video.currentTime = 0;
+        const p = video.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      }
+    };
+
+    const handleLoadedMetadata = () => {
+      if (typeof video.duration === 'number' && Number.isFinite(video.duration) && video.duration > 0) {
+        segmentEndRef.current = video.duration / 2;
+      } else {
+        segmentEndRef.current = 5;
+      }
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    handleLoadedMetadata();
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    };
+  }, [videoReady]);
 
   const languages = [
     { code: 'en', label: 'English' },
@@ -64,6 +94,31 @@ const LoginPage = () => {
   return (
     <div className="min-h-[100svh] min-h-[100dvh] relative overflow-hidden bg-black">
 
+      {videoReady && (
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          disablePictureInPicture
+          preload="metadata"
+          className="absolute inset-0 w-full h-full object-cover opacity-0 animate-[fadeInVideo_1.5s_ease-out_forwards]"
+        >
+          <source src="/videos/Thawb.webm" type="video/webm" />
+          <source src="/videos/Thawb.mp4" type="video/mp4" />
+        </video>
+      )}
+
+      <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/70" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
+
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
       {/* Language Selector - Premium Glass */}
       <div className="absolute top-4 right-4 sm:top-6 sm:right-6 md:top-8 md:right-8 z-50">
         <div className="relative">
@@ -99,55 +154,19 @@ const LoginPage = () => {
         </div>
       </div>
 
-      <div className="relative z-10 min-h-[100svh] min-h-[100dvh] flex flex-col md:flex-row">
-        <div className="relative w-full md:w-1/2 h-[50svh] md:h-auto overflow-hidden">
-          {videoReady && (
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              loop
-              disablePictureInPicture
-              preload="metadata"
-              className="absolute inset-0 w-full h-full object-cover object-top md:object-center opacity-0 animate-[fadeInVideo_1.5s_ease-out_forwards]"
-            >
-              <source src="/videos/Thawb.webm" type="video/webm" />
-              <source src="/videos/Thawb.mp4" type="video/mp4" />
-            </video>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/30 to-black/70" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
-          <div
-            className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-            }}
-          />
-        </div>
+      <div className="relative z-10 min-h-[100svh] min-h-[100dvh] flex items-center justify-center px-4 py-8 sm:p-6 md:p-8">
+        <div className={`w-full max-w-[340px] sm:max-w-sm md:max-w-md transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
 
-        <div className="relative w-full md:w-1/2 flex items-center justify-center px-4 py-8 sm:p-6 md:p-10 bg-black">
-          <div className={`w-full max-w-[340px] sm:max-w-sm md:max-w-md transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-
-            <div className="text-center mb-8 sm:mb-10 md:mb-12">
-              <div className="flex items-center justify-center">
-                <img
-                  src="/khayatoslogo.webp"
-                  alt="KhayyatOS"
-                  className="h-14 sm:h-16 md:h-20 w-auto object-contain"
-                  loading="eager"
-                  onError={(e) => {
-                    const el = e.currentTarget;
-                    if (el.dataset.fallbackApplied === '1') {
-                      el.style.display = 'none';
-                      return;
-                    }
-                    el.dataset.fallbackApplied = '1';
-                    el.src = '/khayatoslogo.png';
-                  }}
-                />
-              </div>
+          <div className="text-center mb-7 sm:mb-9 md:mb-11">
+            <div className="flex items-center justify-center">
+              <img
+                src="/khayatoslogo.png"
+                alt="KhayyatOS"
+                className="h-28 sm:h-32 md:h-40 w-auto max-w-[320px] object-contain"
+                loading="eager"
+              />
             </div>
+          </div>
 
           {/* Login Form - Glassmorphism */}
           <div className="relative">
@@ -247,7 +266,6 @@ const LoginPage = () => {
             <div className="text-white/20">© {new Date().getFullYear()} KHAYYAT OS</div>
           </div>
         </div>
-      </div>
       </div>
 
       {/* Floating Particles */}
