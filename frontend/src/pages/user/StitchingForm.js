@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Textarea } from '../../components/ui/Input';
-import { ArrowLeft, ChevronDown, Calendar, Printer, Users, Image as ImageIcon, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Calendar, Printer, Users, Image as ImageIcon } from 'lucide-react';
 import MeasurementCard from '../../components/ui/MeasurementCard';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
@@ -56,8 +56,6 @@ const StitchingForm = () => {
   const [thawbTypesCatalogLoading, setThawbTypesCatalogLoading] = useState(false);
   const [fabricColorsCatalog, setFabricColorsCatalog] = useState(null);
   const [fabricColorsCatalogLoading, setFabricColorsCatalogLoading] = useState(false);
-  const [embroideryDesigns, setEmbroideryDesigns] = useState([]);
-  const [embroideryDesignsLoading, setEmbroideryDesignsLoading] = useState(false);
   const [selectedEmbroideryDesign, setSelectedEmbroideryDesign] = useState(null);
   const [formData, setFormData] = useState({
     quantity: 1,
@@ -86,7 +84,6 @@ const StitchingForm = () => {
     fetchMeasurementsCatalog();
     fetchThawbTypesCatalog();
     fetchFabricColorsCatalog();
-    fetchEmbroideryDesigns();
     if (isEdit) fetchStitching();
   }, [id]);
 
@@ -114,17 +111,6 @@ const StitchingForm = () => {
     } catch (error) {
       console.error('Error:', error);
     }
-  };
-
-  const fetchEmbroideryDesigns = async () => {
-    try {
-      setEmbroideryDesignsLoading(true);
-      const response = await api.get('/embroidery-designs');
-      setEmbroideryDesigns(Array.isArray(response.data?.designs) ? response.data.designs : []);
-    } catch (error) {
-      setEmbroideryDesigns([]);
-    }
-    setEmbroideryDesignsLoading(false);
   };
 
   useEffect(() => {
@@ -171,13 +157,6 @@ const StitchingForm = () => {
       if (!designId) return;
       if (formData.embroideryDesignId === designId) return;
 
-      const fromList = (embroideryDesigns || []).find((d) => d?._id === designId);
-      if (fromList) {
-        setSelectedEmbroideryDesign(fromList);
-        setFormData((prev) => ({ ...prev, embroideryDesignId: fromList._id }));
-        return;
-      }
-
       try {
         const resp = await api.get(`/embroidery-designs/${designId}`);
         const fetched = resp.data?.design || null;
@@ -191,7 +170,7 @@ const StitchingForm = () => {
     };
 
     preselectEmbroideryDesign();
-  }, [api, embroideryDesigns, formData.embroideryDesignId, isEdit, searchParams]);
+  }, [api, formData.embroideryDesignId, isEdit, searchParams]);
 
   const fetchStyleCatalog = async () => {
     try {
@@ -724,80 +703,37 @@ const StitchingForm = () => {
               </div>
             </div>
 
-            {/* Embroidery Design Selector */}
-            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
-              <div className="flex items-center justify-between gap-3 mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Embroidery Design</h3>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">Optional — select a saved design</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {formData.embroideryDesignId ? (
-                    <button
-                      type="button"
-                      onClick={() => { setSelectedEmbroideryDesign(null); setFormData((p) => ({ ...p, embroideryDesignId: null })); }}
-                      className="px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-2"
-                      title="Clear"
-                    >
-                      <X className="w-4 h-4" />
-                      Clear
-                    </button>
-                  ) : null}
+            {selectedEmbroideryDesign ? (
+              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('embroideryDesigns.title', { defaultValue: 'Embroidery Designs' })}</h3>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">{t('embroideryDesigns.preview', { defaultValue: 'Preview' })}</p>
+                  </div>
                   <Button variant="outline" onClick={() => navigate('/user/embroidery-designs')}>
-                    Manage
+                    {t('embroideryDesigns.title', { defaultValue: 'Embroidery Designs' })}
                   </Button>
                 </div>
-              </div>
 
-              {embroideryDesignsLoading ? (
-                <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
-              ) : embroideryDesigns.length === 0 ? (
-                <div className="text-sm text-gray-500 dark:text-slate-400">No designs uploaded</div>
-              ) : (
-                <div className="flex gap-3 overflow-x-auto pb-2">
-                  {embroideryDesigns.map((d) => {
-                    const selected = formData.embroideryDesignId === d._id;
-                    const imageUrl = d.image ? resolveUploadsUrl(d.image) : null;
-                    const imageSrc = imageUrl ? `${imageUrl}${d.imageUpdatedAt ? `?v=${d.imageUpdatedAt}` : ''}` : null;
-                    return (
-                      <button
-                        key={d._id}
-                        type="button"
-                        onClick={() => { setSelectedEmbroideryDesign(d); setFormData((p) => ({ ...p, embroideryDesignId: d._id })); }}
-                        className={`min-w-[220px] text-left rounded-2xl border transition-all hover:shadow-lg hover:scale-[1.01] ${
-                          selected
-                            ? 'border-primary-500 ring-2 ring-primary-500 bg-primary-50/70 dark:bg-primary-900/20'
-                            : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40'
-                        }`}
-                      >
-                        <div className="p-3">
-                          <div className="relative h-28 w-full rounded-xl bg-gray-100 dark:bg-slate-800 overflow-hidden">
-                            {imageSrc ? (
-                              <img src={imageSrc} alt={d.name} className="absolute inset-0 w-full h-full object-cover" />
-                            ) : (
-                              <div className="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-slate-600">
-                                <ImageIcon className="w-8 h-8" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="mt-3">
-                            <div className={`text-sm font-semibold truncate ${selected ? 'text-primary-700 dark:text-primary-200' : 'text-gray-800 dark:text-slate-100'}`}>{d.name}</div>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {selectedEmbroideryDesign && (
-                <div className="mt-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/30 p-4">
-                  <div className="text-sm text-gray-600 dark:text-slate-300">
-                    Selected: <span className="font-semibold text-gray-900 dark:text-slate-100">{selectedEmbroideryDesign.name || '—'}</span>
+                <div className="flex items-center gap-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 p-4">
+                  <div className="w-20 h-20 rounded-2xl overflow-hidden border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
+                    {selectedEmbroideryDesign?.image ? (
+                      <img
+                        src={`${resolveUploadsUrl(selectedEmbroideryDesign.image)}${selectedEmbroideryDesign.imageUpdatedAt ? `?v=${selectedEmbroideryDesign.imageUpdatedAt}` : ''}`}
+                        alt={selectedEmbroideryDesign?.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-gray-300 dark:text-slate-600" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{selectedEmbroideryDesign?.name || '—'}</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400 truncate">{t('embroideryDesigns.designName', { defaultValue: 'Design Name' })}</div>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : null}
 
             <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
               <div className="flex items-center justify-between mb-4">
