@@ -20,7 +20,8 @@ import {
   Globe,
   Check,
   FileText,
-  Image
+  Image,
+  Droplets
 } from 'lucide-react';
 
 const UserLayout = () => {
@@ -156,6 +157,7 @@ const UserLayout = () => {
     { key: 'customers', to: '/user/customers', icon: UserPlus, label: t('nav.customers') },
     { key: 'stitchings', to: '/user/stitchings', icon: Scissors, label: t('nav.stitchings') },
     { key: 'embroideryDesigns', to: '/user/embroidery-designs', icon: Image, label: t('nav.embroideryDesigns', { defaultValue: 'Embroidery Designs' }) },
+    { key: 'laundry', to: '/user/laundry', icon: Droplets, label: t('nav.laundry', { defaultValue: 'Laundry' }) },
     { key: 'loyalty', to: '/user/loyalty', icon: Heart, label: t('nav.loyalty') },
     { key: 'whatsapp', to: '/user/whatsapp', icon: MessageCircle, label: t('nav.whatsapp') },
     { key: 'zatca', to: '/user/zatca', icon: FileText, label: t('nav.zatca') },

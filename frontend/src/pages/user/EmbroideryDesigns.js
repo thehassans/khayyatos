@@ -258,7 +258,7 @@ const EmbroideryDesigns = () => {
           </CardBody>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedDesigns.map((d) => {
             const imageUrl = d.image ? resolveUploadsUrl(d.image) : null;
             const imageSrc = imageUrl ? `${imageUrl}${d.imageUpdatedAt ? `?v=${d.imageUpdatedAt}` : ''}` : null;
@@ -267,20 +267,20 @@ const EmbroideryDesigns = () => {
             return (
               <div
                 key={d._id}
-                className="group relative rounded-3xl border border-gray-200/70 dark:border-slate-700/70 bg-gradient-to-br from-white via-white to-gray-50 dark:from-slate-900/40 dark:via-slate-900/20 dark:to-slate-900/10 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-black/10 hover:scale-[1.01] transition-all"
+                className="group relative rounded-3xl border border-gray-200/70 dark:border-slate-700/70 bg-gradient-to-br from-white via-white to-amber-50/30 dark:from-slate-900/50 dark:via-slate-900/25 dark:to-slate-900/10 overflow-hidden shadow-lg shadow-black/5 hover:shadow-2xl hover:shadow-amber-500/10 hover:scale-[1.01] transition-all duration-300"
               >
                 <button
                   type="button"
                   onClick={() => openPreview(d)}
                   className="w-full text-left"
                 >
-                  <div className="relative h-56 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-950 dark:to-slate-900">
+                  <div className="relative h-64 bg-gradient-to-br from-gray-50 via-amber-50/30 to-gray-100 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
                     {imageSrc ? (
                       <>
-                        <img src={imageSrc} alt={d.name} className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
-                        <div className="relative w-full h-full p-4 flex items-center justify-center">
-                          <img src={imageSrc} alt={d.name} className="max-w-full max-h-full object-contain rounded-2xl shadow-xl ring-1 ring-white/10" />
+                        <img src={imageSrc} alt={d.name} className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-110" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                        <div className="relative w-full h-full p-5 flex items-center justify-center">
+                          <img src={imageSrc} alt={d.name} className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl ring-1 ring-white/10" />
                         </div>
                       </>
                     ) : (
@@ -296,18 +296,26 @@ const EmbroideryDesigns = () => {
                   </div>
                 </button>
 
-                <div className="p-4 flex items-center justify-between gap-3">
-                  <Button variant="success" onClick={() => createOrderWithDesign(d)}>
-                    {t('embroideryDesigns.createOrder', { defaultValue: 'Create Order' })}
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() => requestDelete(d)}
-                    className="p-2 rounded-xl border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-                    title={t('common.delete', { defaultValue: 'Delete' })}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                <div className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <Button variant="success" onClick={() => createOrderWithDesign(d)} className="rounded-2xl px-5 py-2.5">
+                      {t('embroideryDesigns.createOrder', { defaultValue: 'Create Order' })}
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => requestDelete(d)}
+                      className="p-2.5 rounded-2xl border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                      title={t('common.delete', { defaultValue: 'Delete' })}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {d?.note ? (
+                    <div className="mt-3 text-xs text-gray-500 dark:text-slate-400 leading-relaxed line-clamp-2">
+                      {d.note}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             );
@@ -401,44 +409,47 @@ const EmbroideryDesigns = () => {
         title={(previewModal.design?.nameI18n?.[langKey] || previewModal.design?.name) || t('embroideryDesigns.preview', { defaultValue: 'Preview' })}
         size="full"
       >
-        <div className="space-y-4">
-          <div className="rounded-3xl overflow-hidden border border-gray-200/70 dark:border-slate-700/70 bg-gray-950">
-            {previewModal.design?.image ? (
-              <img
-                src={`${resolveUploadsUrl(previewModal.design.image)}${previewModal.design.imageUpdatedAt ? `?v=${previewModal.design.imageUpdatedAt}` : ''}`}
-                alt={previewModal.design?.name}
-                className="w-full max-h-[80vh] object-contain bg-black"
-              />
-            ) : (
-              <div className="h-64 flex items-center justify-center text-gray-300 dark:text-slate-600">
-                <ImageIcon className="w-10 h-10" />
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-3xl border border-gray-200/70 dark:border-slate-700/70 bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl p-4">
-            <Textarea
-              label={t('embroideryDesigns.note', { defaultValue: 'Note' })}
-              value={noteDraft}
-              onChange={(e) => setNoteDraft(e.target.value)}
-              placeholder={t('embroideryDesigns.notePlaceholder', { defaultValue: 'Add a note for this design (optional)' })}
-            />
-            <div className="mt-3 flex gap-3">
-              <Button onClick={saveDesignNote} loading={savingNote} className="flex-1">
-                {t('common.save', { defaultValue: 'Save' })}
-              </Button>
-              <Button variant="secondary" onClick={closePreview} className="flex-1" disabled={savingNote}>
-                {t('common.close', { defaultValue: 'Close' })}
-              </Button>
+        <div className="grid gap-5 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            <div className="rounded-3xl overflow-hidden border border-gray-200/70 dark:border-slate-700/70 bg-gray-950">
+              {previewModal.design?.image ? (
+                <img
+                  src={`${resolveUploadsUrl(previewModal.design.image)}${previewModal.design.imageUpdatedAt ? `?v=${previewModal.design.imageUpdatedAt}` : ''}`}
+                  alt={previewModal.design?.name}
+                  className="w-full max-h-[76vh] lg:h-[76vh] object-contain bg-black"
+                />
+              ) : (
+                <div className="h-64 flex items-center justify-center text-gray-300 dark:text-slate-600">
+                  <ImageIcon className="w-10 h-10" />
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <Button variant="success" onClick={() => previewModal.design && createOrderWithDesign(previewModal.design)} className="flex-1">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="rounded-3xl border border-gray-200/70 dark:border-slate-700/70 bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl p-4">
+              <Textarea
+                label={t('embroideryDesigns.note', { defaultValue: 'Note' })}
+                value={noteDraft}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                placeholder={t('embroideryDesigns.notePlaceholder', { defaultValue: 'Add a note for this design (optional)' })}
+              />
+              <div className="mt-3 flex gap-3">
+                <Button onClick={saveDesignNote} loading={savingNote} className="flex-1 rounded-2xl">
+                  {t('common.save', { defaultValue: 'Save' })}
+                </Button>
+                <Button variant="secondary" onClick={closePreview} className="flex-1 rounded-2xl" disabled={savingNote}>
+                  {t('common.close', { defaultValue: 'Close' })}
+                </Button>
+              </div>
+            </div>
+
+            <Button
+              variant="success"
+              onClick={() => previewModal.design && createOrderWithDesign(previewModal.design)}
+              className="w-full rounded-2xl py-3"
+            >
               {t('embroideryDesigns.createOrder', { defaultValue: 'Create Order' })}
-            </Button>
-            <Button variant="secondary" onClick={closePreview} className="flex-1" disabled={savingNote}>
-              {t('common.close', { defaultValue: 'Close' })}
             </Button>
           </div>
         </div>

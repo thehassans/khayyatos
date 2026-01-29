@@ -142,41 +142,6 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* Bottom Center: ZATCA Phase 2 + Languages + Contact Sales */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[min(92vw,720px)]">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-black/45 backdrop-blur-2xl border border-white/10 shadow-2xl">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-400" />
-              <div className="text-[10px] sm:text-[11px] tracking-[0.22em] text-emerald-200 font-medium">
-                {t('auth.trustedCertified', { defaultValue: 'TRUSTED & CERTIFIED' })}
-              </div>
-            </div>
-            <div className="h-4 w-px bg-white/10" />
-            <div className="flex items-baseline gap-2">
-              <div className="text-white/90 text-sm sm:text-base font-semibold tracking-[0.18em]">ZATCA</div>
-              <div className="text-white/50 text-[10px] sm:text-[11px] tracking-[0.22em]">{t('auth.phase2', { defaultValue: 'PHASE 2' })}</div>
-            </div>
-          </div>
-
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 backdrop-blur-2xl border border-white/10 text-white/60 text-[10px] sm:text-[11px] tracking-widest">
-            {languages.map((l) => l.label).join(' • ')}
-          </div>
-
-          <div className="text-white/45 text-[11px] sm:text-xs tracking-wide">
-            {t('auth.noAccount', { defaultValue: "Don't have an account?" })}{' '}
-            <a
-              href="https://wa.me/96659675485"
-              target="_blank"
-              rel="noreferrer"
-              className="text-emerald-300 hover:text-emerald-200 underline underline-offset-4"
-            >
-              {t('auth.contactSales', { defaultValue: 'Contact Sales' })}
-            </a>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8 sm:p-6 md:p-8">
         <div className={`w-full max-w-[340px] sm:max-w-sm md:max-w-md transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
@@ -283,6 +248,38 @@ const LoginPage = () => {
                   </button>
                 </div>
               </form>
+
+              <div className="mt-6 pt-5 border-t border-white/10">
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-white/5 to-amber-500/15 backdrop-blur-2xl border border-amber-300/20 shadow-2xl">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-400" />
+                      <div className="text-[10px] sm:text-[11px] tracking-[0.22em] text-amber-200 font-medium">
+                        {t('auth.trustedCertified', { defaultValue: 'TRUSTED & CERTIFIED' })}
+                      </div>
+                    </div>
+                    <div className="h-4 w-px bg-white/10" />
+                    <div className="flex items-baseline gap-2">
+                      <div className="text-white/90 text-sm sm:text-base font-semibold tracking-[0.18em]">ZATCA</div>
+                      <div className="text-white/60 text-[10px] sm:text-[11px] tracking-[0.22em]">{t('auth.phase2', { defaultValue: 'PHASE 2' })}</div>
+                    </div>
+                  </div>
+
+                  <div className="w-full rounded-2xl bg-black/20 backdrop-blur-2xl border border-white/10 px-4 py-3">
+                    <div className="text-white/60 text-[11px] sm:text-xs tracking-wide">
+                      {t('auth.noAccount', { defaultValue: "Don't have an account?" })}{' '}
+                      <a
+                        href="https://wa.me/96659675485"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-amber-300 hover:text-amber-200 underline underline-offset-4"
+                      >
+                        {t('auth.contactSales', { defaultValue: 'Contact Sales' })}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

@@ -95,7 +95,7 @@ const stitchingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'assigned', 'in_progress', 'completed', 'delivered'],
+    enum: ['pending', 'assigned', 'in_progress', 'completed', 'delivered', 'stitching', 'finishing', 'laundry', 'done'],
     default: 'pending'
   },
   description: {
