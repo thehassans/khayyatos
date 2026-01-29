@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
@@ -9,6 +10,7 @@ import SARIcon from '../../components/ui/SARIcon';
 const Loyalty = () => {
   const { t } = useTranslation();
   const { api } = useAuth();
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [stats, setStats] = useState({ totalCustomers: 0, totalSpent: 0 });
   const [loading, setLoading] = useState(true);
@@ -103,7 +105,11 @@ const Loyalty = () => {
             </Thead>
             <Tbody>
               {customers.map((customer, index) => (
-                <Tr key={customer._id}>
+                <Tr
+                  key={customer._id}
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/user/customers/${customer._id}`)}
+                >
                   <Td>
                     <span className={`
                       inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium
@@ -119,7 +125,7 @@ const Loyalty = () => {
                       <div className="w-10 h-10 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center">
                         <span className="text-rose-700 dark:text-rose-200 font-medium">{customer.name?.charAt(0)}</span>
                       </div>
-                      <span className="font-medium">{customer.name}</span>
+                      <span className="font-medium underline underline-offset-4">{customer.name}</span>
                     </div>
                   </Td>
                   <Td>{customer.phone}</Td>
