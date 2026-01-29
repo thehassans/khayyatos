@@ -55,6 +55,44 @@ const CustomerProfile = () => {
     return map[type] || type;
   };
 
+  const relationKey = (rel) => {
+    const id = rel?.customerId?._id || rel?.customerId;
+    return String(id || rel?.customerPhone || rel?.customerName || Math.random());
+  };
+
+  const relationTargetId = (rel) => rel?.customerId?._id || rel?.customerId;
+
+  const relationDisplayName = (rel) => {
+    const fromRef = rel?.customerId?.nameI18n?.[langKey] || rel?.customerId?.name;
+    return fromRef || rel?.customerName || '—';
+  };
+
+  const relationDisplayPhone = (rel) => rel?.customerId?.phone || rel?.customerPhone || '';
+
+  const relationsSorted = useMemo(() => {
+    const order = {
+      father: 0,
+      son: 1,
+      brother: 2,
+      uncle: 3,
+      cousin: 4,
+      friend: 5,
+      other: 6
+    };
+    return (customer?.relations || [])
+      .slice()
+      .sort((a, b) => (order[a?.relationType] ?? 99) - (order[b?.relationType] ?? 99));
+  }, [customer?.relations]);
+
+  const familyTree = useMemo(() => {
+    const all = relationsSorted || [];
+    const father = all.find((r) => r?.relationType === 'father') || null;
+    const sons = all.filter((r) => r?.relationType === 'son');
+    const siblings = all.filter((r) => r?.relationType === 'brother');
+    const others = all.filter((r) => !['father', 'son', 'brother'].includes(r?.relationType));
+    return { father, sons, siblings, others };
+  }, [relationsSorted]);
+
   const sortedOrders = useMemo(() => {
     return (stitchings || [])
       .slice()
@@ -152,32 +190,152 @@ const CustomerProfile = () => {
           <Card className="overflow-hidden">
             <CardBody>
               <div className="flex items-center gap-2 mb-4">
-                <Users className="w-5 h-5 text-primary-600" />
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Family Relations / العلاقات العائلية</h2>
+                <Users className="w-5 h-5 text-[#D5B25B]" />
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Family Tree / شجرة العائلة</h2>
               </div>
 
-              {(customer.relations || []).length > 0 ? (
-                <div className="space-y-2">
-                  {customer.relations.map((rel) => (
+              <div className="rounded-3xl border border-gray-200 dark:border-slate-700 bg-gradient-to-b from-white to-gray-50 dark:from-slate-900/25 dark:to-slate-900/10 p-4">
+                <div className="flex flex-col items-center">
+                  {familyTree.father ? (
                     <button
-                      key={String(rel.customerId?._id || rel.customerId)}
                       type="button"
-                      onClick={() => navigate(`/user/customers/${rel.customerId?._id || rel.customerId}`)}
-                      className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-colors"
+                      onClick={() => navigate(`/user/customers/${relationTargetId(familyTree.father)}`)}
+                      className="group w-full rounded-2xl border border-[#D5B25B]/25 bg-white dark:bg-slate-900/40 hover:shadow-lg transition-all px-4 py-3"
                     >
-                      <div className="min-w-0 text-left">
-                        <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{rel.customerId?.nameI18n?.[langKey] || rel.customerId?.name || rel.customerName || '—'}</div>
-                        <div className="text-xs text-gray-500 dark:text-slate-400 truncate">{rel.customerId?.phone || rel.customerPhone || ''}</div>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0 text-left">
+                          <div className="text-xs tracking-widest uppercase text-slate-500 dark:text-slate-400">{relationLabel('father')}</div>
+                          <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{relationDisplayName(familyTree.father)}</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{relationDisplayPhone(familyTree.father)}</div>
+                        </div>
+                        <div className="w-10 h-10 rounded-2xl bg-[#D5B25B]/10 border border-[#D5B25B]/20 flex items-center justify-center text-[#7E6426] font-bold">
+                          {(relationDisplayName(familyTree.father) || '')?.charAt(0)}
+                        </div>
                       </div>
-                      <span className="text-xs px-2 py-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-200 whitespace-nowrap">
-                        {relationLabel(rel.relationType)}
-                      </span>
                     </button>
-                  ))}
+                  ) : (
+                    <div className="w-full rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/30 px-4 py-3">
+                      <div className="text-xs tracking-widest uppercase text-slate-500 dark:text-slate-400">Father / الأب</div>
+                      <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">Not set</div>
+                    </div>
+                  )}
+
+                  <div className="h-6 w-px bg-[#D5B25B]/35" />
+
+                  <div className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 px-4 py-3 shadow-sm">
+                    <div className="text-xs tracking-widest uppercase text-slate-500 dark:text-slate-400">Customer / العميل</div>
+                    <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{displayName}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{customer.phone}</div>
+                  </div>
+
+                  {familyTree.siblings.length > 0 ? (
+                    <>
+                      <div className="h-6 w-px bg-[#D5B25B]/35" />
+                      <div className="w-full">
+                        <div className="text-xs tracking-widest uppercase text-slate-500 dark:text-slate-400 mb-2">Brothers / الإخوان</div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {familyTree.siblings.map((rel) => (
+                            <button
+                              key={relationKey(rel)}
+                              type="button"
+                              onClick={() => navigate(`/user/customers/${relationTargetId(rel)}`)}
+                              className="w-full flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 hover:shadow-md transition-all"
+                            >
+                              <div className="min-w-0 text-left">
+                                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{relationDisplayName(rel)}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{relationDisplayPhone(rel)}</div>
+                              </div>
+                              <span className="text-[11px] px-2 py-1 rounded-full bg-[#D5B25B]/10 text-[#7E6426] border border-[#D5B25B]/20 whitespace-nowrap">
+                                {relationLabel(rel.relationType)}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
+
+                  {familyTree.sons.length > 0 ? (
+                    <>
+                      <div className="h-6 w-px bg-[#D5B25B]/35" />
+                      <div className="w-full">
+                        <div className="text-xs tracking-widest uppercase text-slate-500 dark:text-slate-400 mb-2">Sons / الأبناء</div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {familyTree.sons.map((rel) => (
+                            <button
+                              key={relationKey(rel)}
+                              type="button"
+                              onClick={() => navigate(`/user/customers/${relationTargetId(rel)}`)}
+                              className="w-full flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 hover:shadow-md transition-all"
+                            >
+                              <div className="min-w-0 text-left">
+                                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{relationDisplayName(rel)}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{relationDisplayPhone(rel)}</div>
+                              </div>
+                              <span className="text-[11px] px-2 py-1 rounded-full bg-[#D5B25B]/10 text-[#7E6426] border border-[#D5B25B]/20 whitespace-nowrap">
+                                {relationLabel(rel.relationType)}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
+
+                  {familyTree.others.length > 0 ? (
+                    <>
+                      <div className="h-6 w-px bg-[#D5B25B]/35" />
+                      <div className="w-full">
+                        <div className="text-xs tracking-widest uppercase text-slate-500 dark:text-slate-400 mb-2">Other Relations</div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {familyTree.others.map((rel) => (
+                            <button
+                              key={relationKey(rel)}
+                              type="button"
+                              onClick={() => navigate(`/user/customers/${relationTargetId(rel)}`)}
+                              className="w-full flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 hover:shadow-md transition-all"
+                            >
+                              <div className="min-w-0 text-left">
+                                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{relationDisplayName(rel)}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{relationDisplayPhone(rel)}</div>
+                              </div>
+                              <span className="text-[11px] px-2 py-1 rounded-full bg-[#D5B25B]/10 text-[#7E6426] border border-[#D5B25B]/20 whitespace-nowrap">
+                                {relationLabel(rel.relationType)}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
                 </div>
-              ) : (
-                <div className="text-sm text-gray-500 dark:text-slate-400">No relations</div>
-              )}
+              </div>
+
+              <div className="mt-4">
+                <div className="text-xs tracking-widest uppercase text-slate-500 dark:text-slate-400">All Relations</div>
+                {relationsSorted.length > 0 ? (
+                  <div className="mt-2 space-y-2">
+                    {relationsSorted.map((rel) => (
+                      <button
+                        key={relationKey(rel)}
+                        type="button"
+                        onClick={() => navigate(`/user/customers/${relationTargetId(rel)}`)}
+                        className="w-full flex items-center justify-between gap-3 p-3 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 hover:bg-gray-100 dark:hover:bg-slate-800/60 transition-colors"
+                      >
+                        <div className="min-w-0 text-left">
+                          <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{relationDisplayName(rel)}</div>
+                          <div className="text-xs text-gray-500 dark:text-slate-400 truncate">{relationDisplayPhone(rel)}</div>
+                        </div>
+                        <span className="text-xs px-2 py-1 rounded-full bg-[#D5B25B]/10 text-[#7E6426] border border-[#D5B25B]/20 whitespace-nowrap">
+                          {relationLabel(rel.relationType)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-2 text-sm text-gray-500 dark:text-slate-400">No relations</div>
+                )}
+              </div>
             </CardBody>
           </Card>
         </div>
