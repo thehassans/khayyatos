@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -56,11 +56,54 @@ const CustomerForm = () => {
   });
   const [newRelation, setNewRelation] = useState({ customerId: '', relationType: 'brother' });
 
+  const translateTimerRef = useRef(null);
+  const [nameTranslating, setNameTranslating] = useState(false);
+  const [nameI18nPreview, setNameI18nPreview] = useState(null);
+
   useEffect(() => {
     fetchAllCustomers();
     fetchMeasurementsCatalog();
     if (isEdit) fetchCustomer();
   }, [id]);
+
+  useEffect(() => {
+    const text = typeof formData.name === 'string' ? formData.name.trim() : '';
+
+    if (translateTimerRef.current) {
+      clearTimeout(translateTimerRef.current);
+      translateTimerRef.current = null;
+    }
+
+    if (!text) {
+      setNameI18nPreview(null);
+      setNameTranslating(false);
+      return;
+    }
+
+    translateTimerRef.current = setTimeout(async () => {
+      try {
+        setNameTranslating(true);
+        const resp = await api.post('/settings/translate', {
+          entries: [{ id: 'name', text }],
+          targetLangs: ['en', 'ar', 'ur', 'hi', 'bn']
+        });
+        const tr = resp.data?.translations?.name || null;
+        if (tr && typeof tr === 'object') {
+          setNameI18nPreview(tr);
+        }
+      } catch (e) {
+
+      }
+      setNameTranslating(false);
+    }, 650);
+
+    return () => {
+      if (translateTimerRef.current) {
+        clearTimeout(translateTimerRef.current);
+        translateTimerRef.current = null;
+      }
+    };
+  }, [api, formData.name]);
 
   const resolveUploadsUrl = useCallback((src) => {
     if (!src) return src;
@@ -248,6 +291,26 @@ const CustomerForm = () => {
                 required
               />
             </div>
+
+            {(nameTranslating || nameI18nPreview) ? (
+              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-slate-100">{t('common.translation', { defaultValue: 'Translation' })}</div>
+                  {nameTranslating ? (
+                    <div className="text-xs text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
+                  ) : null}
+                </div>
+                {nameI18nPreview ? (
+                  <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-700 dark:text-slate-200">
+                    <div><span className="font-semibold">EN:</span> {nameI18nPreview.en || ''}</div>
+                    <div><span className="font-semibold">AR:</span> {nameI18nPreview.ar || ''}</div>
+                    <div><span className="font-semibold">UR:</span> {nameI18nPreview.ur || ''}</div>
+                    <div><span className="font-semibold">HI:</span> {nameI18nPreview.hi || ''}</div>
+                    <div className="md:col-span-2"><span className="font-semibold">BN:</span> {nameI18nPreview.bn || ''}</div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             {/* Family Relations */}
             <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-4">

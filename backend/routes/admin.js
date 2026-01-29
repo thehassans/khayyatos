@@ -4,13 +4,77 @@ const User = require('../models/User');
 const Worker = require('../models/Worker');
 const Customer = require('../models/Customer');
 const Stitching = require('../models/Stitching');
+const SystemSettings = require('../models/SystemSettings');
 const { verifyToken, isAdmin } = require('../middleware/auth');
 const { generateToken } = require('../middleware/auth');
 const { calculateEndDate } = require('../utils/subscriptionChecker');
 const upload = require('../middleware/upload');
-const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
+const { translateMany, buildFallbackI18n, getGeminiConfig, invalidateGeminiConfigCache } = require('../utils/geminiTranslate');
 
 router.use(verifyToken, isAdmin);
+
+router.get('/gemini', async (req, res) => {
+  try {
+    const doc = await SystemSettings.findOne({});
+    const gemini = doc?.gemini || {};
+    const cfg = await getGeminiConfig();
+    res.json({
+      gemini: {
+        enabled: cfg.enabled === true,
+        model: cfg.model || 'gemini-3-flash-preview',
+        hasApiKey: !!cfg.apiKey,
+        updatedAt: gemini.updatedAt || doc?.updatedAt || null
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.put('/gemini', async (req, res) => {
+  try {
+    const { enabled, apiKey, model, clearApiKey } = req.body || {};
+
+    const doc = (await SystemSettings.findOne({})) || new SystemSettings({});
+    if (!doc.gemini) doc.gemini = {};
+
+    if (enabled !== undefined) doc.gemini.enabled = enabled === true;
+    if (typeof model === 'string' && model.trim()) doc.gemini.model = model.trim();
+    if (typeof apiKey === 'string' && apiKey.trim()) doc.gemini.apiKey = apiKey.trim();
+    if (clearApiKey === true) doc.gemini.apiKey = '';
+    doc.gemini.updatedAt = new Date();
+
+    await doc.save();
+    invalidateGeminiConfigCache();
+
+    const cfg = await getGeminiConfig();
+    res.json({
+      success: true,
+      gemini: {
+        enabled: cfg.enabled === true,
+        model: cfg.model || 'gemini-3-flash-preview',
+        hasApiKey: !!cfg.apiKey,
+        updatedAt: doc.gemini.updatedAt || doc.updatedAt || null
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/gemini/translate', async (req, res) => {
+  try {
+    const { text, entries, targetLangs } = req.body || {};
+    let list = Array.isArray(entries) ? entries : [];
+    if (!list.length && typeof text === 'string' && text.trim()) {
+      list = [{ id: 'text', text: text.trim() }];
+    }
+    const translations = await translateMany({ entries: list, targetLangs });
+    res.json({ translations });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // Dashboard stats
 router.get('/dashboard', async (req, res) => {

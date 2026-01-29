@@ -20,6 +20,20 @@ const upload = require('../middleware/upload');
 
 router.use(verifyToken, isUser);
 
+router.post('/translate', async (req, res) => {
+  try {
+    const { text, entries, targetLangs } = req.body || {};
+    let list = Array.isArray(entries) ? entries : [];
+    if (!list.length && typeof text === 'string' && text.trim()) {
+      list = [{ id: 'text', text: text.trim() }];
+    }
+    const translations = await translateMany({ entries: list, targetLangs });
+    res.json({ translations });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 const uploadsBaseDir = path.join(__dirname, '..', 'uploads');
 
 const ALLOWED_STYLE_GROUPS = new Set([

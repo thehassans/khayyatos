@@ -1,6 +1,39 @@
 const axios = require('axios');
+const SystemSettings = require('../models/SystemSettings');
 
 const DEFAULT_TARGET_LANGS = ['en', 'ar', 'ur', 'hi', 'bn'];
+
+let cachedGeminiConfig = null;
+let cachedGeminiConfigAt = 0;
+const GEMINI_CONFIG_TTL_MS = 60 * 1000;
+
+const invalidateGeminiConfigCache = () => {
+  cachedGeminiConfig = null;
+  cachedGeminiConfigAt = 0;
+};
+
+const getGeminiConfig = async () => {
+  const now = Date.now();
+  if (cachedGeminiConfig && now - cachedGeminiConfigAt < GEMINI_CONFIG_TTL_MS) {
+    return cachedGeminiConfig;
+  }
+
+  try {
+    const doc = await SystemSettings.findOne({}).lean();
+    const cfg = doc?.gemini || {};
+    cachedGeminiConfig = {
+      enabled: cfg.enabled === true,
+      apiKey: typeof cfg.apiKey === 'string' ? cfg.apiKey : '',
+      model: typeof cfg.model === 'string' && cfg.model.trim() ? cfg.model.trim() : 'gemini-3-flash-preview'
+    };
+    cachedGeminiConfigAt = now;
+    return cachedGeminiConfig;
+  } catch (e) {
+    cachedGeminiConfig = { enabled: false, apiKey: '', model: 'gemini-3-flash-preview' };
+    cachedGeminiConfigAt = now;
+    return cachedGeminiConfig;
+  }
+};
 
 const stripCodeFences = (text) => {
   if (typeof text !== 'string') return '';
@@ -28,11 +61,23 @@ const buildFallbackI18n = (value, targetLangs = DEFAULT_TARGET_LANGS) => {
   return out;
 };
 
-const translateMany = async ({ entries, targetLangs = DEFAULT_TARGET_LANGS }) => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  const model = process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
+const translateMany = async ({ entries, targetLangs = DEFAULT_TARGET_LANGS, apiKey, model, enabled } = {}) => {
+  let cfg = {
+    enabled: enabled === true,
+    apiKey: typeof apiKey === 'string' ? apiKey : '',
+    model: typeof model === 'string' && model.trim() ? model.trim() : ''
+  };
 
-  if (!apiKey) {
+  if (!cfg.apiKey || !cfg.model) {
+    const fromDb = await getGeminiConfig();
+    cfg = {
+      enabled: enabled === true ? true : fromDb.enabled,
+      apiKey: cfg.apiKey || fromDb.apiKey,
+      model: cfg.model || fromDb.model
+    };
+  }
+
+  if (!cfg.enabled || !cfg.apiKey) {
     const fallback = {};
     (entries || []).forEach((e) => {
       if (!e?.id) return;
@@ -60,7 +105,7 @@ const translateMany = async ({ entries, targetLangs = DEFAULT_TARGET_LANGS }) =>
     JSON.stringify(safeEntries)
   ].join('\n');
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cfg.model)}:generateContent?key=${encodeURIComponent(cfg.apiKey)}`;
 
   try {
     const resp = await axios.post(
@@ -106,5 +151,7 @@ const translateMany = async ({ entries, targetLangs = DEFAULT_TARGET_LANGS }) =>
 module.exports = {
   DEFAULT_TARGET_LANGS,
   translateMany,
+  getGeminiConfig,
+  invalidateGeminiConfigCache,
   buildFallbackI18n
 };

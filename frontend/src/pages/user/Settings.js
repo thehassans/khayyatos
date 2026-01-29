@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -50,6 +50,10 @@ const Settings = () => {
   const [fabricColorsCatalog, setFabricColorsCatalog] = useState(null);
   const [fabricColorsCatalogLoading, setFabricColorsCatalogLoading] = useState(false);
   const [fabricColorsCatalogSaving, setFabricColorsCatalogSaving] = useState(false);
+
+  const catalogTranslateTimersRef = useRef({});
+  const [catalogNameTranslating, setCatalogNameTranslating] = useState({});
+  const [catalogNameI18nPreview, setCatalogNameI18nPreview] = useState({});
 
   const colorPresets = [
     { name: 'sky', color: '#0ea5e9' },
@@ -195,6 +199,63 @@ const Settings = () => {
     }
   }, [activeSection, fetchFabricColorsCatalog]);
 
+  useEffect(() => {
+    return () => {
+      const timers = catalogTranslateTimersRef.current || {};
+      Object.keys(timers).forEach((k) => {
+        try {
+          clearTimeout(timers[k]);
+        } catch (e) {
+
+        }
+      });
+      catalogTranslateTimersRef.current = {};
+    };
+  }, []);
+
+  const scheduleCatalogTranslate = useCallback((id, text) => {
+    const key = String(id || '');
+    const value = typeof text === 'string' ? text.trim() : '';
+    if (!key) return;
+
+    const timers = catalogTranslateTimersRef.current || {};
+    if (timers[key]) {
+      clearTimeout(timers[key]);
+      delete timers[key];
+      catalogTranslateTimersRef.current = timers;
+    }
+
+    if (!value) {
+      setCatalogNameI18nPreview((p) => {
+        const next = { ...(p || {}) };
+        delete next[key];
+        return next;
+      });
+      setCatalogNameTranslating((p) => ({ ...(p || {}), [key]: false }));
+      return;
+    }
+
+    setCatalogNameTranslating((p) => ({ ...(p || {}), [key]: true }));
+
+    timers[key] = setTimeout(async () => {
+      try {
+        const resp = await api.post('/settings/translate', {
+          entries: [{ id: key, text: value }],
+          targetLangs: ['en', 'ar', 'ur', 'hi', 'bn']
+        });
+        const tr = resp.data?.translations?.[key] || null;
+        if (tr && typeof tr === 'object') {
+          setCatalogNameI18nPreview((p) => ({ ...(p || {}), [key]: tr }));
+        }
+      } catch (e) {
+
+      }
+      setCatalogNameTranslating((p) => ({ ...(p || {}), [key]: false }));
+    }, 650);
+
+    catalogTranslateTimersRef.current = timers;
+  }, [api]);
+
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -308,6 +369,9 @@ const Settings = () => {
   };
 
   const updateMeasurementsField = (key, patch) => {
+    if (patch && typeof patch.name === 'string') {
+      scheduleCatalogTranslate(`m:${key}`, patch.name);
+    }
     setMeasurementsCatalog((prev) => {
       if (!prev) return prev;
       return {
@@ -384,6 +448,9 @@ const Settings = () => {
   };
 
   const updateThawbType = (key, patch) => {
+    if (patch && typeof patch.name === 'string') {
+      scheduleCatalogTranslate(`t:${key}`, patch.name);
+    }
     setThawbTypesCatalog((prev) => {
       if (!prev) return prev;
       return {
@@ -425,6 +492,9 @@ const Settings = () => {
   };
 
   const updateFabricColor = (key, patch) => {
+    if (patch && typeof patch.name === 'string') {
+      scheduleCatalogTranslate(`c:${key}`, patch.name);
+    }
     setFabricColorsCatalog((prev) => {
       if (!prev) return prev;
       return {
@@ -435,6 +505,9 @@ const Settings = () => {
   };
 
   const updateGroupName = (groupKey, value) => {
+    if (typeof value === 'string') {
+      scheduleCatalogTranslate(`g:${groupKey}`, value);
+    }
     setStyleCatalog((prev) => {
       if (!prev) return prev;
       return {
@@ -445,6 +518,9 @@ const Settings = () => {
   };
 
   const updateOptionName = (groupKey, optionKey, value) => {
+    if (typeof value === 'string') {
+      scheduleCatalogTranslate(`o:${groupKey}:${optionKey}`, value);
+    }
     setStyleCatalog((prev) => {
       if (!prev) return prev;
       return {
@@ -788,6 +864,25 @@ const Settings = () => {
                                     className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                                     placeholder={t('settings.placeholders.displayNameOptional', { defaultValue: 'Display name (optional)' })}
                                   />
+                                  {(catalogNameTranslating[`m:${field.key}`] || catalogNameI18nPreview[`m:${field.key}`]) ? (
+                                    <div className="mt-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 p-3">
+                                      <div className="flex items-center justify-between gap-3">
+                                        <div className="text-xs font-semibold text-gray-900 dark:text-slate-100">{t('common.translation', { defaultValue: 'Translation' })}</div>
+                                        {catalogNameTranslating[`m:${field.key}`] ? (
+                                          <div className="text-[11px] text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
+                                        ) : null}
+                                      </div>
+                                      {catalogNameI18nPreview[`m:${field.key}`] ? (
+                                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-gray-700 dark:text-slate-200">
+                                          <div><span className="font-semibold">EN:</span> {catalogNameI18nPreview[`m:${field.key}`]?.en || ''}</div>
+                                          <div><span className="font-semibold">AR:</span> {catalogNameI18nPreview[`m:${field.key}`]?.ar || ''}</div>
+                                          <div><span className="font-semibold">UR:</span> {catalogNameI18nPreview[`m:${field.key}`]?.ur || ''}</div>
+                                          <div><span className="font-semibold">HI:</span> {catalogNameI18nPreview[`m:${field.key}`]?.hi || ''}</div>
+                                          <div className="md:col-span-2"><span className="font-semibold">BN:</span> {catalogNameI18nPreview[`m:${field.key}`]?.bn || ''}</div>
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  ) : null}
                                   <div className="mt-3 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs text-gray-500 dark:text-slate-400">{t('settings.enabled', { defaultValue: 'Enabled' })}</span>
@@ -861,6 +956,25 @@ const Settings = () => {
                                     className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                                     placeholder={t('settings.placeholders.displayNameOptional', { defaultValue: 'Display name (optional)' })}
                                   />
+                                  {(catalogNameTranslating[`t:${type.key}`] || catalogNameI18nPreview[`t:${type.key}`]) ? (
+                                    <div className="mt-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 p-3">
+                                      <div className="flex items-center justify-between gap-3">
+                                        <div className="text-xs font-semibold text-gray-900 dark:text-slate-100">{t('common.translation', { defaultValue: 'Translation' })}</div>
+                                        {catalogNameTranslating[`t:${type.key}`] ? (
+                                          <div className="text-[11px] text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
+                                        ) : null}
+                                      </div>
+                                      {catalogNameI18nPreview[`t:${type.key}`] ? (
+                                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-gray-700 dark:text-slate-200">
+                                          <div><span className="font-semibold">EN:</span> {catalogNameI18nPreview[`t:${type.key}`]?.en || ''}</div>
+                                          <div><span className="font-semibold">AR:</span> {catalogNameI18nPreview[`t:${type.key}`]?.ar || ''}</div>
+                                          <div><span className="font-semibold">UR:</span> {catalogNameI18nPreview[`t:${type.key}`]?.ur || ''}</div>
+                                          <div><span className="font-semibold">HI:</span> {catalogNameI18nPreview[`t:${type.key}`]?.hi || ''}</div>
+                                          <div className="md:col-span-2"><span className="font-semibold">BN:</span> {catalogNameI18nPreview[`t:${type.key}`]?.bn || ''}</div>
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  ) : null}
                                   <div className="mt-3 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs text-gray-500 dark:text-slate-400">{t('settings.enabled', { defaultValue: 'Enabled' })}</span>
@@ -921,6 +1035,25 @@ const Settings = () => {
                                   className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                                   placeholder={t('settings.placeholders.displayNameOptional', { defaultValue: 'Display name (optional)' })}
                                 />
+                                {(catalogNameTranslating[`c:${c.key}`] || catalogNameI18nPreview[`c:${c.key}`]) ? (
+                                  <div className="mt-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 p-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                      <div className="text-xs font-semibold text-gray-900 dark:text-slate-100">{t('common.translation', { defaultValue: 'Translation' })}</div>
+                                      {catalogNameTranslating[`c:${c.key}`] ? (
+                                        <div className="text-[11px] text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
+                                      ) : null}
+                                    </div>
+                                    {catalogNameI18nPreview[`c:${c.key}`] ? (
+                                      <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-gray-700 dark:text-slate-200">
+                                        <div><span className="font-semibold">EN:</span> {catalogNameI18nPreview[`c:${c.key}`]?.en || ''}</div>
+                                        <div><span className="font-semibold">AR:</span> {catalogNameI18nPreview[`c:${c.key}`]?.ar || ''}</div>
+                                        <div><span className="font-semibold">UR:</span> {catalogNameI18nPreview[`c:${c.key}`]?.ur || ''}</div>
+                                        <div><span className="font-semibold">HI:</span> {catalogNameI18nPreview[`c:${c.key}`]?.hi || ''}</div>
+                                        <div className="md:col-span-2"><span className="font-semibold">BN:</span> {catalogNameI18nPreview[`c:${c.key}`]?.bn || ''}</div>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ) : null}
                                 <div className="mt-3 flex items-center justify-between gap-3">
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs text-gray-500 dark:text-slate-400">{t('settings.enabled', { defaultValue: 'Enabled' })}</span>
@@ -983,6 +1116,25 @@ const Settings = () => {
                                 className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                                 placeholder={t('settings.placeholders.groupNameOptional', { defaultValue: 'Group name (optional)' })}
                               />
+                              {(catalogNameTranslating[`g:${group.key}`] || catalogNameI18nPreview[`g:${group.key}`]) ? (
+                                <div className="mt-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 p-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="text-xs font-semibold text-gray-900 dark:text-slate-100">{t('common.translation', { defaultValue: 'Translation' })}</div>
+                                    {catalogNameTranslating[`g:${group.key}`] ? (
+                                      <div className="text-[11px] text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
+                                    ) : null}
+                                  </div>
+                                  {catalogNameI18nPreview[`g:${group.key}`] ? (
+                                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-gray-700 dark:text-slate-200">
+                                      <div><span className="font-semibold">EN:</span> {catalogNameI18nPreview[`g:${group.key}`]?.en || ''}</div>
+                                      <div><span className="font-semibold">AR:</span> {catalogNameI18nPreview[`g:${group.key}`]?.ar || ''}</div>
+                                      <div><span className="font-semibold">UR:</span> {catalogNameI18nPreview[`g:${group.key}`]?.ur || ''}</div>
+                                      <div><span className="font-semibold">HI:</span> {catalogNameI18nPreview[`g:${group.key}`]?.hi || ''}</div>
+                                      <div className="md:col-span-2"><span className="font-semibold">BN:</span> {catalogNameI18nPreview[`g:${group.key}`]?.bn || ''}</div>
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ) : null}
                             </div>
                           </div>
 
@@ -1027,6 +1179,25 @@ const Settings = () => {
                                         className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                                         placeholder={t('settings.placeholders.displayNameOptional', { defaultValue: 'Display name (optional)' })}
                                       />
+                                      {(catalogNameTranslating[`o:${group.key}:${opt.key}`] || catalogNameI18nPreview[`o:${group.key}:${opt.key}`]) ? (
+                                        <div className="mt-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 p-3">
+                                          <div className="flex items-center justify-between gap-3">
+                                            <div className="text-xs font-semibold text-gray-900 dark:text-slate-100">{t('common.translation', { defaultValue: 'Translation' })}</div>
+                                            {catalogNameTranslating[`o:${group.key}:${opt.key}`] ? (
+                                              <div className="text-[11px] text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
+                                            ) : null}
+                                          </div>
+                                          {catalogNameI18nPreview[`o:${group.key}:${opt.key}`] ? (
+                                            <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-gray-700 dark:text-slate-200">
+                                              <div><span className="font-semibold">EN:</span> {catalogNameI18nPreview[`o:${group.key}:${opt.key}`]?.en || ''}</div>
+                                              <div><span className="font-semibold">AR:</span> {catalogNameI18nPreview[`o:${group.key}:${opt.key}`]?.ar || ''}</div>
+                                              <div><span className="font-semibold">UR:</span> {catalogNameI18nPreview[`o:${group.key}:${opt.key}`]?.ur || ''}</div>
+                                              <div><span className="font-semibold">HI:</span> {catalogNameI18nPreview[`o:${group.key}:${opt.key}`]?.hi || ''}</div>
+                                              <div className="md:col-span-2"><span className="font-semibold">BN:</span> {catalogNameI18nPreview[`o:${group.key}:${opt.key}`]?.bn || ''}</div>
+                                            </div>
+                                          ) : null}
+                                        </div>
+                                      ) : null}
                                     </div>
 
                                     <div className="flex items-center gap-2">

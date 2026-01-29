@@ -9,7 +9,8 @@ import {
   Menu, 
   X,
   Scissors,
-  ChevronDown
+  ChevronDown,
+  Sparkles
 } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -26,7 +27,8 @@ const AdminLayout = () => {
 
   const navItems = [
     { to: '/admin/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
-    { to: '/admin/users', icon: Users, label: t('nav.users') }
+    { to: '/admin/users', icon: Users, label: t('nav.users') },
+    { to: '/admin/gemini', icon: Sparkles, label: t('nav.gemini', { defaultValue: 'Gemini AI' }) }
   ];
 
   const languages = [

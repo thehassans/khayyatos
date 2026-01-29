@@ -19,6 +19,7 @@ import Landing from './pages/public/Landing';
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const AdminUsers = lazy(() => import('./pages/admin/Users'));
 const AdminUserForm = lazy(() => import('./pages/admin/UserForm'));
+const AdminGeminiSettings = lazy(() => import('./pages/admin/GeminiSettings'));
 
 const UserDashboard = lazy(() => import('./pages/user/Dashboard'));
 const Workers = lazy(() => import('./pages/user/Workers'));
@@ -122,6 +123,7 @@ const AppRoutes = () => {
           <Route path="users" element={<LazyPage><AdminUsers /></LazyPage>} />
           <Route path="users/new" element={<LazyPage skeleton="form"><AdminUserForm /></LazyPage>} />
           <Route path="users/:id/edit" element={<LazyPage skeleton="form"><AdminUserForm /></LazyPage>} />
+          <Route path="gemini" element={<LazyPage><AdminGeminiSettings /></LazyPage>} />
         </Route>
 
         {/* User Routes */}
