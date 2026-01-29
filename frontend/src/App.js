@@ -44,6 +44,7 @@ const WorkerAmountsPage = lazy(() => import('./pages/worker/Amounts'));
 const WorkerSettings = lazy(() => import('./pages/worker/Settings'));
 
 const TrackOrder = lazy(() => import('./pages/public/TrackOrder'));
+const DashboardPreview = lazy(() => import('./pages/public/DashboardPreview'));
 
 // Loading wrapper for lazy components
 const LazyPage = ({ children, skeleton = 'page' }) => {
@@ -109,6 +110,7 @@ const AppRoutes = () => {
         {/* Public Routes */}
         <Route path="/" element={<HomeRoute />} />
         <Route path="/track-order" element={<LazyPage><TrackOrder /></LazyPage>} />
+        <Route path="/preview/dashboard" element={<LazyPage><DashboardPreview /></LazyPage>} />
         
         {/* Auth Routes */}
         <Route path="/login" element={<LoginPage />} />

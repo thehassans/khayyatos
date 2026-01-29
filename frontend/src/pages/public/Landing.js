@@ -406,35 +406,15 @@ const Landing = () => {
                     <div className="text-sm font-semibold text-slate-900 tracking-widest">
                       {t('landing.whatsInside', { defaultValue: 'LIVE DASHBOARD PREVIEW' })}
                     </div>
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                      {[{ label: 'Orders', value: '128' }, { label: 'Due Today', value: '7' }, { label: 'Customers', value: '1,240' }, { label: 'Pending', value: '42' }].map((kpi) => (
-                        <div key={kpi.label} className="rounded-2xl border border-slate-200 bg-white p-4">
-                          <div className="text-xs text-slate-500 tracking-widest uppercase">{kpi.label}</div>
-                          <div className="mt-1 text-2xl font-semibold text-slate-900">{kpi.value}</div>
-                        </div>
-                      ))}
-                    </div>
-
                     <div className="mt-4 rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                      <div className="px-4 py-3 border-b border-slate-200 text-xs tracking-widest uppercase text-slate-600">
-                        Recent Activity
-                      </div>
-                      <div className="divide-y divide-slate-200">
-                        {[
-                          { title: 'Order #1048', sub: 'Assigned to Worker A', tag: 'In Progress' },
-                          { title: 'Order #1046', sub: 'Customer: Ahmed', tag: 'Ready' },
-                          { title: 'Laundry: 18 pcs', sub: 'Payment updated', tag: 'Paid' }
-                        ].map((row) => (
-                          <div key={row.title} className="px-4 py-3 flex items-center justify-between gap-3">
-                            <div>
-                              <div className="text-sm font-medium text-slate-900">{row.title}</div>
-                              <div className="text-xs text-slate-500">{row.sub}</div>
-                            </div>
-                            <div className="text-[11px] px-2 py-1 rounded-full bg-[#D5B25B]/10 text-[#7E6426] border border-[#D5B25B]/20 whitespace-nowrap">
-                              {row.tag}
-                            </div>
-                          </div>
-                        ))}
+                      <div className="aspect-[16/10] w-full bg-white">
+                        <iframe
+                          title="KhayyatOS Dashboard Preview"
+                          src="/preview/dashboard"
+                          className="w-full h-full"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
                       </div>
                     </div>
 

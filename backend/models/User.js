@@ -237,11 +237,7 @@ userSchema.methods.generateReceiptNumber = function() {
   const shop = rawShop.trim().replace(/\s+/g, '-');
   const safeShop = shop.replace(/[^\p{L}\p{N}-]/gu, '').slice(0, 24);
 
-  const rawSuffix = typeof this.receiptPrefix === 'string' ? this.receiptPrefix : 'RCP';
-  const suffix = rawSuffix.trim().replace(/\s+/g, '-');
-  const safeSuffix = suffix.replace(/[^\p{L}\p{N}-]/gu, '').slice(0, 12) || 'RCP';
-
-  const finalPrefix = safeShop ? `${safeShop}-${safeSuffix}` : safeSuffix;
+  const finalPrefix = safeShop || 'SHOP';
   this.receiptCounter += 1;
   return `${finalPrefix}-${this.receiptCounter}`;
 };
