@@ -319,7 +319,8 @@ const UserDashboard = () => {
           <Button
             onClick={() => navigate('/user/stitchings/new')}
             icon={Plus}
-            className="rounded-2xl px-5 py-3 bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
+            variant="success"
+            className="rounded-2xl px-5 py-3"
           >
             {t('stitchings.createOrder')}
           </Button>

@@ -31,6 +31,10 @@ const embroideryDesignSchema = new mongoose.Schema({
     type: Number,
     default: null
   },
+  note: {
+    type: String,
+    default: ''
+  },
   createdAt: {
     type: Date,
     default: Date.now

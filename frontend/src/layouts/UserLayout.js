@@ -196,11 +196,13 @@ const UserLayout = () => {
         <div className={`px-4 py-5 border-b ${sidebarStyle === 'colored' || sidebarStyle === 'dark' ? 'border-white/10' : 'border-gray-100 dark:border-slate-800'}`}>
           <div className="flex items-center gap-3">
             {user?.logo ? (
-              <div className={`rounded-xl overflow-hidden shadow-lg ${colors.ring} ring-2 ring-white/20 flex-shrink-0 transition-all ${sidebarCollapsed ? 'w-10 h-10' : 'w-12 h-12'}`}>
-                <img src={user.logo} alt="Logo" className="w-full h-full object-cover" />
+              <div className={`rounded-xl p-0.5 bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-lg ring-2 ring-white/20 flex-shrink-0 transition-all ${sidebarCollapsed ? 'w-10 h-10' : 'w-12 h-12'}`}>
+                <div className="w-full h-full rounded-[10px] overflow-hidden bg-emerald-950/20">
+                  <img src={user.logo} alt="Logo" className="w-full h-full object-cover" />
+                </div>
               </div>
             ) : (
-              <div className={`bg-gradient-to-br ${colors.gradient} rounded-xl flex items-center justify-center shadow-lg ${colors.ring} flex-shrink-0 transition-all ${sidebarCollapsed ? 'w-10 h-10' : 'w-12 h-12'}`}>
+              <div className={`bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center shadow-lg ring-emerald-500/20 flex-shrink-0 transition-all ${sidebarCollapsed ? 'w-10 h-10' : 'w-12 h-12'}`}>
                 <Scissors className={`text-white ${sidebarCollapsed ? 'w-5 h-5' : 'w-6 h-6'}`} />
               </div>
             )}

@@ -26,7 +26,7 @@ const safeUnlink = (absPath) => {
   try {
     if (fs.existsSync(absPath)) fs.unlinkSync(absPath);
   } catch (e) {
-    null;
+
   }
 };
 
@@ -72,6 +72,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', upload.single('image'), async (req, res) => {
   try {
     const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    const note = typeof req.body?.note === 'string' ? req.body.note : '';
     if (!name) {
       return res.status(400).json({ error: 'name is required' });
     }
@@ -81,7 +82,8 @@ router.post('/', upload.single('image'), async (req, res) => {
       name,
       nameI18n: {},
       image: null,
-      imageUpdatedAt: null
+      imageUpdatedAt: null,
+      note
     });
 
     {
@@ -138,6 +140,10 @@ router.put('/:id', upload.single('image'), async (req, res) => {
         const translations = await translateMany({ entries: [{ id: 'name', text: n }] });
         design.nameI18n = translations.name || buildFallbackI18n(n);
       }
+    }
+
+    if (typeof req.body?.note === 'string') {
+      design.note = req.body.note;
     }
 
     if (req.file) {
