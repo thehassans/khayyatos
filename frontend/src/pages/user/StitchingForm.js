@@ -157,7 +157,7 @@ const StitchingForm = () => {
           }));
         }
       } catch (e) {
-        null;
+        // ignore
       }
     };
 
@@ -186,7 +186,7 @@ const StitchingForm = () => {
           setFormData((prev) => ({ ...prev, embroideryDesignId: fetched._id }));
         }
       } catch (e) {
-        null;
+        // ignore
       }
     };
 
