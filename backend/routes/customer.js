@@ -8,6 +8,104 @@ const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate')
 
 const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+const INVERSE_RELATION_TYPES = {
+  father: 'son',
+  son: 'father',
+  brother: 'brother',
+  cousin: 'cousin',
+  friend: 'friend'
+};
+
+const relationRefId = (rel) => {
+  const ref = rel?.customerId;
+  return (ref && typeof ref === 'object') ? ref._id : ref;
+};
+
+const buildInverseMap = (relations) => {
+  const map = new Map();
+  (Array.isArray(relations) ? relations : []).forEach((r) => {
+    const refId = relationRefId(r);
+    const relType = r?.relationType;
+    const inverseType = INVERSE_RELATION_TYPES[relType];
+    if (!inverseType || !refId) return;
+    map.set(String(refId), inverseType);
+  });
+  return map;
+};
+
+const ensureInverseRelation = async ({ userId, sourceCustomer, targetCustomerId, inverseType }) => {
+  if (!userId || !sourceCustomer?._id || !targetCustomerId || !inverseType) return;
+  const sourceIdStr = String(sourceCustomer._id);
+  const targetIdStr = String(targetCustomerId);
+  if (!targetIdStr || targetIdStr === sourceIdStr) return;
+
+  const target = await Customer.findOne({ _id: targetCustomerId, userId });
+  if (!target) return;
+  const existing = Array.isArray(target.relations) ? target.relations : [];
+
+  const next = existing.filter((r) => String(relationRefId(r)) !== sourceIdStr);
+  next.push({
+    customerId: sourceCustomer._id,
+    customerName: sourceCustomer.name || '',
+    customerPhone: sourceCustomer.phone || '',
+    relationType: inverseType
+  });
+
+  const changed = next.length !== existing.length || existing.some((r) => {
+    if (String(relationRefId(r)) !== sourceIdStr) return false;
+    return r?.relationType !== inverseType;
+  });
+
+  if (changed) {
+    target.relations = next;
+    await target.save();
+  }
+};
+
+const removeInverseRelation = async ({ userId, sourceCustomerId, targetCustomerId, inverseType }) => {
+  if (!userId || !sourceCustomerId || !targetCustomerId || !inverseType) return;
+  const sourceIdStr = String(sourceCustomerId);
+  const target = await Customer.findOne({ _id: targetCustomerId, userId });
+  if (!target) return;
+
+  const existing = Array.isArray(target.relations) ? target.relations : [];
+  const next = existing.filter((r) => {
+    const rid = String(relationRefId(r));
+    if (rid !== sourceIdStr) return true;
+    return r?.relationType !== inverseType;
+  });
+
+  if (next.length !== existing.length) {
+    target.relations = next;
+    await target.save();
+  }
+};
+
+const syncReverseRelations = async ({ userId, customer, oldRelations }) => {
+  const before = buildInverseMap(oldRelations);
+  const after = buildInverseMap(customer?.relations);
+  const customerId = customer?._id;
+
+  for (const [refIdStr, inverseType] of after.entries()) {
+    await ensureInverseRelation({
+      userId,
+      sourceCustomer: customer,
+      targetCustomerId: refIdStr,
+      inverseType
+    });
+  }
+
+  for (const [refIdStr, inverseType] of before.entries()) {
+    if (after.has(refIdStr)) continue;
+    await removeInverseRelation({
+      userId,
+      sourceCustomerId: customerId,
+      targetCustomerId: refIdStr,
+      inverseType
+    });
+  }
+};
+
 const buildSaudiPhoneNeedles = (q) => {
   const raw = String(q || '').trim();
   const digits = raw.replace(/\D/g, '');
@@ -158,6 +256,7 @@ router.post('/', blockDemoWrites, async (req, res) => {
     const { name, phone, measurements, notes, relations } = req.body;
     
     let customer = await Customer.findOne({ userId: req.user._id, phone });
+    const oldRelations = customer ? (Array.isArray(customer.relations) ? customer.relations.slice() : []) : [];
     
     if (customer) {
       if (name) {
@@ -173,6 +272,8 @@ router.post('/', blockDemoWrites, async (req, res) => {
       if (notes) customer.notes = notes;
       if (Array.isArray(relations)) customer.relations = relations;
       await customer.save();
+
+      await syncReverseRelations({ userId: req.user._id, customer, oldRelations });
       return res.json({ message: 'Customer updated', customer, isExisting: true });
     }
     
@@ -191,6 +292,8 @@ router.post('/', blockDemoWrites, async (req, res) => {
     }
     
     await customer.save();
+
+    await syncReverseRelations({ userId: req.user._id, customer, oldRelations: [] });
     
     res.status(201).json({ message: 'Customer created successfully', customer });
   } catch (error) {
@@ -207,6 +310,8 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
       _id: req.params.id, 
       userId: req.user._id 
     });
+
+    const oldRelations = Array.isArray(customer?.relations) ? customer.relations.slice() : [];
     
     if (!customer) {
       return res.status(404).json({ error: 'Customer not found' });
@@ -227,6 +332,8 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
     if (Array.isArray(relations)) customer.relations = relations;
     
     await customer.save();
+
+    await syncReverseRelations({ userId: req.user._id, customer, oldRelations });
     
     res.json({ message: 'Customer updated successfully', customer });
   } catch (error) {
@@ -247,6 +354,10 @@ router.delete('/:id', blockDemoWrites, async (req, res) => {
     }
     
     await Stitching.deleteMany({ customerId: customer._id });
+    await Customer.updateMany(
+      { userId: req.user._id },
+      { $pull: { relations: { customerId: customer._id } } }
+    );
     await Customer.findByIdAndDelete(req.params.id);
     
     res.json({ message: 'Customer deleted successfully' });
