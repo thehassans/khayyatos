@@ -10,6 +10,16 @@ import SARIcon from '../../components/ui/SARIcon';
 import { Button } from '../../components/ui/Button';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 
+const canonicalSaudiMobile = (value) => {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!digits) return '';
+  let d = digits;
+  if (d.startsWith('966')) d = d.slice(3);
+  if (d.startsWith('0')) d = d.slice(1);
+  if (d.length > 9) d = d.slice(-9);
+  return d;
+};
+
 const UserDashboard = () => {
   const { t, i18n } = useTranslation();
   const { api, user } = useAuth();
@@ -17,6 +27,7 @@ const UserDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [orderSearch, setOrderSearch] = useState('');
+  const langKey = (i18n?.language || 'en').split('-')[0];
   const isRTL = ['ar', 'ur'].includes((i18n?.language || 'en').split('-')[0]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -46,10 +57,11 @@ const UserDashboard = () => {
   const runGlobalSearch = async (q) => {
     setSearchLoading(true);
     try {
-      const isPhone = /^\d{3,}$/.test(q);
+      const phoneKey = canonicalSaudiMobile(q);
+      const isPhone = !!phoneKey && phoneKey.length >= 3;
       const [ordersRes, customersRes, workersRes] = await Promise.all([
-        api.get('/stitchings/search', { params: isPhone ? { receipt: q, phone: q } : { receipt: q } }),
-        api.get('/customers/search', { params: { q } }),
+        api.get('/stitchings/search', { params: isPhone ? { receipt: q, phone: phoneKey } : { receipt: q } }),
+        api.get('/customers/search', { params: { q: isPhone ? phoneKey : q } }),
         workersCache ? Promise.resolve({ data: { workers: workersCache } }) : api.get('/worker')
       ]);
 
@@ -67,7 +79,9 @@ const UserDashboard = () => {
             .filter((w) => {
               const name = (w.name || '').toLowerCase();
               const phone = String(w.phone || '');
-              return name.includes(qLower) || phone.includes(q);
+              if (name.includes(qLower)) return true;
+              if (!isPhone) return phone.includes(q);
+              return canonicalSaudiMobile(phone) === phoneKey;
             })
             .slice(0, 6)
         : [];
@@ -95,11 +109,11 @@ const UserDashboard = () => {
       return;
     }
     if (result.type === 'customer') {
-      navigate(`/user/customers/${result.item._id}/edit`);
+      navigate(`/user/customers/${result.item._id}`);
       return;
     }
     if (result.type === 'worker') {
-      navigate(`/user/workers/${result.item._id}/edit`);
+      navigate(`/user/workers/${result.item._id}`);
     }
   };
 
@@ -271,10 +285,10 @@ const UserDashboard = () => {
                             const primary =
                               section.type === 'order'
                                 ? `#${item.receiptNumber || ''}`
-                                : item.name || '';
+                                : item.nameI18n?.[langKey] || item.name || '';
                             const secondary =
                               section.type === 'order'
-                                ? `${item.customerId?.name || '-'}${item.customerId?.phone ? ` • ${item.customerId.phone}` : ''}`
+                                ? `${item.customerId?.nameI18n?.[langKey] || item.customerId?.name || '-'}${item.customerId?.phone ? ` • ${item.customerId.phone}` : ''}`
                                 : String(item.phone || '');
 
                             return (

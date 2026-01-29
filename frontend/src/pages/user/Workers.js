@@ -110,7 +110,13 @@ const Workers = () => {
                       <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
                         <span className="text-emerald-700 dark:text-emerald-200 font-medium">{(worker.nameI18n?.[langKey] || worker.name || '')?.charAt(0)}</span>
                       </div>
-                      <span className="font-medium">{worker.nameI18n?.[langKey] || worker.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/user/workers/${worker._id}`)}
+                        className="font-medium text-left hover:underline"
+                      >
+                        {worker.nameI18n?.[langKey] || worker.name}
+                      </button>
                     </div>
                   </Td>
                   <Td>{worker.phone}</Td>

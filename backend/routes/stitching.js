@@ -9,6 +9,33 @@ const { verifyToken, isUser } = require('../middleware/auth');
 const { blockDemoWrites } = require('../middleware/demoGuard');
 const whatsappService = require('../utils/whatsappService');
 
+const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const canonicalSaudiMobile = (value) => {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!digits) return '';
+  let d = digits;
+  if (d.startsWith('966')) d = d.slice(3);
+  if (d.startsWith('0')) d = d.slice(1);
+  if (d.length > 9) d = d.slice(-9);
+  return d;
+};
+
+const buildSaudiPhoneNeedles = (q) => {
+  const digits = String(q || '').replace(/\D/g, '');
+  if (!digits) return [];
+  const d9 = canonicalSaudiMobile(digits);
+  if (!d9 || d9.length < 3) return [];
+  const set = new Set([
+    digits,
+    d9,
+    `0${d9}`,
+    `966${d9}`,
+    `+966${d9}`
+  ]);
+  return Array.from(set);
+};
+
 router.use(verifyToken, isUser);
 
 // Get all stitchings
@@ -52,17 +79,38 @@ router.get('/search', async (req, res) => {
     if (receipt) {
       query.receiptNumber = { $regex: receipt, $options: 'i' };
     }
+
+    if (phone) {
+      const safePhone = escapeRegex(phone);
+      const needles = buildSaudiPhoneNeedles(phone);
+      const orPhone = [
+        { phone: { $regex: safePhone, $options: 'i' } },
+        ...needles.map((n) => ({ phone: { $regex: escapeRegex(n), $options: 'i' } }))
+      ];
+
+      const matchedCustomers = await Customer.find({
+        userId: req.user._id,
+        $or: orPhone
+      }).select('_id').limit(50);
+
+      const ids = matchedCustomers.map((c) => c._id);
+      if (!ids.length) {
+        return res.json({ stitchings: [] });
+      }
+      query.customerId = { $in: ids };
+    }
     
     let stitchings = await Stitching.find(query)
       .sort({ createdAt: -1 })
       .limit(20)
-      .populate('customerId', 'name phone')
+      .populate('customerId', 'name phone nameI18n')
       .populate('workerId', 'name');
-    
+
     if (phone) {
-      stitchings = stitchings.filter(s => 
-        s.customerId?.phone?.includes(phone)
-      );
+      const p = canonicalSaudiMobile(phone);
+      if (p) {
+        stitchings = stitchings.filter((s) => canonicalSaudiMobile(s.customerId?.phone) === p);
+      }
     }
     
     res.json({ stitchings });

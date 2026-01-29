@@ -19,7 +19,50 @@ router.get('/', verifyToken, isUser, async (req, res) => {
   }
 });
 
-router.get('/:id', verifyToken, isUser, async (req, res) => {
+router.get('/profile/:id', verifyToken, isUser, async (req, res) => {
+  try {
+    const worker = await Worker.findOne({
+      _id: req.params.id,
+      userId: req.user._id
+    }).select('-password');
+
+    if (!worker) {
+      return res.status(404).json({ error: 'Worker not found' });
+    }
+
+    const stitchings = await Stitching.find({ workerId: worker._id })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .populate('customerId', 'name phone nameI18n')
+      .populate('workerId', 'name phone');
+
+    const stats = {
+      total: 0,
+      assigned: 0,
+      inProgress: 0,
+      completed: 0,
+      delivered: 0,
+      uniqueCustomers: 0
+    };
+
+    const customerSet = new Set();
+    for (const s of stitchings) {
+      stats.total += 1;
+      if (s.customerId?._id) customerSet.add(String(s.customerId._id));
+      if (s.status === 'assigned') stats.assigned += 1;
+      else if (s.status === 'in_progress') stats.inProgress += 1;
+      else if (s.status === 'completed') stats.completed += 1;
+      else if (s.status === 'delivered') stats.delivered += 1;
+    }
+    stats.uniqueCustomers = customerSet.size;
+
+    res.json({ worker, stitchings, stats });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.get('/:id([0-9a-fA-F]{24})', verifyToken, isUser, async (req, res) => {
   try {
     const worker = await Worker.findOne({ 
       _id: req.params.id, 
@@ -85,7 +128,7 @@ router.post('/', verifyToken, isUser, blockDemoWrites, async (req, res) => {
   }
 });
 
-router.put('/:id', verifyToken, isUser, blockDemoWrites, async (req, res) => {
+router.put('/:id([0-9a-fA-F]{24})', verifyToken, isUser, blockDemoWrites, async (req, res) => {
   try {
     const { name, phone, password, paymentType, paymentAmount, isActive } = req.body;
     
@@ -115,7 +158,7 @@ router.put('/:id', verifyToken, isUser, blockDemoWrites, async (req, res) => {
   }
 });
 
-router.delete('/:id', verifyToken, isUser, blockDemoWrites, async (req, res) => {
+router.delete('/:id([0-9a-fA-F]{24})', verifyToken, isUser, blockDemoWrites, async (req, res) => {
   try {
     const worker = await Worker.findOne({ _id: req.params.id, userId: req.user._id });
     if (!worker) {

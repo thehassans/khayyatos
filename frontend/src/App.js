@@ -24,6 +24,7 @@ const AdminGeminiSettings = lazy(() => import('./pages/admin/GeminiSettings'));
 const UserDashboard = lazy(() => import('./pages/user/Dashboard'));
 const Workers = lazy(() => import('./pages/user/Workers'));
 const WorkerForm = lazy(() => import('./pages/user/WorkerForm'));
+const WorkerProfile = lazy(() => import('./pages/user/WorkerProfile'));
 const WorkerAmounts = lazy(() => import('./pages/user/WorkerAmounts'));
 const Customers = lazy(() => import('./pages/user/Customers'));
 const CustomerForm = lazy(() => import('./pages/user/CustomerForm'));
@@ -136,6 +137,7 @@ const AppRoutes = () => {
           <Route path="dashboard" element={<LazyPage skeleton="dashboard"><UserDashboard /></LazyPage>} />
           <Route path="workers" element={<LazyPage><Workers /></LazyPage>} />
           <Route path="workers/new" element={<LazyPage skeleton="form"><WorkerForm /></LazyPage>} />
+          <Route path="workers/:id" element={<LazyPage><WorkerProfile /></LazyPage>} />
           <Route path="workers/:id/edit" element={<LazyPage skeleton="form"><WorkerForm /></LazyPage>} />
           <Route path="worker-amounts" element={<LazyPage><WorkerAmounts /></LazyPage>} />
           <Route path="customers" element={<LazyPage><Customers /></LazyPage>} />

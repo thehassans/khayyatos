@@ -6,6 +6,29 @@ const { verifyToken, isUser } = require('../middleware/auth');
 const { blockDemoWrites } = require('../middleware/demoGuard');
 const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 
+const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const buildSaudiPhoneNeedles = (q) => {
+  const raw = String(q || '').trim();
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return [];
+
+  let d = digits;
+  if (d.startsWith('966')) d = d.slice(3);
+  if (d.startsWith('0')) d = d.slice(1);
+  if (d.length > 9) d = d.slice(-9);
+  if (d.length < 3) return [];
+
+  const set = new Set([
+    digits,
+    d,
+    `0${d}`,
+    `966${d}`,
+    `+966${d}`
+  ]);
+  return Array.from(set);
+};
+
 router.use(verifyToken, isUser);
 
 // Get all customers
@@ -15,9 +38,12 @@ router.get('/', async (req, res) => {
     const query = { userId: req.user._id };
     
     if (search) {
+      const safe = escapeRegex(search);
+      const needles = buildSaudiPhoneNeedles(search);
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } }
+        { name: { $regex: safe, $options: 'i' } },
+        { phone: { $regex: safe, $options: 'i' } },
+        ...needles.map((n) => ({ phone: { $regex: escapeRegex(n), $options: 'i' } }))
       ];
     }
     
@@ -48,11 +74,14 @@ router.get('/search', async (req, res) => {
       return res.json({ customers: [] });
     }
     
+    const needles = buildSaudiPhoneNeedles(q);
+    const safe = escapeRegex(q);
     const customers = await Customer.find({
       userId: req.user._id,
       $or: [
-        { name: { $regex: q, $options: 'i' } },
-        { phone: { $regex: q, $options: 'i' } }
+        { name: { $regex: safe, $options: 'i' } },
+        { phone: { $regex: safe, $options: 'i' } },
+        ...needles.map((n) => ({ phone: { $regex: escapeRegex(n), $options: 'i' } }))
       ]
     }).limit(10);
     
@@ -69,9 +98,12 @@ router.get('/loyalty', async (req, res) => {
     
     const query = { userId: req.user._id };
     if (search) {
+      const safe = escapeRegex(search);
+      const needles = buildSaudiPhoneNeedles(search);
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } }
+        { name: { $regex: safe, $options: 'i' } },
+        { phone: { $regex: safe, $options: 'i' } },
+        ...needles.map((n) => ({ phone: { $regex: escapeRegex(n), $options: 'i' } }))
       ];
     }
     

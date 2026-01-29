@@ -16,7 +16,6 @@ const LoginPage = () => {
   const [mounted, setMounted] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef(null);
-  const halfDurationRef = useRef(null);
 
   useEffect(() => {
     setMounted(true);
@@ -63,7 +62,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-black">
+    <div className="min-h-[100svh] min-h-[100dvh] relative overflow-hidden bg-black">
       {/* Video Background - Saudi Thawb/Dishdasha Tailoring (Lazy loaded) */}
       {videoReady && (
         <video
@@ -71,23 +70,9 @@ const LoginPage = () => {
           autoPlay
           muted
           playsInline
+          loop
+          disablePictureInPicture
           preload="metadata"
-          onLoadedMetadata={(e) => {
-            const d = e.currentTarget.duration;
-            if (Number.isFinite(d) && d > 0) {
-              halfDurationRef.current = d / 2;
-              e.currentTarget.currentTime = 0;
-            }
-          }}
-          onTimeUpdate={(e) => {
-            const half = halfDurationRef.current;
-            if (!half) return;
-            if (e.currentTarget.currentTime >= half) {
-              e.currentTarget.currentTime = 0;
-              const p = e.currentTarget.play();
-              if (p && typeof p.catch === 'function') p.catch(() => {});
-            }
-          }}
           className="absolute inset-0 w-full h-full object-cover opacity-0 animate-[fadeInVideo_1.5s_ease-out_forwards]"
         >
           <source src="/videos/Thawb.webm" type="video/webm" />
@@ -143,7 +128,7 @@ const LoginPage = () => {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8 sm:p-6 md:p-8">
+      <div className="relative z-10 min-h-[100svh] min-h-[100dvh] flex items-center justify-center px-4 py-8 sm:p-6 md:p-8">
         <div className={`w-full max-w-[340px] sm:max-w-sm md:max-w-md transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           
           {/* Logo & Brand - Ultra Minimal */}
