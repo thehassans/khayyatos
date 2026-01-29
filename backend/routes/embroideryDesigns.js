@@ -11,6 +11,7 @@ try {
 
 const EmbroideryDesign = require('../models/EmbroideryDesign');
 const { verifyToken, isUser } = require('../middleware/auth');
+const { blockDemoWrites } = require('../middleware/demoGuard');
 const upload = require('../middleware/upload');
 const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 
@@ -69,7 +70,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', upload.single('image'), async (req, res) => {
+router.post('/', blockDemoWrites, upload.single('image'), async (req, res) => {
   try {
     const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
     const note = typeof req.body?.note === 'string' ? req.body.note : '';
@@ -128,7 +129,7 @@ router.post('/', upload.single('image'), async (req, res) => {
   }
 });
 
-router.put('/:id', upload.single('image'), async (req, res) => {
+router.put('/:id', blockDemoWrites, upload.single('image'), async (req, res) => {
   try {
     const design = await EmbroideryDesign.findOne({ _id: req.params.id, userId: req.user._id });
     if (!design) return res.status(404).json({ error: 'Design not found' });
@@ -181,7 +182,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', blockDemoWrites, async (req, res) => {
   try {
     const design = await EmbroideryDesign.findOne({ _id: req.params.id, userId: req.user._id });
     if (!design) return res.status(404).json({ error: 'Design not found' });

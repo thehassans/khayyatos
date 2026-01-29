@@ -3,6 +3,7 @@ const router = express.Router();
 const Customer = require('../models/Customer');
 const Stitching = require('../models/Stitching');
 const { verifyToken, isUser } = require('../middleware/auth');
+const { blockDemoWrites } = require('../middleware/demoGuard');
 const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 
 router.use(verifyToken, isUser);
@@ -120,7 +121,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create customer
-router.post('/', async (req, res) => {
+router.post('/', blockDemoWrites, async (req, res) => {
   try {
     const { name, phone, measurements, notes, relations } = req.body;
     
@@ -166,7 +167,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update customer
-router.put('/:id', async (req, res) => {
+router.put('/:id', blockDemoWrites, async (req, res) => {
   try {
     const { name, phone, measurements, notes, relations } = req.body;
     
@@ -202,7 +203,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete customer
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', blockDemoWrites, async (req, res) => {
   try {
     const customer = await Customer.findOne({ 
       _id: req.params.id, 

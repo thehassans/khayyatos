@@ -4,6 +4,7 @@ const Worker = require('../models/Worker');
 const Stitching = require('../models/Stitching');
 const Payment = require('../models/Payment');
 const { verifyToken, isUser, isWorker } = require('../middleware/auth');
+const { blockDemoWrites } = require('../middleware/demoGuard');
 const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 
 // User routes for managing workers
@@ -44,7 +45,7 @@ router.get('/:id', verifyToken, isUser, async (req, res) => {
   }
 });
 
-router.post('/', verifyToken, isUser, async (req, res) => {
+router.post('/', verifyToken, isUser, blockDemoWrites, async (req, res) => {
   try {
     const { name, phone, password, paymentType, paymentAmount } = req.body;
     
@@ -84,7 +85,7 @@ router.post('/', verifyToken, isUser, async (req, res) => {
   }
 });
 
-router.put('/:id', verifyToken, isUser, async (req, res) => {
+router.put('/:id', verifyToken, isUser, blockDemoWrites, async (req, res) => {
   try {
     const { name, phone, password, paymentType, paymentAmount, isActive } = req.body;
     
@@ -114,7 +115,7 @@ router.put('/:id', verifyToken, isUser, async (req, res) => {
   }
 });
 
-router.delete('/:id', verifyToken, isUser, async (req, res) => {
+router.delete('/:id', verifyToken, isUser, blockDemoWrites, async (req, res) => {
   try {
     const worker = await Worker.findOne({ _id: req.params.id, userId: req.user._id });
     if (!worker) {

@@ -5,15 +5,19 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import { ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const WorkerForm = () => {
   const { t } = useTranslation();
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
+
+  const isDemo = !!user?.isDemoSession;
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
 
   const translateTimerRef = useRef(null);
   const [nameTranslating, setNameTranslating] = useState(false);
@@ -92,6 +96,10 @@ const WorkerForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -231,13 +239,20 @@ const WorkerForm = () => {
             )}
 
             <div className="flex gap-3 pt-4">
-              <Button type="submit" loading={loading} className="flex-1">
+              <Button type="submit" loading={loading} className="flex-1" disabled={isDemo}>
                 {isEdit ? t('common.save') : t('workers.createWorker')}
               </Button>
               <Button type="button" variant="secondary" onClick={() => navigate('/user/workers')}>
                 {t('common.cancel')}
               </Button>
             </div>
+
+            <DemoBlockedModal
+              isOpen={demoBlockedOpen}
+              onClose={() => setDemoBlockedOpen(false)}
+              title={t('demo.title', { defaultValue: 'Demo Mode' })}
+              phone="+966596775485"
+            />
           </form>
         </CardBody>
       </Card>

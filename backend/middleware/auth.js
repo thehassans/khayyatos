@@ -3,8 +3,9 @@ const Admin = require('../models/Admin');
 const User = require('../models/User');
 const Worker = require('../models/Worker');
 
-const generateToken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET || 'fallback_secret', {
+const generateToken = (id, role, extraClaims = {}) => {
+  const extra = extraClaims && typeof extraClaims === 'object' ? extraClaims : {};
+  return jwt.sign({ id, role, ...extra }, process.env.JWT_SECRET || 'fallback_secret', {
     expiresIn: process.env.JWT_EXPIRE || '30d'
   });
 };
@@ -21,6 +22,7 @@ const verifyToken = async (req, res, next) => {
     
     req.userId = decoded.id;
     req.userRole = decoded.role;
+    req.tokenClaims = decoded;
     next();
   } catch (error) {
     return res.status(401).json({ error: 'Invalid or expired token.' });

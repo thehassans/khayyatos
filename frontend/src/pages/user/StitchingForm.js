@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Textarea } from '../../components/ui/Input';
+import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import { ArrowLeft, ChevronDown, Calendar, Printer, Users, Image as ImageIcon } from 'lucide-react';
 import MeasurementCard from '../../components/ui/MeasurementCard';
 import SARIcon from '../../components/ui/SARIcon';
@@ -39,6 +40,9 @@ const StitchingForm = () => {
   const printRef = useRef();
 
   const langKey = (i18n?.language || 'en').split('-')[0];
+
+  const isDemo = !!user?.isDemoSession;
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [allCustomers, setAllCustomers] = useState([]);
@@ -459,6 +463,10 @@ const StitchingForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     if (!selectedCustomer) {
       toast.error('Select a customer');
       return;
@@ -1114,13 +1122,20 @@ const StitchingForm = () => {
             />
 
             <div className="flex gap-3 pt-4">
-              <Button type="submit" variant={isEdit ? 'primary' : 'success'} loading={loading} className="flex-1">
+              <Button type="submit" variant={isEdit ? 'primary' : 'success'} loading={loading} className="flex-1" disabled={isDemo}>
                 {isEdit ? t('common.save') : t('stitchings.createOrder')}
               </Button>
               <Button type="button" variant="secondary" onClick={() => navigate('/user/stitchings')}>
                 {t('common.cancel')}
               </Button>
             </div>
+
+            <DemoBlockedModal
+              isOpen={demoBlockedOpen}
+              onClose={() => setDemoBlockedOpen(false)}
+              title={t('demo.title', { defaultValue: 'Demo Mode' })}
+              phone="+966596775485"
+            />
           </form>
         </CardBody>
       </Card>

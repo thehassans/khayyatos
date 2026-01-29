@@ -8,10 +8,11 @@ import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
 import { Users, UserPlus, Clock, CheckCircle, AlertCircle, Search, Plus, Calendar } from 'lucide-react';
 import SARIcon from '../../components/ui/SARIcon';
 import { Button } from '../../components/ui/Button';
+import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 
 const UserDashboard = () => {
   const { t, i18n } = useTranslation();
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,6 +25,9 @@ const UserDashboard = () => {
   const [workersCache, setWorkersCache] = useState(null);
   const searchWrapRef = useRef(null);
   const debounceRef = useRef(null);
+
+  const isDemo = !!user?.isDemoSession;
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
 
   useEffect(() => {
     fetchDashboard();
@@ -317,18 +321,20 @@ const UserDashboard = () => {
 
         <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
           <Button
-            onClick={() => navigate('/user/stitchings/new')}
+            onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/user/stitchings/new'))}
             icon={Plus}
             variant="success"
             className="rounded-2xl px-5 py-3"
+            disabled={isDemo}
           >
             {t('stitchings.createOrder')}
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate('/user/customers/new')}
+            onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/user/customers/new'))}
             icon={UserPlus}
             className="rounded-2xl px-5 py-3"
+            disabled={isDemo}
           >
             {t('customers.createCustomer')}
           </Button>
@@ -461,40 +467,111 @@ const UserDashboard = () => {
         </Card>
       </div>
 
-      {/* Recent Orders */}
-      <Card>
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900 dark:text-slate-100">{t('dashboard.recentOrders')}</h2>
-        </div>
-        {data?.recentStitchings?.length > 0 ? (
-          <Table>
-            <Thead>
-              <Tr>
-                <Th>{t('stitchings.receiptNumber')}</Th>
-                <Th>{t('stitchings.customer')}</Th>
-                <Th>{t('stitchings.worker')}</Th>
-                <Th>{t('common.status')}</Th>
-                <Th>{t('stitchings.price')}</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {data.recentStitchings.map((stitch) => (
-                <Tr key={stitch._id} onClick={() => navigate(`/user/stitchings/${stitch._id}/edit`)}>
-                  <Td className="font-medium">{stitch.receiptNumber}</Td>
-                  <Td>{stitch.customerId?.name || '-'}</Td>
-                  <Td>{stitch.workerId?.name || '-'}</Td>
-                  <Td><StatusBadge status={stitch.status} /></Td>
-                  <Td className="flex items-center gap-1">{stitch.price} <SARIcon className="w-3 h-3" /></Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        ) : (
-          <div className="p-12 text-center text-gray-500 dark:text-slate-400">
-            {t('common.noData')}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
+            <h2 className="font-semibold text-gray-900 dark:text-slate-100">{t('dashboard.upcomingDue', { defaultValue: 'Upcoming Due Dates' })}</h2>
+            <button
+              type="button"
+              onClick={() => navigate('/user/stitchings')}
+              className="text-sm font-medium text-primary-600 dark:text-primary-300 hover:underline"
+            >
+              {t('common.view', { defaultValue: 'View' })}
+            </button>
           </div>
-        )}
-      </Card>
+          {(data?.upcomingDueStitchings || []).length > 0 ? (
+            <div className="divide-y divide-gray-100 dark:divide-slate-800">
+              {(data.upcomingDueStitchings || []).slice(0, 8).map((stitch) => {
+                const due = stitch?.dueDate ? new Date(stitch.dueDate) : null;
+                const today = new Date();
+                const dueMid = due ? new Date(due.getFullYear(), due.getMonth(), due.getDate()).getTime() : null;
+                const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+                const diffDays = dueMid === null ? null : Math.round((dueMid - todayMid) / (1000 * 60 * 60 * 24));
+                const isOverdue = typeof diffDays === 'number' && diffDays < 0;
+
+                return (
+                  <button
+                    key={stitch._id}
+                    type="button"
+                    onClick={() => navigate(`/user/stitchings/${stitch._id}/edit`)}
+                    className="w-full px-6 py-4 text-left hover:bg-gray-50 dark:hover:bg-slate-900/40 transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">#{stitch.receiptNumber || ''}</div>
+                        <div className="text-xs text-gray-500 dark:text-slate-400 truncate">
+                          {stitch.customerId?.name || '-'}
+                          {stitch.customerId?.phone ? ` • ${stitch.customerId.phone}` : ''}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="text-right">
+                          <div className={`text-sm font-semibold ${isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-gray-900 dark:text-slate-100'}`}>
+                            {due ? due.toLocaleDateString() : '-'}
+                          </div>
+                          {typeof diffDays === 'number' ? (
+                            <div className={`text-[11px] font-medium ${isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-gray-500 dark:text-slate-400'}`}>
+                              {isOverdue
+                                ? t('dashboard.overdueByDays', { defaultValue: 'Overdue by {{count}}d', count: Math.abs(diffDays) })
+                                : t('dashboard.dueInDays', { defaultValue: 'Due in {{count}}d', count: diffDays })}
+                            </div>
+                          ) : null}
+                        </div>
+                        <StatusBadge status={stitch.status} />
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-gray-500 dark:text-slate-400">{t('common.noData')}</div>
+          )}
+        </Card>
+
+        {/* Recent Orders */}
+        <Card>
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-900 dark:text-slate-100">{t('dashboard.recentOrders')}</h2>
+          </div>
+          {data?.recentStitchings?.length > 0 ? (
+            <Table>
+              <Thead>
+                <Tr>
+                  <Th>{t('stitchings.receiptNumber')}</Th>
+                  <Th>{t('stitchings.customer')}</Th>
+                  <Th>{t('stitchings.worker')}</Th>
+                  <Th>{t('common.status')}</Th>
+                  <Th>{t('stitchings.price')}</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {data.recentStitchings.map((stitch) => (
+                  <Tr key={stitch._id} onClick={() => navigate(`/user/stitchings/${stitch._id}/edit`)}>
+                    <Td className="font-medium">{stitch.receiptNumber}</Td>
+                    <Td>{stitch.customerId?.name || '-'}</Td>
+                    <Td>{stitch.workerId?.name || '-'}</Td>
+                    <Td><StatusBadge status={stitch.status} /></Td>
+                    <Td className="flex items-center gap-1">{stitch.price} <SARIcon className="w-3 h-3" /></Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          ) : (
+            <div className="p-12 text-center text-gray-500 dark:text-slate-400">
+              {t('common.noData')}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      <DemoBlockedModal
+        isOpen={demoBlockedOpen}
+        onClose={() => setDemoBlockedOpen(false)}
+        title={t('demo.title', { defaultValue: 'Demo Mode' })}
+        phone="+966596775485"
+      />
     </div>
   );
 };

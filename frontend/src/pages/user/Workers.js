@@ -7,17 +7,21 @@ import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
+import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
 
 const Workers = () => {
   const { t, i18n } = useTranslation();
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const navigate = useNavigate();
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState({ open: false, worker: null, loading: false });
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
+
+  const isDemo = !!user?.isDemoSession;
 
   const langKey = (i18n?.language || 'en').split('-')[0];
 
@@ -38,6 +42,10 @@ const Workers = () => {
   };
 
   const requestDelete = (worker) => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     setDeleteModal({ open: true, worker, loading: false });
   };
 
@@ -46,6 +54,11 @@ const Workers = () => {
   };
 
   const confirmDelete = async () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      closeDelete();
+      return;
+    }
     const id = deleteModal?.worker?._id;
     if (!id) {
       closeDelete();
@@ -67,7 +80,7 @@ const Workers = () => {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('workers.title')}</h1>
-        <Button onClick={() => navigate('/user/workers/new')} icon={Plus}>
+        <Button onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/user/workers/new'))} icon={Plus}>
           {t('workers.createWorker')}
         </Button>
       </div>
@@ -112,13 +125,15 @@ const Workers = () => {
                   <Td>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => navigate(`/user/workers/${worker._id}/edit`)}
+                        onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate(`/user/workers/${worker._id}/edit`))}
+                        disabled={isDemo}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800/50 text-gray-600 dark:text-slate-300 rounded-lg"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => requestDelete(worker)}
+                        disabled={isDemo}
                         className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -149,6 +164,13 @@ const Workers = () => {
         onConfirm={confirmDelete}
         previewTitle={deleteModal?.worker?.nameI18n?.[langKey] || deleteModal?.worker?.name || ''}
         previewSubtitle={deleteModal?.worker?.phone || ''}
+      />
+
+      <DemoBlockedModal
+        isOpen={demoBlockedOpen}
+        onClose={() => setDemoBlockedOpen(false)}
+        title="Live Demo"
+        phone="+966596775485"
       />
     </div>
   );

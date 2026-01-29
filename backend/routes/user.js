@@ -39,6 +39,16 @@ router.get('/dashboard', async (req, res) => {
       .limit(5)
       .populate('customerId', 'name phone')
       .populate('workerId', 'name');
+
+    const upcomingDueStitchings = await Stitching.find({
+      userId: req.user._id,
+      dueDate: { $ne: null },
+      status: { $nin: ['delivered', 'done'] }
+    })
+      .sort({ dueDate: 1 })
+      .limit(8)
+      .populate('customerId', 'name phone')
+      .populate('workerId', 'name');
     
     const pendingStitchings = await Stitching.countDocuments({ userId: req.user._id, status: { $in: ['pending', 'assigned'] } });
     const inProgressStitchings = await Stitching.countDocuments({ userId: req.user._id, status: 'in_progress' });
@@ -63,6 +73,7 @@ router.get('/dashboard', async (req, res) => {
       },
       stitchingStats,
       recentStitchings,
+      upcomingDueStitchings,
       subscription: {
         type: req.user.subscriptionType,
         endDate: req.user.subscriptionEndDate,

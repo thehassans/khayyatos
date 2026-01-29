@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Laundry = require('../models/Laundry');
 const { verifyToken, isUser } = require('../middleware/auth');
+const { blockDemoWrites } = require('../middleware/demoGuard');
 
 router.use(verifyToken, isUser);
 
@@ -14,7 +15,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', blockDemoWrites, async (req, res) => {
   try {
     const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
     const pricePerPiece = Number(req.body?.pricePerPiece);
@@ -37,7 +38,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', blockDemoWrites, async (req, res) => {
   try {
     const laundry = await Laundry.findOne({ _id: req.params.id, userId: req.user._id });
     if (!laundry) return res.status(404).json({ error: 'Laundry not found' });
@@ -64,7 +65,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.post('/:id/assign', async (req, res) => {
+router.post('/:id/assign', blockDemoWrites, async (req, res) => {
   try {
     const laundry = await Laundry.findOne({ _id: req.params.id, userId: req.user._id });
     if (!laundry) return res.status(404).json({ error: 'Laundry not found' });
@@ -83,7 +84,7 @@ router.post('/:id/assign', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', blockDemoWrites, async (req, res) => {
   try {
     const laundry = await Laundry.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
     if (!laundry) return res.status(404).json({ error: 'Laundry not found' });

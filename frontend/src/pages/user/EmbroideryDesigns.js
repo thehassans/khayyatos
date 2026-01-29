@@ -5,14 +5,18 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
+import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import { Input, Textarea } from '../../components/ui/Input';
 import { ChevronLeft, ChevronRight, Plus, Upload, Trash2, X, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const EmbroideryDesigns = () => {
   const { t, i18n } = useTranslation();
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const navigate = useNavigate();
+
+  const isDemo = !!user?.isDemoSession;
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
 
   const langKey = (i18n?.language || 'en').split('-')[0];
 
@@ -71,6 +75,10 @@ const EmbroideryDesigns = () => {
   }, [designs]);
 
   const openUploadModal = () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     setNewDesign({ name: '', note: '', image: null, preview: null });
     setUploadModalOpen(true);
   };
@@ -133,6 +141,10 @@ const EmbroideryDesigns = () => {
   };
 
   const handleUpload = async () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     if (!newDesign.name.trim()) {
       toast.error('Design name is required');
       return;
@@ -159,6 +171,10 @@ const EmbroideryDesigns = () => {
   };
 
   const requestDelete = (design) => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     setDeleteModal({ open: true, design, loading: false });
   };
 
@@ -167,6 +183,11 @@ const EmbroideryDesigns = () => {
   };
 
   const confirmDelete = async () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      closeDelete();
+      return;
+    }
     const id = deleteModal?.design?._id;
     if (!id) {
       closeDelete();
@@ -232,6 +253,10 @@ const EmbroideryDesigns = () => {
   }, [previewIndex, previewModal.open]);
 
   const saveDesignNote = async () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     const id = previewModal?.design?._id;
     if (!id) return;
 
@@ -259,6 +284,10 @@ const EmbroideryDesigns = () => {
   };
 
   const createOrderWithDesign = (design) => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     closePreview();
     navigate(`/user/stitchings/new?embroideryDesignId=${design._id}`);
   };
@@ -338,12 +367,13 @@ const EmbroideryDesigns = () => {
 
                 <div className="p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <Button variant="success" onClick={() => createOrderWithDesign(d)} className="rounded-2xl px-5 py-2.5">
+                    <Button variant="success" onClick={() => createOrderWithDesign(d)} className="rounded-2xl px-5 py-2.5" disabled={isDemo}>
                       {t('embroideryDesigns.createOrder', { defaultValue: 'Create Order' })}
                     </Button>
                     <button
                       type="button"
                       onClick={() => requestDelete(d)}
+                      disabled={isDemo}
                       className="p-2.5 rounded-2xl border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
                       title={t('common.delete', { defaultValue: 'Delete' })}
                     >
@@ -433,7 +463,7 @@ const EmbroideryDesigns = () => {
           </div>
 
           <div className="flex gap-3 pt-2">
-            <Button onClick={handleUpload} loading={uploading} className="flex-1">
+            <Button onClick={handleUpload} loading={uploading} className="flex-1" disabled={isDemo}>
               {t('common.save', { defaultValue: 'Save' })}
             </Button>
             <Button variant="secondary" onClick={closeUploadModal} className="flex-1">
@@ -513,7 +543,7 @@ const EmbroideryDesigns = () => {
                 placeholder={t('embroideryDesigns.notePlaceholder', { defaultValue: 'Add a note for this design (optional)' })}
               />
               <div className="mt-3 flex gap-3">
-                <Button onClick={saveDesignNote} loading={savingNote} className="flex-1 rounded-2xl">
+                <Button onClick={saveDesignNote} loading={savingNote} className="flex-1 rounded-2xl" disabled={isDemo}>
                   {t('common.save', { defaultValue: 'Save' })}
                 </Button>
                 <Button variant="secondary" onClick={closePreview} className="flex-1 rounded-2xl" disabled={savingNote}>
@@ -526,6 +556,7 @@ const EmbroideryDesigns = () => {
               variant="success"
               onClick={() => previewModal.design && createOrderWithDesign(previewModal.design)}
               className="w-full rounded-2xl py-3"
+              disabled={isDemo}
             >
               {t('embroideryDesigns.createOrder', { defaultValue: 'Create Order' })}
             </Button>
@@ -572,7 +603,7 @@ const EmbroideryDesigns = () => {
           </div>
 
           <div className="flex gap-3">
-            <Button variant="danger" onClick={confirmDelete} loading={deleteModal.loading} className="flex-1">
+            <Button variant="danger" onClick={confirmDelete} loading={deleteModal.loading} className="flex-1" disabled={isDemo}>
               {t('common.delete', { defaultValue: 'Delete' })}
             </Button>
             <Button variant="secondary" onClick={closeDelete} className="flex-1" disabled={deleteModal.loading}>
@@ -581,6 +612,13 @@ const EmbroideryDesigns = () => {
           </div>
         </div>
       </Modal>
+
+      <DemoBlockedModal
+        isOpen={demoBlockedOpen}
+        onClose={() => setDemoBlockedOpen(false)}
+        title={t('demo.title', { defaultValue: 'Demo Mode' })}
+        phone="+966596775485"
+      />
     </div>
   );
 };

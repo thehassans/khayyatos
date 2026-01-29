@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
+import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
 import { Plus, Search, UserPlus, Trash2, Printer } from 'lucide-react';
 import SARIcon from '../../components/ui/SARIcon';
@@ -25,6 +26,9 @@ const Stitchings = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [assignModal, setAssignModal] = useState({ open: false, stitching: null });
   const [deleteModal, setDeleteModal] = useState({ open: false, stitching: null, loading: false });
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
+
+  const isDemo = !!user?.isDemoSession;
 
   useEffect(() => {
     const q = searchParams.get('search') || '';
@@ -58,6 +62,10 @@ const Stitchings = () => {
   };
 
   const handleAssign = async (workerId) => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     try {
       await api.put(`/stitchings/${assignModal.stitching._id}/assign`, { workerId });
       toast.success('Worker assigned');
@@ -69,6 +77,10 @@ const Stitchings = () => {
   };
 
   const requestDelete = (stitching) => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     setDeleteModal({ open: true, stitching, loading: false });
   };
 
@@ -77,6 +89,11 @@ const Stitchings = () => {
   };
 
   const confirmDelete = async () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      closeDelete();
+      return;
+    }
     const id = deleteModal?.stitching?._id;
     if (!id) {
       closeDelete();
@@ -95,6 +112,10 @@ const Stitchings = () => {
   };
 
   const handleStatusChange = async (id, status) => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     try {
       await api.put(`/stitchings/${id}`, { status });
       toast.success('Status updated');
@@ -258,7 +279,7 @@ const Stitchings = () => {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('stitchings.title')}</h1>
-        <Button variant="success" onClick={() => navigate('/user/stitchings/new')} icon={Plus}>
+        <Button variant="success" onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/user/stitchings/new'))} icon={Plus}>
           {t('stitchings.createOrder')}
         </Button>
       </div>
@@ -303,6 +324,7 @@ const Stitchings = () => {
                 <Th>{t('stitchings.customer')}</Th>
                 <Th>{t('stitchings.worker')}</Th>
                 <Th>{t('stitchings.quantity')}</Th>
+                <Th>{t('stitchings.dueDate')}</Th>
                 <Th>{t('stitchings.price')}</Th>
                 <Th>Payment</Th>
                 <Th>{t('common.status')}</Th>
@@ -324,7 +346,7 @@ const Stitchings = () => {
                   <Td>
                     {stitch.workerId ? (
                       <button
-                        onClick={() => setAssignModal({ open: true, stitching: stitch })}
+                        onClick={() => (isDemo ? setDemoBlockedOpen(true) : setAssignModal({ open: true, stitching: stitch }))}
                         className="group flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-lg transition-all cursor-pointer"
                         title="Click to change worker"
                       >
@@ -335,7 +357,7 @@ const Stitchings = () => {
                       </button>
                     ) : (
                       <button
-                        onClick={() => setAssignModal({ open: true, stitching: stitch })}
+                        onClick={() => (isDemo ? setDemoBlockedOpen(true) : setAssignModal({ open: true, stitching: stitch }))}
                         className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/40 rounded-lg transition-all"
                       >
                         <UserPlus className="w-4 h-4 text-primary-600 dark:text-primary-300" />
@@ -344,6 +366,22 @@ const Stitchings = () => {
                     )}
                   </Td>
                   <Td>{stitch.quantity}</Td>
+                  <Td>
+                    {(() => {
+                      if (!stitch.dueDate) return <span className="text-gray-400 dark:text-slate-500">-</span>;
+                      const due = new Date(stitch.dueDate);
+                      const today = new Date();
+                      const dueMid = new Date(due.getFullYear(), due.getMonth(), due.getDate()).getTime();
+                      const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+                      const diffDays = Math.round((dueMid - todayMid) / (1000 * 60 * 60 * 24));
+                      const isOverdue = diffDays < 0 && stitch.status !== 'delivered';
+                      return (
+                        <div className={`text-sm font-medium ${isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-gray-700 dark:text-slate-200'}`}>
+                          {due.toLocaleDateString()}
+                        </div>
+                      );
+                    })()}
+                  </Td>
                   <Td className="flex items-center gap-1">{stitch.price} <SARIcon className="w-3 h-3" /></Td>
                   <Td>
                     {(parseFloat(stitch.paidAmount) || 0) >= (parseFloat(stitch.price) || 0) ? (
@@ -379,7 +417,8 @@ const Stitchings = () => {
                     <select
                       value={stitch.status}
                       onChange={(e) => handleStatusChange(stitch._id, e.target.value)}
-                      className="text-sm bg-transparent border-none cursor-pointer text-gray-700 dark:text-slate-200"
+                      disabled={isDemo}
+                      className="text-sm bg-transparent border-none cursor-pointer text-gray-700 dark:text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <option value="pending">{t('stitchings.statusPending')}</option>
                       <option value="assigned">{t('stitchings.statusAssigned')}</option>
@@ -399,7 +438,8 @@ const Stitchings = () => {
                       </button>
                       <button
                         onClick={() => requestDelete(stitch)}
-                        className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg"
+                        disabled={isDemo}
+                        className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -456,6 +496,13 @@ const Stitchings = () => {
         onConfirm={confirmDelete}
         previewTitle={`#${deleteModal?.stitching?.receiptNumber || deleteModal?.stitching?._id?.slice(-6) || ''}`}
         previewSubtitle={`${deleteModal?.stitching?.customerId?.name || ''}${deleteModal?.stitching?.customerId?.phone ? ` • ${deleteModal.stitching.customerId.phone}` : ''}`}
+      />
+
+      <DemoBlockedModal
+        isOpen={demoBlockedOpen}
+        onClose={() => setDemoBlockedOpen(false)}
+        title="Live Demo"
+        phone="+966596775485"
       />
     </div>
   );

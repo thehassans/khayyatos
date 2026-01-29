@@ -5,17 +5,21 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/Badge';
+import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import SARIcon from '../../components/ui/SARIcon';
 import { ArrowLeft, Users, Phone, Plus, Edit, Receipt, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const CustomerProfile = () => {
   const { t, i18n } = useTranslation();
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
 
   const langKey = (i18n?.language || 'en').split('-')[0];
+
+  const isDemo = !!user?.isDemoSession;
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [customer, setCustomer] = useState(null);
@@ -101,15 +105,17 @@ const CustomerProfile = () => {
         <div className="flex items-center gap-2 flex-shrink-0">
           <Button
             variant="success"
-            onClick={() => navigate(`/user/stitchings/new?customerId=${customer._id}`)}
+            onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate(`/user/stitchings/new?customerId=${customer._id}`))}
             icon={Plus}
+            disabled={isDemo}
           >
             {t('stitchings.createOrder')}
           </Button>
           <Button
             variant="secondary"
-            onClick={() => navigate(`/user/customers/${customer._id}/edit`)}
+            onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate(`/user/customers/${customer._id}/edit`))}
             icon={Edit}
+            disabled={isDemo}
           >
             {t('common.edit', { defaultValue: 'Edit' })}
           </Button>
@@ -219,6 +225,13 @@ const CustomerProfile = () => {
           </Card>
         </div>
       </div>
+
+      <DemoBlockedModal
+        isOpen={demoBlockedOpen}
+        onClose={() => setDemoBlockedOpen(false)}
+        title={t('demo.title', { defaultValue: 'Demo Mode' })}
+        phone="+966596775485"
+      />
     </div>
   );
 };

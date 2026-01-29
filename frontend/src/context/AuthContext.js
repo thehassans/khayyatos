@@ -43,6 +43,9 @@ export const AuthProvider = ({ children }) => {
           const response = await api.get('/auth/verify');
           const userData = response.data.user;
           setUser(userData);
+          if (userData?.theme) {
+            localStorage.setItem('theme', userData.theme);
+          }
           if (userData?.language) {
             const lang = String(userData.language).split('-')[0];
             if (lang) i18n.changeLanguage(lang);
@@ -60,7 +63,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle('dark', user?.theme === 'dark');
+    const preferred = user?.theme || localStorage.getItem('theme') || 'light';
+    root.classList.toggle('dark', preferred === 'dark');
   }, [user?.theme]);
 
   const login = async (credentials) => {
@@ -70,6 +74,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', newToken);
       setToken(newToken);
       setUser(userData);
+      if (userData?.theme) localStorage.setItem('theme', userData.theme);
       if (userData?.language) {
         const lang = String(userData.language).split('-')[0];
         if (lang) i18n.changeLanguage(lang);
@@ -83,10 +88,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginDemo = async () => {
+    try {
+      const response = await api.post('/auth/demo');
+      const { token: newToken, user: userData, role } = response.data;
+      localStorage.setItem('token', newToken);
+      setToken(newToken);
+      setUser(userData);
+      localStorage.setItem('theme', 'light');
+      return { success: true, user: userData, role: role || 'user' };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || 'Demo login failed' };
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
+    localStorage.setItem('theme', 'light');
   };
 
   const loginAsUser = async (userId) => {
@@ -104,6 +124,9 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (userData) => {
     setUser(prev => ({ ...prev, ...userData }));
+    if (userData?.theme) {
+      localStorage.setItem('theme', userData.theme);
+    }
     if (userData?.language) {
       const lang = String(userData.language).split('-')[0];
       if (lang) i18n.changeLanguage(lang);
@@ -116,6 +139,7 @@ export const AuthProvider = ({ children }) => {
       loading,
       api,
       login,
+      loginDemo,
       logout,
       loginAsUser,
       updateUser,

@@ -6,18 +6,22 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
+import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import { Plus, Search, Edit, Trash2, Users } from 'lucide-react';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
 
 const Customers = () => {
   const { t, i18n } = useTranslation();
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deleteModal, setDeleteModal] = useState({ open: false, customer: null, loading: false });
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
+
+  const isDemo = !!user?.isDemoSession;
 
   const langKey = (i18n?.language || 'en').split('-')[0];
 
@@ -39,6 +43,10 @@ const Customers = () => {
   };
 
   const requestDelete = (customer) => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     setDeleteModal({ open: true, customer, loading: false });
   };
 
@@ -47,6 +55,11 @@ const Customers = () => {
   };
 
   const confirmDelete = async () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      closeDelete();
+      return;
+    }
     const id = deleteModal?.customer?._id;
     if (!id) {
       closeDelete();
@@ -68,7 +81,7 @@ const Customers = () => {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('customers.title')}</h1>
-        <Button onClick={() => navigate('/user/customers/new')} icon={Plus}>
+        <Button onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/user/customers/new'))} icon={Plus}>
           {t('customers.createCustomer')}
         </Button>
       </div>
@@ -129,13 +142,22 @@ const Customers = () => {
                   <Td>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={(e) => { e.stopPropagation(); navigate(`/user/customers/${customer._id}/edit`); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isDemo) {
+                            setDemoBlockedOpen(true);
+                            return;
+                          }
+                          navigate(`/user/customers/${customer._id}/edit`);
+                        }}
+                        disabled={isDemo}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800/50 text-gray-600 dark:text-slate-300 rounded-lg"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); requestDelete(customer); }}
+                        disabled={isDemo}
                         className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -164,6 +186,13 @@ const Customers = () => {
         onConfirm={confirmDelete}
         previewTitle={deleteModal?.customer?.nameI18n?.[langKey] || deleteModal?.customer?.name || ''}
         previewSubtitle={deleteModal?.customer?.phone || ''}
+      />
+
+      <DemoBlockedModal
+        isOpen={demoBlockedOpen}
+        onClose={() => setDemoBlockedOpen(false)}
+        title={t('demo.title', { defaultValue: 'Demo Mode' })}
+        phone="+966596775485"
       />
     </div>
   );

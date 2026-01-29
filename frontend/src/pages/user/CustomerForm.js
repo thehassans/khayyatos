@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input, Textarea } from '../../components/ui/Input';
+import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import { ArrowLeft, Plus, X, Users } from 'lucide-react';
 import MeasurementCard from '../../components/ui/MeasurementCard';
 import toast from 'react-hot-toast';
@@ -21,10 +22,13 @@ const RELATION_TYPES = [
 
 const CustomerForm = () => {
   const { t, i18n } = useTranslation();
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
+
+  const isDemo = !!user?.isDemoSession;
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
 
   const langKey = (i18n?.language || 'en').split('-')[0];
 
@@ -204,6 +208,10 @@ const CustomerForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -409,13 +417,20 @@ const CustomerForm = () => {
             />
 
             <div className="flex gap-3 pt-4">
-              <Button type="submit" loading={loading} className="flex-1">
+              <Button type="submit" loading={loading} className="flex-1" disabled={isDemo}>
                 {isEdit ? t('common.save') : t('customers.createCustomer')}
               </Button>
               <Button type="button" variant="secondary" onClick={() => navigate('/user/customers')}>
                 {t('common.cancel')}
               </Button>
             </div>
+
+            <DemoBlockedModal
+              isOpen={demoBlockedOpen}
+              onClose={() => setDemoBlockedOpen(false)}
+              title={t('demo.title', { defaultValue: 'Demo Mode' })}
+              phone="+966596775485"
+            />
           </form>
         </CardBody>
       </Card>

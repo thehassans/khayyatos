@@ -283,15 +283,13 @@ const UserLayout = () => {
               <div className="relative">
                 <button
                   onClick={() => setLangOpen(!langOpen)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm hover:shadow ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all border shadow-sm hover:shadow ${
                     headerStyle === 'colored' || headerStyle === 'gradient'
-                      ? 'bg-white/20 hover:bg-white/30 border border-white/20 text-white'
-                      : 'bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-150 dark:from-slate-800 dark:to-slate-700 dark:hover:from-slate-700 dark:hover:to-slate-600 border border-gray-200 dark:border-slate-600'
+                      ? 'bg-white/15 hover:bg-white/25 border-white/20 text-white'
+                      : 'bg-white/70 hover:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 border-gray-200/70 dark:border-slate-700/70'
                   }`}
                 >
-                  <Globe className={`w-4 h-4 ${headerStyle === 'colored' || headerStyle === 'gradient' ? 'text-white/80' : 'text-gray-500 dark:text-slate-300'}`} />
                   <span className="text-lg">{languages.find(l => l.code === currentLang)?.flag}</span>
-                  <span className={`text-sm font-medium hidden sm:block ${headerStyle === 'colored' || headerStyle === 'gradient' ? 'text-white' : 'text-gray-700 dark:text-slate-100'}`}>{languages.find(l => l.code === currentLang)?.label || 'English'}</span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${langOpen ? 'rotate-180' : ''} ${headerStyle === 'colored' || headerStyle === 'gradient' ? 'text-white/60' : 'text-gray-400 dark:text-slate-400'}`} />
                 </button>
                 {langOpen && (
@@ -325,16 +323,6 @@ const UserLayout = () => {
                     </div>
                   </>
                 )}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 bg-gradient-to-br ${colors.gradient} rounded-xl flex items-center justify-center shadow-lg ${colors.ring} ${
-                  headerStyle === 'colored' || headerStyle === 'gradient' ? 'ring-2 ring-white/30' : ''
-                }`}>
-                  <span className="text-sm font-bold text-white">
-                    {user?.name?.charAt(0) || 'U'}
-                  </span>
-                </div>
               </div>
             </div>
           </div>

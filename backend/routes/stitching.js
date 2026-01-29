@@ -6,6 +6,7 @@ const Worker = require('../models/Worker');
 const User = require('../models/User');
 const EmbroideryDesign = require('../models/EmbroideryDesign');
 const { verifyToken, isUser } = require('../middleware/auth');
+const { blockDemoWrites } = require('../middleware/demoGuard');
 const whatsappService = require('../utils/whatsappService');
 
 router.use(verifyToken, isUser);
@@ -91,7 +92,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create stitching order
-router.post('/', async (req, res) => {
+router.post('/', blockDemoWrites, async (req, res) => {
   try {
     const { 
       customerId, 
@@ -192,7 +193,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update stitching
-router.put('/:id', async (req, res) => {
+router.put('/:id', blockDemoWrites, async (req, res) => {
   try {
     const { 
       measurements, 
@@ -334,7 +335,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Assign to worker
-router.put('/:id/assign', async (req, res) => {
+router.put('/:id/assign', blockDemoWrites, async (req, res) => {
   try {
     const { workerId } = req.body;
     
@@ -387,7 +388,7 @@ router.put('/:id/assign', async (req, res) => {
 });
 
 // Delete stitching
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', blockDemoWrites, async (req, res) => {
   try {
     const stitching = await Stitching.findOne({ 
       _id: req.params.id, 

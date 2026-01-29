@@ -5,6 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
+import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import { Input } from '../../components/ui/Input';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
 import SARIcon from '../../components/ui/SARIcon';
@@ -13,7 +14,10 @@ import toast from 'react-hot-toast';
 
 const Laundry = () => {
   const { t } = useTranslation();
-  const { api } = useAuth();
+  const { api, user } = useAuth();
+
+  const isDemo = !!user?.isDemoSession;
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [laundries, setLaundries] = useState([]);
@@ -52,6 +56,10 @@ const Laundry = () => {
   }, []);
 
   const openCreate = () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     setCreateForm({ name: '', pricePerPiece: '' });
     setCreateOpen(true);
   };
@@ -62,6 +70,10 @@ const Laundry = () => {
   };
 
   const submitCreate = async () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     const name = String(createForm.name || '').trim();
     const pricePerPiece = Number(createForm.pricePerPiece);
     if (!name) {
@@ -83,6 +95,10 @@ const Laundry = () => {
   };
 
   const openEdit = (l) => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     setEditForm({
       id: l?._id,
       name: l?.name || '',
@@ -97,6 +113,10 @@ const Laundry = () => {
   };
 
   const submitEdit = async () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     const id = editForm.id;
     if (!id) return;
 
@@ -122,6 +142,10 @@ const Laundry = () => {
   };
 
   const openAssign = (l) => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     setAssignForm({ id: l?._id, pieces: '' });
     setAssignOpen(true);
   };
@@ -132,6 +156,10 @@ const Laundry = () => {
   };
 
   const submitAssign = async () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     const id = assignForm.id;
     const pieces = Number(assignForm.pieces);
     if (!id) return;
@@ -152,6 +180,10 @@ const Laundry = () => {
   };
 
   const requestDelete = (l) => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
     setDeleteModal({ open: true, laundry: l, loading: false });
   };
 
@@ -160,6 +192,11 @@ const Laundry = () => {
   };
 
   const confirmDelete = async () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      closeDelete();
+      return;
+    }
     const id = deleteModal?.laundry?._id;
     if (!id) {
       closeDelete();
@@ -250,6 +287,7 @@ const Laundry = () => {
                         <button
                           type="button"
                           onClick={() => openEdit(l)}
+                          disabled={isDemo}
                           className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/50 text-gray-600 dark:text-slate-300"
                           title={t('common.edit', { defaultValue: 'Edit' })}
                         >
@@ -258,6 +296,7 @@ const Laundry = () => {
                         <button
                           type="button"
                           onClick={() => requestDelete(l)}
+                          disabled={isDemo}
                           className="p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400"
                           title={t('common.delete', { defaultValue: 'Delete' })}
                         >
@@ -297,7 +336,7 @@ const Laundry = () => {
             onChange={(e) => setCreateForm((p) => ({ ...p, pricePerPiece: e.target.value }))}
           />
           <div className="flex gap-3 pt-2">
-            <Button onClick={submitCreate} className="flex-1 rounded-2xl">
+            <Button onClick={submitCreate} className="flex-1 rounded-2xl" disabled={isDemo}>
               {t('common.save', { defaultValue: 'Save' })}
             </Button>
             <Button variant="secondary" onClick={closeCreate} className="flex-1 rounded-2xl">
@@ -328,7 +367,7 @@ const Laundry = () => {
             onChange={(e) => setEditForm((p) => ({ ...p, pricePerPiece: e.target.value }))}
           />
           <div className="flex gap-3 pt-2">
-            <Button onClick={submitEdit} className="flex-1 rounded-2xl">
+            <Button onClick={submitEdit} className="flex-1 rounded-2xl" disabled={isDemo}>
               {t('common.save', { defaultValue: 'Save' })}
             </Button>
             <Button variant="secondary" onClick={closeEdit} className="flex-1 rounded-2xl">
@@ -354,7 +393,7 @@ const Laundry = () => {
             onChange={(e) => setAssignForm((p) => ({ ...p, pieces: e.target.value }))}
           />
           <div className="flex gap-3 pt-2">
-            <Button onClick={submitAssign} className="flex-1 rounded-2xl">
+            <Button onClick={submitAssign} className="flex-1 rounded-2xl" disabled={isDemo}>
               {t('common.save', { defaultValue: 'Save' })}
             </Button>
             <Button variant="secondary" onClick={closeAssign} className="flex-1 rounded-2xl">
@@ -377,6 +416,13 @@ const Laundry = () => {
         onConfirm={confirmDelete}
         previewTitle={deleteModal?.laundry?.name || ''}
         previewSubtitle={deleteModal?.laundry ? `${Number(deleteModal.laundry.pricePerPiece || 0).toFixed(2)} SAR / piece` : ''}
+      />
+
+      <DemoBlockedModal
+        isOpen={demoBlockedOpen}
+        onClose={() => setDemoBlockedOpen(false)}
+        title={t('demo.title', { defaultValue: 'Demo Mode' })}
+        phone="+966596775485"
       />
     </div>
   );

@@ -5,6 +5,37 @@ const User = require('../models/User');
 const Worker = require('../models/Worker');
 const { generateToken, verifyToken } = require('../middleware/auth');
 
+const DEMO_PHONE = '+966000000000';
+const DEMO_PASSWORD = 'Demo@123456';
+
+const ensureDemoUser = async () => {
+  let user = await User.findOne({ phone: DEMO_PHONE });
+  if (user) return user;
+
+  user = new User({
+    name: 'Demo Shop Owner',
+    nameAr: 'Demo Shop Owner',
+    nameI18n: {},
+    businessName: 'KHAYYAT Demo',
+    businessNameAr: 'KHAYYAT Demo',
+    businessNameI18n: {},
+    businessAddress: '',
+    phone: DEMO_PHONE,
+    password: DEMO_PASSWORD,
+    subscriptionType: 'lifetime',
+    subscriptionStartDate: new Date(),
+    subscriptionEndDate: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000),
+    isActive: true,
+    receiptPrefix: 'DEMO',
+    receiptCounter: 2000,
+    language: 'en',
+    theme: 'light'
+  });
+
+  await user.save();
+  return user;
+};
+
 // Unified login - auto-detect user type
 router.post('/login', async (req, res) => {
   try {
@@ -99,6 +130,31 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error.message, error.stack);
     res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
+router.post('/demo', async (req, res) => {
+  try {
+    const user = await ensureDemoUser();
+    const token = generateToken(user._id, 'user', { demo: true });
+    res.json({
+      token,
+      role: 'user',
+      user: {
+        id: user._id,
+        name: user.name,
+        businessName: user.businessName,
+        phone: user.phone,
+        logo: user.logo,
+        language: user.language,
+        theme: user.theme,
+        subscriptionType: user.subscriptionType,
+        role: 'user',
+        isDemoSession: true
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -232,7 +288,7 @@ router.get('/verify', verifyToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    res.json({ user: { ...user.toObject(), role: req.userRole } });
+    res.json({ user: { ...user.toObject(), role: req.userRole, isDemoSession: !!req?.tokenClaims?.demo } });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }

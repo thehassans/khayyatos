@@ -77,7 +77,10 @@
     "daysRemaining": "Days Remaining",
     "expiresOn": "Expires On",
     "todaysSummary": "Today's Summary",
-    "pendingPayments": "Pending Payments"
+    "pendingPayments": "Pending Payments",
+    "upcomingDue": "Upcoming Due Dates",
+    "dueInDays": "Due in {{count}}d",
+    "overdueByDays": "Overdue by {{count}}d"
   },
   "workers": {
     "title": "Workers",
@@ -210,6 +213,12 @@
       }
     }
   },
+  "demo": {
+    "title": "Demo Mode",
+    "blockedTitle": "This action is disabled in Live Demo.",
+    "blockedSubtitle": "Contact sales team {{phone}} to get a free trial.",
+    "callSales": "Call Sales"
+  },
   "stitchings": {
     "title": "Stitchings",
     "createOrder": "Create Order",
@@ -330,11 +339,16 @@
     "heroSubtitle": "Orders, customers, workers, catalogs, ZATCA, WhatsApp, embroidery designs, multi-language, and more — crafted with premium UX.",
     "ctaPrimary": "Get Started",
     "ctaSecondary": "Track an Order",
+    "liveDemo": "Live Demo",
+    "demoHint": "Live demo is read‑only",
+    "themeLight": "Light",
+    "themeDark": "Dark",
     "zatcaReady": "ZATCA Ready",
     "multiLang": "Multi‑Language + RTL",
     "whatsInside": "WHAT’S INSIDE",
     "featuresTitle": "A‑to‑Z FEATURES",
     "contact": "Contact",
+    "footerNote": "Book a free trial for your tailor shop.",
     "features": {
       "orders": {
         "title": "Orders & Stitchings",
