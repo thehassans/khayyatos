@@ -15,7 +15,7 @@ import {
   Scissors,
   Receipt,
   Wallet,
-  WashingMachine,
+  Droplets,
   BadgeCheck,
   MessageCircle,
   Globe,
@@ -110,7 +110,7 @@ const Landing = () => {
       desc: 'Track paid vs pending amounts clearly to avoid mistakes at checkout.'
     },
     {
-      icon: WashingMachine,
+      icon: Droplets,
       title: 'Laundry Module',
       desc: 'Laundry pricing per piece, assigned pieces, and payment history per laundry item.'
     },
@@ -221,7 +221,7 @@ const Landing = () => {
       ]
     },
     {
-      icon: WashingMachine,
+      icon: Droplets,
       title: 'Laundry (Pricing + Payments)',
       points: [
         'Price per piece, assigned pieces, and totals.',
