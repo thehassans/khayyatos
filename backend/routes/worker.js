@@ -4,6 +4,7 @@ const Worker = require('../models/Worker');
 const Stitching = require('../models/Stitching');
 const Payment = require('../models/Payment');
 const { verifyToken, isUser, isWorker } = require('../middleware/auth');
+const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 
 // User routes for managing workers
 router.get('/', verifyToken, isUser, async (req, res) => {
@@ -60,6 +61,11 @@ router.post('/', verifyToken, isUser, async (req, res) => {
       paymentType: paymentType || 'per_stitching',
       paymentAmount: paymentAmount || 0
     });
+
+    if (typeof name === 'string' && name.trim()) {
+      const translations = await translateMany({ entries: [{ id: 'name', text: name.trim() }] });
+      worker.nameI18n = translations.name || buildFallbackI18n(name.trim());
+    }
     
     await worker.save();
     
@@ -87,7 +93,13 @@ router.put('/:id', verifyToken, isUser, async (req, res) => {
       return res.status(404).json({ error: 'Worker not found' });
     }
     
-    if (name) worker.name = name;
+    if (name) {
+      worker.name = name;
+      if (typeof name === 'string' && name.trim()) {
+        const translations = await translateMany({ entries: [{ id: 'name', text: name.trim() }] });
+        worker.nameI18n = translations.name || buildFallbackI18n(name.trim());
+      }
+    }
     if (phone) worker.phone = phone;
     if (password) worker.password = password;
     if (paymentType) worker.paymentType = paymentType;

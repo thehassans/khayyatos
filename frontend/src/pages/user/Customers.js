@@ -10,12 +10,14 @@ import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
 
 const Customers = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { api } = useAuth();
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+
+  const langKey = (i18n?.language || 'en').split('-')[0];
 
   useEffect(() => {
     fetchCustomers();
@@ -85,14 +87,14 @@ const Customers = () => {
             </Thead>
             <Tbody>
               {customers.map((customer) => (
-                <Tr key={customer._id}>
+                <Tr key={customer._id} onClick={() => navigate(`/user/customers/${customer._id}`)}>
                   <Td>
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
-                        <span className="text-primary-700 dark:text-primary-200 font-medium">{customer.name?.charAt(0)}</span>
+                        <span className="text-primary-700 dark:text-primary-200 font-medium">{(customer.nameI18n?.[langKey] || customer.name || '')?.charAt(0)}</span>
                       </div>
                       <div>
-                        <span className="font-medium block">{customer.name}</span>
+                        <span className="font-medium block">{customer.nameI18n?.[langKey] || customer.name}</span>
                         {customer.relations?.length > 0 && (
                           <div className="flex items-center gap-1 mt-1">
                             <Users className="w-3 h-3 text-gray-400 dark:text-slate-400" />
@@ -110,13 +112,13 @@ const Customers = () => {
                   <Td>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => navigate(`/user/customers/${customer._id}/edit`)}
+                        onClick={(e) => { e.stopPropagation(); navigate(`/user/customers/${customer._id}/edit`); }}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800/50 text-gray-600 dark:text-slate-300 rounded-lg"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(customer._id)}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(customer._id); }}
                         className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg"
                       >
                         <Trash2 className="w-4 h-4" />

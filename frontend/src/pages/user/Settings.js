@@ -4,8 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   Settings as SettingsIcon, Upload, Globe, Sun, Moon, 
   Shield, Download, Bell, Database, ChevronRight, 
-  Check, Smartphone, Mail, Lock, Key, Trash2,
-  FileText, HelpCircle, Info
+  Check, Smartphone, Mail, Lock, Key, Trash2, Plus,
+  FileText, HelpCircle, Info, Ruler, Palette, Tag
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -34,6 +34,23 @@ const Settings = () => {
 
   const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
 
+  const [styleCatalog, setStyleCatalog] = useState(null);
+  const [styleCatalogLoading, setStyleCatalogLoading] = useState(false);
+  const [styleCatalogSaving, setStyleCatalogSaving] = useState(false);
+  const [newOptionDraft, setNewOptionDraft] = useState({});
+
+  const [measurementsCatalog, setMeasurementsCatalog] = useState(null);
+  const [measurementsCatalogLoading, setMeasurementsCatalogLoading] = useState(false);
+  const [measurementsCatalogSaving, setMeasurementsCatalogSaving] = useState(false);
+
+  const [thawbTypesCatalog, setThawbTypesCatalog] = useState(null);
+  const [thawbTypesCatalogLoading, setThawbTypesCatalogLoading] = useState(false);
+  const [thawbTypesCatalogSaving, setThawbTypesCatalogSaving] = useState(false);
+
+  const [fabricColorsCatalog, setFabricColorsCatalog] = useState(null);
+  const [fabricColorsCatalogLoading, setFabricColorsCatalogLoading] = useState(false);
+  const [fabricColorsCatalogSaving, setFabricColorsCatalogSaving] = useState(false);
+
   const colorPresets = [
     { name: 'sky', color: '#0ea5e9' },
     { name: 'indigo', color: '#6366f1' },
@@ -53,6 +70,10 @@ const Settings = () => {
 
   const sections = [
     { id: 'general', label: 'General', icon: SettingsIcon },
+    { id: 'styleOptions', label: 'Style Options', icon: FileText },
+    { id: 'measurements', label: 'Measurements', icon: Ruler },
+    { id: 'thawbTypes', label: 'Thawb Types', icon: Tag },
+    { id: 'fabricColors', label: 'Fabric Colors', icon: Palette },
     { id: 'appearance', label: 'Appearance', icon: Sun },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
@@ -61,6 +82,31 @@ const Settings = () => {
   ];
 
   useEffect(() => { fetchSettings(); }, []);
+
+  const sanitizeKey = (value) => {
+    if (!value) return '';
+    return String(value)
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9_-]/g, '');
+  };
+
+  const resolveUploadsUrl = useCallback((src) => {
+    if (!src) return src;
+    if (src.startsWith('http://') || src.startsWith('https://')) return src;
+    if (!src.startsWith('/uploads/')) return src;
+    const baseUrl = api?.defaults?.baseURL;
+    if (!baseUrl || typeof baseUrl !== 'string') return src;
+    try {
+      if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+        return `${new URL(baseUrl).origin}${src}`;
+      }
+    } catch (e) {
+      return src;
+    }
+    return src;
+  }, [api]);
 
   const fetchSettings = async () => {
     try {
@@ -80,6 +126,74 @@ const Settings = () => {
       console.error('Error:', error);
     }
   };
+
+  const fetchStyleCatalog = useCallback(async () => {
+    try {
+      setStyleCatalogLoading(true);
+      const response = await api.get('/settings/style-options');
+      setStyleCatalog(response.data?.catalog || null);
+    } catch (error) {
+      toast.error('Failed to load style options');
+    }
+    setStyleCatalogLoading(false);
+  }, [api]);
+
+  const fetchMeasurementsCatalog = useCallback(async () => {
+    try {
+      setMeasurementsCatalogLoading(true);
+      const response = await api.get('/settings/measurements-catalog');
+      setMeasurementsCatalog(response.data?.catalog || null);
+    } catch (error) {
+      toast.error('Failed to load measurements');
+    }
+    setMeasurementsCatalogLoading(false);
+  }, [api]);
+
+  const fetchThawbTypesCatalog = useCallback(async () => {
+    try {
+      setThawbTypesCatalogLoading(true);
+      const response = await api.get('/settings/thawb-types-catalog');
+      setThawbTypesCatalog(response.data?.catalog || null);
+    } catch (error) {
+      toast.error('Failed to load thawb types');
+    }
+    setThawbTypesCatalogLoading(false);
+  }, [api]);
+
+  const fetchFabricColorsCatalog = useCallback(async () => {
+    try {
+      setFabricColorsCatalogLoading(true);
+      const response = await api.get('/settings/fabric-colors-catalog');
+      setFabricColorsCatalog(response.data?.catalog || null);
+    } catch (error) {
+      toast.error('Failed to load fabric colors');
+    }
+    setFabricColorsCatalogLoading(false);
+  }, [api]);
+
+  useEffect(() => {
+    if (activeSection === 'styleOptions') {
+      fetchStyleCatalog();
+    }
+  }, [activeSection, fetchStyleCatalog]);
+
+  useEffect(() => {
+    if (activeSection === 'measurements') {
+      fetchMeasurementsCatalog();
+    }
+  }, [activeSection, fetchMeasurementsCatalog]);
+
+  useEffect(() => {
+    if (activeSection === 'thawbTypes') {
+      fetchThawbTypesCatalog();
+    }
+  }, [activeSection, fetchThawbTypesCatalog]);
+
+  useEffect(() => {
+    if (activeSection === 'fabricColors') {
+      fetchFabricColorsCatalog();
+    }
+  }, [activeSection, fetchFabricColorsCatalog]);
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
@@ -115,6 +229,277 @@ const Settings = () => {
       toast.error('Failed to save settings');
     }
     setLoading(false);
+  };
+
+  const handleSaveStyleCatalog = async () => {
+    if (!styleCatalog) return;
+    setStyleCatalogSaving(true);
+    try {
+      const response = await api.put('/settings/style-options', styleCatalog);
+      setStyleCatalog(response.data?.catalog || styleCatalog);
+      toast.success('Style options saved');
+    } catch (error) {
+      toast.error('Failed to save style options');
+    }
+    setStyleCatalogSaving(false);
+  };
+
+  const handleSaveMeasurementsCatalog = async () => {
+    if (!measurementsCatalog) return;
+    setMeasurementsCatalogSaving(true);
+    try {
+      const response = await api.put('/settings/measurements-catalog', measurementsCatalog);
+      setMeasurementsCatalog(response.data?.catalog || measurementsCatalog);
+      toast.success('Measurements saved');
+    } catch (error) {
+      toast.error('Failed to save measurements');
+    }
+    setMeasurementsCatalogSaving(false);
+  };
+
+  const handleSaveThawbTypesCatalog = async () => {
+    if (!thawbTypesCatalog) return;
+    setThawbTypesCatalogSaving(true);
+    try {
+      const response = await api.put('/settings/thawb-types-catalog', thawbTypesCatalog);
+      setThawbTypesCatalog(response.data?.catalog || thawbTypesCatalog);
+      toast.success('Thawb types saved');
+    } catch (error) {
+      toast.error('Failed to save thawb types');
+    }
+    setThawbTypesCatalogSaving(false);
+  };
+
+  const handleSaveFabricColorsCatalog = async () => {
+    if (!fabricColorsCatalog) return;
+    setFabricColorsCatalogSaving(true);
+    try {
+      const response = await api.put('/settings/fabric-colors-catalog', fabricColorsCatalog);
+      setFabricColorsCatalog(response.data?.catalog || fabricColorsCatalog);
+      toast.success('Fabric colors saved');
+    } catch (error) {
+      toast.error('Failed to save fabric colors');
+    }
+    setFabricColorsCatalogSaving(false);
+  };
+
+  const handleSaveClick = async () => {
+    if (activeSection === 'styleOptions') {
+      await handleSaveStyleCatalog();
+      return;
+    }
+    if (activeSection === 'measurements') {
+      await handleSaveMeasurementsCatalog();
+      return;
+    }
+    if (activeSection === 'thawbTypes') {
+      await handleSaveThawbTypesCatalog();
+      return;
+    }
+    if (activeSection === 'fabricColors') {
+      await handleSaveFabricColorsCatalog();
+      return;
+    }
+    await handleSave();
+  };
+
+  const updateMeasurementsField = (key, patch) => {
+    setMeasurementsCatalog((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        fields: (prev.fields || []).map((f) => (f.key === key ? { ...f, ...patch } : f))
+      };
+    });
+  };
+
+  const uploadMeasurementImage = async (fieldKey, file) => {
+    if (!file) return;
+    setMeasurementsCatalogSaving(true);
+    try {
+      const data = new FormData();
+      data.append('fieldKey', fieldKey);
+      data.append('image', file);
+      const response = await api.post('/settings/measurements-catalog/image', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setMeasurementsCatalog(response.data?.catalog || measurementsCatalog);
+      toast.success('Image updated');
+    } catch (error) {
+      toast.error('Failed to upload image');
+    }
+    setMeasurementsCatalogSaving(false);
+  };
+
+  const deleteMeasurementImage = async (fieldKey) => {
+    setMeasurementsCatalogSaving(true);
+    try {
+      const response = await api.delete('/settings/measurements-catalog/image', { params: { fieldKey } });
+      setMeasurementsCatalog(response.data?.catalog || measurementsCatalog);
+      toast.success('Image deleted');
+    } catch (error) {
+      toast.error('Failed to delete image');
+    }
+    setMeasurementsCatalogSaving(false);
+  };
+
+  const updateThawbType = (key, patch) => {
+    setThawbTypesCatalog((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        types: (prev.types || []).map((t) => (t.key === key ? { ...t, ...patch } : t))
+      };
+    });
+  };
+
+  const uploadThawbImage = async (typeKey, file) => {
+    if (!file) return;
+    setThawbTypesCatalogSaving(true);
+    try {
+      const data = new FormData();
+      data.append('typeKey', typeKey);
+      data.append('image', file);
+      const response = await api.post('/settings/thawb-types-catalog/image', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setThawbTypesCatalog(response.data?.catalog || thawbTypesCatalog);
+      toast.success('Image updated');
+    } catch (error) {
+      toast.error('Failed to upload image');
+    }
+    setThawbTypesCatalogSaving(false);
+  };
+
+  const deleteThawbImage = async (typeKey) => {
+    setThawbTypesCatalogSaving(true);
+    try {
+      const response = await api.delete('/settings/thawb-types-catalog/image', { params: { typeKey } });
+      setThawbTypesCatalog(response.data?.catalog || thawbTypesCatalog);
+      toast.success('Image deleted');
+    } catch (error) {
+      toast.error('Failed to delete image');
+    }
+    setThawbTypesCatalogSaving(false);
+  };
+
+  const updateFabricColor = (key, patch) => {
+    setFabricColorsCatalog((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        colors: (prev.colors || []).map((c) => (c.key === key ? { ...c, ...patch } : c))
+      };
+    });
+  };
+
+  const updateGroupName = (groupKey, value) => {
+    setStyleCatalog((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        groups: (prev.groups || []).map((g) => (g.key === groupKey ? { ...g, name: value } : g))
+      };
+    });
+  };
+
+  const updateOptionName = (groupKey, optionKey, value) => {
+    setStyleCatalog((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        groups: (prev.groups || []).map((g) => {
+          if (g.key !== groupKey) return g;
+          return {
+            ...g,
+            options: (g.options || []).map((o) => (o.key === optionKey ? { ...o, name: value } : o))
+          };
+        })
+      };
+    });
+  };
+
+  const uploadOptionImage = async (groupKey, optionKey, file) => {
+    if (!file) return;
+    setStyleCatalogSaving(true);
+    try {
+      const data = new FormData();
+      data.append('groupKey', groupKey);
+      data.append('optionKey', optionKey);
+      data.append('image', file);
+
+      const response = await api.post('/settings/style-options/image', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setStyleCatalog(response.data?.catalog || styleCatalog);
+      toast.success('Image updated');
+    } catch (error) {
+      toast.error('Failed to upload image');
+    }
+    setStyleCatalogSaving(false);
+  };
+
+  const deleteOptionImage = async (groupKey, optionKey) => {
+    setStyleCatalogSaving(true);
+    try {
+      const response = await api.delete('/settings/style-options/image', {
+        params: { groupKey, optionKey }
+      });
+      setStyleCatalog(response.data?.catalog || styleCatalog);
+      toast.success('Image deleted');
+    } catch (error) {
+      toast.error('Failed to delete image');
+    }
+    setStyleCatalogSaving(false);
+  };
+
+  const deleteOption = async (groupKey, optionKey) => {
+    setStyleCatalogSaving(true);
+    try {
+      const response = await api.delete('/settings/style-options/option', {
+        params: { groupKey, optionKey }
+      });
+      setStyleCatalog(response.data?.catalog || styleCatalog);
+      toast.success('Option deleted');
+    } catch (error) {
+      toast.error('Failed to delete option');
+    }
+    setStyleCatalogSaving(false);
+  };
+
+  const addOptionLocal = (groupKey) => {
+    const draft = newOptionDraft[groupKey] || { key: '', name: '' };
+    const candidateKey = sanitizeKey(draft.key || draft.name);
+    if (!candidateKey) {
+      toast.error('Enter option key or name');
+      return;
+    }
+
+    setStyleCatalog((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        groups: (prev.groups || []).map((g) => {
+          if (g.key !== groupKey) return g;
+          const existing = (g.options || []).some((o) => o.key === candidateKey);
+          if (existing) return g;
+          const nextOptions = [...(g.options || []), {
+            key: candidateKey,
+            name: draft.name || '',
+            image: null,
+            imageUpdatedAt: Date.now(),
+            enabled: true,
+            sortOrder: (g.options || []).length
+          }];
+          return { ...g, options: nextOptions };
+        })
+      };
+    });
+
+    setNewOptionDraft((prev) => ({
+      ...prev,
+      [groupKey]: { key: '', name: '' }
+    }));
   };
 
   const handleExportData = async () => {
@@ -335,6 +720,351 @@ const Settings = () => {
             </div>
           )}
 
+          {activeSection === 'measurements' && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Measurements</h2>
+                </div>
+
+                <div className="p-6">
+                  {measurementsCatalogLoading ? (
+                    <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
+                  ) : !measurementsCatalog?.fields?.length ? (
+                    <div className="text-sm text-gray-500 dark:text-slate-400">No measurements found</div>
+                  ) : (
+                    <div className="flex gap-4 overflow-x-auto pb-2">
+                      {(measurementsCatalog.fields || [])
+                        .slice()
+                        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                        .map((field) => {
+                          const imageUrl = field.image ? resolveUploadsUrl(field.image) : null;
+                          const imageSrc = imageUrl ? `${imageUrl}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : null;
+                          return (
+                            <div key={field.key} className={`min-w-[260px] rounded-2xl border ${field.enabled === false ? 'border-gray-200 dark:border-slate-700 opacity-70' : 'border-gray-200 dark:border-slate-700'} bg-gradient-to-br from-gray-50 to-white dark:from-slate-900/40 dark:to-slate-900/10 p-4`}>
+                              <div className="flex items-start gap-4">
+                                <div className="w-16">
+                                  <div className="relative w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 overflow-hidden">
+                                    {imageSrc ? (
+                                      <img src={imageSrc} alt={field.key} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-gray-300 dark:text-slate-600">
+                                        <Upload className="w-6 h-6" />
+                                      </div>
+                                    )}
+                                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                                      <Upload className="w-5 h-5 text-white" />
+                                      <input type="file" accept="image/*" onChange={(e) => uploadMeasurementImage(field.key, e.target.files?.[0])} className="hidden" />
+                                    </label>
+                                  </div>
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1">{field.key}</div>
+                                  <input
+                                    type="text"
+                                    value={field.name || ''}
+                                    onChange={(e) => updateMeasurementsField(field.key, { name: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                                    placeholder="Display name (optional)"
+                                  />
+                                  <div className="mt-3 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500 dark:text-slate-400">Enabled</span>
+                                      <Toggle enabled={field.enabled !== false} onChange={(v) => updateMeasurementsField(field.key, { enabled: v })} />
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteMeasurementImage(field.key)}
+                                      className="p-2 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+                                      title="Delete image"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'thawbTypes' && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Thawb Types</h2>
+                </div>
+                <div className="p-6">
+                  {thawbTypesCatalogLoading ? (
+                    <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
+                  ) : !thawbTypesCatalog?.types?.length ? (
+                    <div className="text-sm text-gray-500 dark:text-slate-400">No thawb types found</div>
+                  ) : (
+                    <div className="flex gap-4 overflow-x-auto pb-2">
+                      {(thawbTypesCatalog.types || [])
+                        .slice()
+                        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                        .map((type) => {
+                          const imageUrl = type.image ? resolveUploadsUrl(type.image) : null;
+                          const imageSrc = imageUrl ? `${imageUrl}${type.imageUpdatedAt ? `?v=${type.imageUpdatedAt}` : ''}` : null;
+                          return (
+                            <div key={type.key} className={`min-w-[260px] rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-900/40 dark:to-slate-900/10 p-4 ${type.enabled === false ? 'opacity-70' : ''}`}>
+                              <div className="flex items-start gap-4">
+                                <div className="w-16">
+                                  <div className="relative w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 overflow-hidden">
+                                    {imageSrc ? (
+                                      <img src={imageSrc} alt={type.key} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-gray-300 dark:text-slate-600">
+                                        <Upload className="w-6 h-6" />
+                                      </div>
+                                    )}
+                                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                                      <Upload className="w-5 h-5 text-white" />
+                                      <input type="file" accept="image/*" onChange={(e) => uploadThawbImage(type.key, e.target.files?.[0])} className="hidden" />
+                                    </label>
+                                  </div>
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1">{type.key}</div>
+                                  <input
+                                    type="text"
+                                    value={type.name || ''}
+                                    onChange={(e) => updateThawbType(type.key, { name: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                                    placeholder="Display name (optional)"
+                                  />
+                                  <div className="mt-3 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500 dark:text-slate-400">Enabled</span>
+                                      <Toggle enabled={type.enabled !== false} onChange={(v) => updateThawbType(type.key, { enabled: v })} />
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteThawbImage(type.key)}
+                                      className="p-2 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+                                      title="Delete image"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'fabricColors' && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Fabric Colors</h2>
+                </div>
+                <div className="p-6">
+                  {fabricColorsCatalogLoading ? (
+                    <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
+                  ) : !fabricColorsCatalog?.colors?.length ? (
+                    <div className="text-sm text-gray-500 dark:text-slate-400">No fabric colors found</div>
+                  ) : (
+                    <div className="flex gap-4 overflow-x-auto pb-2">
+                      {(fabricColorsCatalog.colors || [])
+                        .slice()
+                        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                        .map((c) => (
+                          <div key={c.key} className={`min-w-[260px] rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-900/40 dark:to-slate-900/10 p-4 ${c.enabled === false ? 'opacity-70' : ''}`}>
+                            <div className="flex items-start gap-4">
+                              <div className="w-16">
+                                <div className="w-16 h-16 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden flex items-center justify-center">
+                                  <span className="w-10 h-10 rounded-full border border-gray-300 dark:border-slate-600" style={{ backgroundColor: c.hex || '#e5e7eb' }} />
+                                </div>
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1">{c.key}</div>
+                                <input
+                                  type="text"
+                                  value={c.name || ''}
+                                  onChange={(e) => updateFabricColor(c.key, { name: e.target.value })}
+                                  className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                                  placeholder="Display name (optional)"
+                                />
+                                <div className="mt-3 flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 dark:text-slate-400">Enabled</span>
+                                    <Toggle enabled={c.enabled !== false} onChange={(v) => updateFabricColor(c.key, { enabled: v })} />
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="color"
+                                      value={c.hex || '#e5e7eb'}
+                                      onChange={(e) => updateFabricColor(c.key, { hex: e.target.value })}
+                                      className="w-10 h-10 p-0 border-0 bg-transparent"
+                                      title="Pick color"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={c.hex || ''}
+                                      onChange={(e) => updateFabricColor(c.key, { hex: e.target.value })}
+                                      className="w-24 px-3 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm"
+                                      placeholder="#FFFFFF"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'styleOptions' && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Style Options</h2>
+                </div>
+
+                <div className="p-6 space-y-6">
+                  {styleCatalogLoading ? (
+                    <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
+                  ) : !styleCatalog?.groups?.length ? (
+                    <div className="text-sm text-gray-500 dark:text-slate-400">No style options found</div>
+                  ) : (
+                    (styleCatalog.groups || [])
+                      .filter((g) => g && g.enabled !== false)
+                      .slice()
+                      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                      .map((group) => (
+                        <div key={group.key} className="rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                          <div className="p-4 bg-gray-50 dark:bg-slate-900/40 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1">{group.key}</div>
+                              <input
+                                type="text"
+                                value={group.name || ''}
+                                onChange={(e) => updateGroupName(group.key, e.target.value)}
+                                className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                                placeholder="Group name (optional)"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="p-4 space-y-3">
+                            {(group.options || [])
+                              .filter((o) => o && o.enabled !== false)
+                              .slice()
+                              .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                              .map((opt) => {
+                                const imageUrl = opt.image ? resolveUploadsUrl(opt.image) : null;
+                                const imageSrc = imageUrl ? `${imageUrl}${opt.imageUpdatedAt ? `?v=${opt.imageUpdatedAt}` : ''}` : null;
+
+                                return (
+                                  <div key={opt.key} className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-slate-900/40 border border-gray-100 dark:border-slate-700">
+                                    <div className="w-16">
+                                      <div className="relative w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 overflow-hidden">
+                                        {imageSrc ? (
+                                          <img src={imageSrc} alt={opt.key} className="w-full h-full object-cover" />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-gray-300 dark:text-slate-600">
+                                            <Upload className="w-6 h-6" />
+                                          </div>
+                                        )}
+                                        <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                                          <Upload className="w-5 h-5 text-white" />
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => uploadOptionImage(group.key, opt.key, e.target.files?.[0])}
+                                            className="hidden"
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1">{opt.key}</div>
+                                      <input
+                                        type="text"
+                                        value={opt.name || ''}
+                                        onChange={(e) => updateOptionName(group.key, opt.key, e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                                        placeholder="Display name (optional)"
+                                      />
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => deleteOptionImage(group.key, opt.key)}
+                                        className="p-2 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+                                        title="Delete image"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => deleteOption(group.key, opt.key)}
+                                        className="p-2 rounded-xl border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                                        title="Delete option"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+
+                                  </div>
+                                );
+                              })}
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                              <input
+                                type="text"
+                                value={(newOptionDraft[group.key]?.key) || ''}
+                                onChange={(e) => setNewOptionDraft((prev) => ({ ...prev, [group.key]: { ...(prev[group.key] || { key: '', name: '' }), key: e.target.value } }))}
+                                className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl"
+                                placeholder="New option key"
+                              />
+                              <input
+                                type="text"
+                                value={(newOptionDraft[group.key]?.name) || ''}
+                                onChange={(e) => setNewOptionDraft((prev) => ({ ...prev, [group.key]: { ...(prev[group.key] || { key: '', name: '' }), name: e.target.value } }))}
+                                className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl"
+                                placeholder="New option name"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => addOptionLocal(group.key)}
+                                className="px-4 py-2.5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Add option
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Appearance Section */}
           {activeSection === 'appearance' && (
             <div className="space-y-6">
@@ -508,11 +1238,11 @@ const Settings = () => {
           {/* Save Button */}
           <div className="mt-8 flex justify-end">
             <button
-              onClick={handleSave}
-              disabled={loading}
+              onClick={handleSaveClick}
+              disabled={loading || styleCatalogSaving || measurementsCatalogSaving || thawbTypesCatalogSaving || fabricColorsCatalogSaving}
               className="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
             >
-              {loading ? (
+              {loading || styleCatalogSaving || measurementsCatalogSaving || thawbTypesCatalogSaving || fabricColorsCatalogSaving ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <Check className="w-5 h-5" />

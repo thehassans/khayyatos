@@ -3,6 +3,7 @@ const router = express.Router();
 const Customer = require('../models/Customer');
 const Stitching = require('../models/Stitching');
 const { verifyToken, isUser } = require('../middleware/auth');
+const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 
 router.use(verifyToken, isUser);
 
@@ -121,15 +122,23 @@ router.get('/:id', async (req, res) => {
 // Create customer
 router.post('/', async (req, res) => {
   try {
-    const { name, phone, measurements, notes } = req.body;
+    const { name, phone, measurements, notes, relations } = req.body;
     
     let customer = await Customer.findOne({ userId: req.user._id, phone });
     
     if (customer) {
+      if (name) {
+        customer.name = name;
+        if (typeof name === 'string' && name.trim()) {
+          const translations = await translateMany({ entries: [{ id: 'name', text: name.trim() }] });
+          customer.nameI18n = translations.name || buildFallbackI18n(name.trim());
+        }
+      }
       if (measurements) {
         customer.measurements = { ...customer.measurements.toObject(), ...measurements };
       }
       if (notes) customer.notes = notes;
+      if (Array.isArray(relations)) customer.relations = relations;
       await customer.save();
       return res.json({ message: 'Customer updated', customer, isExisting: true });
     }
@@ -139,8 +148,14 @@ router.post('/', async (req, res) => {
       name,
       phone,
       measurements: measurements || {},
-      notes: notes || ''
+      notes: notes || '',
+      relations: Array.isArray(relations) ? relations : []
     });
+
+    if (typeof name === 'string' && name.trim()) {
+      const translations = await translateMany({ entries: [{ id: 'name', text: name.trim() }] });
+      customer.nameI18n = translations.name || buildFallbackI18n(name.trim());
+    }
     
     await customer.save();
     
@@ -153,7 +168,7 @@ router.post('/', async (req, res) => {
 // Update customer
 router.put('/:id', async (req, res) => {
   try {
-    const { name, phone, measurements, notes } = req.body;
+    const { name, phone, measurements, notes, relations } = req.body;
     
     const customer = await Customer.findOne({ 
       _id: req.params.id, 
@@ -164,12 +179,19 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Customer not found' });
     }
     
-    if (name) customer.name = name;
+    if (name) {
+      customer.name = name;
+      if (typeof name === 'string' && name.trim()) {
+        const translations = await translateMany({ entries: [{ id: 'name', text: name.trim() }] });
+        customer.nameI18n = translations.name || buildFallbackI18n(name.trim());
+      }
+    }
     if (phone) customer.phone = phone;
     if (measurements) {
       customer.measurements = { ...customer.measurements.toObject(), ...measurements };
     }
     if (notes !== undefined) customer.notes = notes;
+    if (Array.isArray(relations)) customer.relations = relations;
     
     await customer.save();
     

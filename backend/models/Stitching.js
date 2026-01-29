@@ -26,6 +26,12 @@ const styleOptionsSchema = new mongoose.Schema({
   embroidery: { type: String, default: null }
 }, { _id: false });
 
+const embroideryDesignSnapshotSchema = new mongoose.Schema({
+  name: { type: String, default: '' },
+  image: { type: String, default: null },
+  imageUpdatedAt: { type: Number, default: null }
+}, { _id: false });
+
 const stitchingSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -62,6 +68,15 @@ const stitchingSchema = new mongoose.Schema({
   },
   styleOptions: {
     type: styleOptionsSchema,
+    default: () => ({})
+  },
+  embroideryDesignId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'EmbroideryDesign',
+    default: null
+  },
+  embroideryDesign: {
+    type: embroideryDesignSnapshotSchema,
     default: () => ({})
   },
   quantity: {

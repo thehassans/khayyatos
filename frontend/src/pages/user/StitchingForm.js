@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Textarea } from '../../components/ui/Input';
-import { ArrowLeft, ChevronDown, Calendar, Printer, Users } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Calendar, Printer, Users, Image as ImageIcon, X } from 'lucide-react';
 import MeasurementCard from '../../components/ui/MeasurementCard';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
@@ -30,12 +30,15 @@ const THAWB_TYPES = [
 ];
 
 const StitchingForm = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { api, user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const isEdit = !!id;
   const printRef = useRef();
+
+  const langKey = (i18n?.language || 'en').split('-')[0];
 
   const [loading, setLoading] = useState(false);
   const [allCustomers, setAllCustomers] = useState([]);
@@ -45,6 +48,17 @@ const StitchingForm = () => {
   const [selectedRelation, setSelectedRelation] = useState(null);
   const [relationDropdownOpen, setRelationDropdownOpen] = useState(false);
   const [createdOrder, setCreatedOrder] = useState(null);
+  const [styleCatalog, setStyleCatalog] = useState(null);
+  const [styleCatalogLoading, setStyleCatalogLoading] = useState(false);
+  const [measurementsCatalog, setMeasurementsCatalog] = useState(null);
+  const [measurementsCatalogLoading, setMeasurementsCatalogLoading] = useState(false);
+  const [thawbTypesCatalog, setThawbTypesCatalog] = useState(null);
+  const [thawbTypesCatalogLoading, setThawbTypesCatalogLoading] = useState(false);
+  const [fabricColorsCatalog, setFabricColorsCatalog] = useState(null);
+  const [fabricColorsCatalogLoading, setFabricColorsCatalogLoading] = useState(false);
+  const [embroideryDesigns, setEmbroideryDesigns] = useState([]);
+  const [embroideryDesignsLoading, setEmbroideryDesignsLoading] = useState(false);
+  const [selectedEmbroideryDesign, setSelectedEmbroideryDesign] = useState(null);
   const [formData, setFormData] = useState({
     quantity: 1,
     price: '',
@@ -55,19 +69,9 @@ const StitchingForm = () => {
     thawbType: 'saudi',
     fabricColor: '',
     measurements: {},
-    styleOptions: {}
+    styleOptions: {},
+    embroideryDesignId: null
   });
-
-  const FABRIC_COLORS = [
-    { value: 'white', label: 'White', labelAr: 'أبيض', hex: '#FFFFFF' },
-    { value: 'cream', label: 'Cream', labelAr: 'كريمي', hex: '#FFFDD0' },
-    { value: 'offwhite', label: 'Off White', labelAr: 'أوف وايت', hex: '#FAF9F6' },
-    { value: 'beige', label: 'Beige', labelAr: 'بيج', hex: '#F5F5DC' },
-    { value: 'grey', label: 'Grey', labelAr: 'رمادي', hex: '#808080' },
-    { value: 'black', label: 'Black', labelAr: 'أسود', hex: '#000000' },
-    { value: 'navy', label: 'Navy', labelAr: 'كحلي', hex: '#000080' },
-    { value: 'brown', label: 'Brown', labelAr: 'بني', hex: '#8B4513' }
-  ];
 
   const filteredCustomers = allCustomers.filter(customer => {
     if (!customerSearch) return true;
@@ -78,8 +82,29 @@ const StitchingForm = () => {
 
   useEffect(() => {
     fetchAllCustomers();
+    fetchStyleCatalog();
+    fetchMeasurementsCatalog();
+    fetchThawbTypesCatalog();
+    fetchFabricColorsCatalog();
+    fetchEmbroideryDesigns();
     if (isEdit) fetchStitching();
   }, [id]);
+
+  const resolveUploadsUrl = useCallback((src) => {
+    if (!src) return src;
+    if (src.startsWith('http://') || src.startsWith('https://')) return src;
+    if (!src.startsWith('/uploads/')) return src;
+    const baseUrl = api?.defaults?.baseURL;
+    if (!baseUrl || typeof baseUrl !== 'string') return src;
+    try {
+      if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+        return `${new URL(baseUrl).origin}${src}`;
+      }
+    } catch (e) {
+      return src;
+    }
+    return src;
+  }, [api]);
 
   const fetchAllCustomers = async () => {
     try {
@@ -91,11 +116,140 @@ const StitchingForm = () => {
     }
   };
 
+  const fetchEmbroideryDesigns = async () => {
+    try {
+      setEmbroideryDesignsLoading(true);
+      const response = await api.get('/embroidery-designs');
+      setEmbroideryDesigns(Array.isArray(response.data?.designs) ? response.data.designs : []);
+    } catch (error) {
+      setEmbroideryDesigns([]);
+    }
+    setEmbroideryDesignsLoading(false);
+  };
+
+  useEffect(() => {
+    const preselectCustomer = async () => {
+      if (isEdit) return;
+      const customerId = searchParams.get('customerId');
+      if (!customerId) return;
+      if (selectedCustomer?._id === customerId) return;
+
+      const fromList = (allCustomers || []).find((c) => c?._id === customerId);
+      if (fromList) {
+        setSelectedCustomer(fromList);
+        setSelectedRelation(null);
+        setFormData((prev) => ({
+          ...prev,
+          measurements: fromList.measurements || {}
+        }));
+        return;
+      }
+
+      try {
+        const resp = await api.get(`/customers/${customerId}`);
+        const fetched = resp.data?.customer || null;
+        if (fetched) {
+          setSelectedCustomer(fetched);
+          setSelectedRelation(null);
+          setFormData((prev) => ({
+            ...prev,
+            measurements: fetched.measurements || {}
+          }));
+        }
+      } catch (e) {
+        null;
+      }
+    };
+
+    preselectCustomer();
+  }, [api, allCustomers, isEdit, searchParams, selectedCustomer?._id]);
+
+  useEffect(() => {
+    const preselectEmbroideryDesign = async () => {
+      if (isEdit) return;
+      const designId = searchParams.get('embroideryDesignId');
+      if (!designId) return;
+      if (formData.embroideryDesignId === designId) return;
+
+      const fromList = (embroideryDesigns || []).find((d) => d?._id === designId);
+      if (fromList) {
+        setSelectedEmbroideryDesign(fromList);
+        setFormData((prev) => ({ ...prev, embroideryDesignId: fromList._id }));
+        return;
+      }
+
+      try {
+        const resp = await api.get(`/embroidery-designs/${designId}`);
+        const fetched = resp.data?.design || null;
+        if (fetched) {
+          setSelectedEmbroideryDesign(fetched);
+          setFormData((prev) => ({ ...prev, embroideryDesignId: fetched._id }));
+        }
+      } catch (e) {
+        null;
+      }
+    };
+
+    preselectEmbroideryDesign();
+  }, [api, embroideryDesigns, formData.embroideryDesignId, isEdit, searchParams]);
+
+  const fetchStyleCatalog = async () => {
+    try {
+      setStyleCatalogLoading(true);
+      const response = await api.get('/settings/style-options');
+      setStyleCatalog(response.data?.catalog || null);
+    } catch (error) {
+      setStyleCatalog(null);
+    }
+    setStyleCatalogLoading(false);
+  };
+
+  const fetchMeasurementsCatalog = async () => {
+    try {
+      setMeasurementsCatalogLoading(true);
+      const response = await api.get('/settings/measurements-catalog');
+      setMeasurementsCatalog(response.data?.catalog || null);
+    } catch (error) {
+      setMeasurementsCatalog(null);
+    }
+    setMeasurementsCatalogLoading(false);
+  };
+
+  const fetchThawbTypesCatalog = async () => {
+    try {
+      setThawbTypesCatalogLoading(true);
+      const response = await api.get('/settings/thawb-types-catalog');
+      setThawbTypesCatalog(response.data?.catalog || null);
+    } catch (error) {
+      setThawbTypesCatalog(null);
+    }
+    setThawbTypesCatalogLoading(false);
+  };
+
+  const fetchFabricColorsCatalog = async () => {
+    try {
+      setFabricColorsCatalogLoading(true);
+      const response = await api.get('/settings/fabric-colors-catalog');
+      setFabricColorsCatalog(response.data?.catalog || null);
+    } catch (error) {
+      setFabricColorsCatalog(null);
+    }
+    setFabricColorsCatalogLoading(false);
+  };
+
   const fetchStitching = async () => {
     try {
       const response = await api.get(`/stitchings/${id}`);
       const stitch = response.data.stitching || response.data;
       setSelectedCustomer(stitch.customerId);
+      const designId = typeof stitch.embroideryDesignId === 'object' ? stitch.embroideryDesignId?._id : stitch.embroideryDesignId;
+      const designSnap = stitch.embroideryDesign || {};
+      setSelectedEmbroideryDesign(designId ? {
+        _id: designId,
+        name: designSnap.name || '',
+        image: designSnap.image || null,
+        imageUpdatedAt: designSnap.imageUpdatedAt || null
+      } : null);
       setFormData({
         quantity: stitch.quantity,
         price: stitch.price || '',
@@ -106,7 +260,8 @@ const StitchingForm = () => {
         thawbType: stitch.thawbType || 'saudi',
         fabricColor: stitch.fabricColor || '',
         measurements: stitch.measurements || {},
-        styleOptions: stitch.styleOptions || {}
+        styleOptions: stitch.styleOptions || {},
+        embroideryDesignId: designId || null
       });
     } catch (error) {
       toast.error('Failed to load');
@@ -343,12 +498,13 @@ const StitchingForm = () => {
         price: parseFloat(formData.price) || 0,
         paidAmount: parseFloat(formData.paidAmount) || 0,
         description: formData.description,
-        dueDate: formData.dueDate || null,
+        dueDate: formData.dueDate,
         status: formData.status,
         thawbType: formData.thawbType,
         fabricColor: formData.fabricColor || null,
         measurements: formData.measurements,
-        styleOptions: formData.styleOptions
+        styleOptions: formData.styleOptions,
+        embroideryDesignId: formData.embroideryDesignId || null
       };
 
       if (isEdit) {
@@ -367,7 +523,7 @@ const StitchingForm = () => {
     setLoading(false);
   };
 
-  const measurementFields = [
+  const fallbackMeasurementFields = [
     { key: 'length', label: t('measurements.length') },
     { key: 'shoulderWidth', label: t('measurements.shoulderWidth') },
     { key: 'chest', label: t('measurements.chest') },
@@ -383,6 +539,78 @@ const StitchingForm = () => {
     { key: 'armhole', label: t('measurements.armhole') },
     { key: 'bottom', label: t('measurements.bottom') }
   ];
+
+  const measurementFields = measurementsCatalog?.fields?.length
+    ? measurementsCatalog.fields
+        .filter((f) => f && f.enabled !== false)
+        .slice()
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+        .map((f) => ({
+          key: f.key,
+          label: f.nameI18n?.[langKey] || f.name || t(`measurements.${f.key}`, { defaultValue: f.key }),
+          image: f.image,
+          imageUpdatedAt: f.imageUpdatedAt
+        }))
+    : fallbackMeasurementFields;
+
+  const fallbackThawbTypes = THAWB_TYPES.map((t) => ({
+    key: t.value,
+    name: '',
+    enabled: true,
+    sortOrder: 0,
+    image: null,
+    imageUpdatedAt: null,
+    fallbackImage: t.image,
+    fallbackLabel: t.label,
+    fallbackLabelAr: t.labelAr
+  }));
+
+  const thawbTypes = thawbTypesCatalog?.types?.length
+    ? thawbTypesCatalog.types
+        .filter((x) => x && x.enabled !== false)
+        .slice()
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+        .map((x) => {
+          const fallback = THAWB_TYPES.find((t) => t.value === x.key);
+          return {
+            key: x.key,
+            name: x.name || '',
+            nameI18n: x.nameI18n || {},
+            image: x.image,
+            imageUpdatedAt: x.imageUpdatedAt,
+            fallbackImage: fallback?.image,
+            fallbackLabel: fallback?.label,
+            fallbackLabelAr: fallback?.labelAr
+          };
+        })
+    : fallbackThawbTypes;
+
+  const fallbackFabricColors = [
+    { key: 'white', name: 'White', nameAr: 'أبيض', hex: '#FFFFFF' },
+    { key: 'cream', name: 'Cream', nameAr: 'كريمي', hex: '#FFFDD0' },
+    { key: 'offwhite', name: 'Off White', nameAr: 'أوف وايت', hex: '#FAF9F6' },
+    { key: 'beige', name: 'Beige', nameAr: 'بيج', hex: '#F5F5DC' },
+    { key: 'grey', name: 'Grey', nameAr: 'رمادي', hex: '#808080' },
+    { key: 'black', name: 'Black', nameAr: 'أسود', hex: '#000000' },
+    { key: 'navy', name: 'Navy', nameAr: 'كحلي', hex: '#000080' },
+    { key: 'brown', name: 'Brown', nameAr: 'بني', hex: '#8B4513' }
+  ];
+
+  const fabricColors = fabricColorsCatalog?.colors?.length
+    ? fabricColorsCatalog.colors
+        .filter((c) => c && c.enabled !== false)
+        .slice()
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+        .map((c) => {
+          const fallback = fallbackFabricColors.find((x) => x.key === c.key);
+          return {
+            key: c.key,
+            name: c.nameI18n?.[langKey] || c.name || fallback?.name || c.key,
+            nameAr: fallback?.nameAr || '',
+            hex: c.hex || fallback?.hex || '#e5e7eb'
+          };
+        })
+    : fallbackFabricColors;
 
   // If order created, show print option
   if (createdOrder) {
@@ -404,7 +632,7 @@ const StitchingForm = () => {
             <Button variant="outline" onClick={() => navigate('/user/stitchings')} className="w-full">
               Back to Orders
             </Button>
-            <Button variant="secondary" onClick={() => { setCreatedOrder(null); setSelectedCustomer(null); setSelectedRelation(null); setCustomerSearch(''); setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', thawbType: 'saudi', fabricColor: '', measurements: {}, styleOptions: {} }); }} className="w-full">
+            <Button variant="secondary" onClick={() => { setCreatedOrder(null); setSelectedCustomer(null); setSelectedRelation(null); setSelectedEmbroideryDesign(null); setCustomerSearch(''); setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', thawbType: 'saudi', fabricColor: '', measurements: {}, styleOptions: {}, embroideryDesignId: null }); }} className="w-full">
               Create Another Order
             </Button>
           </div>
@@ -496,123 +724,168 @@ const StitchingForm = () => {
               </div>
             </div>
 
+            {/* Embroidery Design Selector */}
+            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Embroidery Design</h3>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">Optional — select a saved design</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {formData.embroideryDesignId ? (
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedEmbroideryDesign(null); setFormData((p) => ({ ...p, embroideryDesignId: null })); }}
+                      className="px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-2"
+                      title="Clear"
+                    >
+                      <X className="w-4 h-4" />
+                      Clear
+                    </button>
+                  ) : null}
+                  <Button variant="outline" onClick={() => navigate('/user/embroidery-designs')}>
+                    Manage
+                  </Button>
+                </div>
+              </div>
+
+              {embroideryDesignsLoading ? (
+                <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
+              ) : embroideryDesigns.length === 0 ? (
+                <div className="text-sm text-gray-500 dark:text-slate-400">No designs uploaded</div>
+              ) : (
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {embroideryDesigns.map((d) => {
+                    const selected = formData.embroideryDesignId === d._id;
+                    const imageUrl = d.image ? resolveUploadsUrl(d.image) : null;
+                    const imageSrc = imageUrl ? `${imageUrl}${d.imageUpdatedAt ? `?v=${d.imageUpdatedAt}` : ''}` : null;
+                    return (
+                      <button
+                        key={d._id}
+                        type="button"
+                        onClick={() => { setSelectedEmbroideryDesign(d); setFormData((p) => ({ ...p, embroideryDesignId: d._id })); }}
+                        className={`min-w-[220px] text-left rounded-2xl border transition-all hover:shadow-lg hover:scale-[1.01] ${
+                          selected
+                            ? 'border-primary-500 ring-2 ring-primary-500 bg-primary-50/70 dark:bg-primary-900/20'
+                            : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40'
+                        }`}
+                      >
+                        <div className="p-3">
+                          <div className="relative h-28 w-full rounded-xl bg-gray-100 dark:bg-slate-800 overflow-hidden">
+                            {imageSrc ? (
+                              <img src={imageSrc} alt={d.name} className="absolute inset-0 w-full h-full object-cover" />
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-slate-600">
+                                <ImageIcon className="w-8 h-8" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-3">
+                            <div className={`text-sm font-semibold truncate ${selected ? 'text-primary-700 dark:text-primary-200' : 'text-gray-800 dark:text-slate-100'}`}>{d.name}</div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {selectedEmbroideryDesign && (
+                <div className="mt-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/30 p-4">
+                  <div className="text-sm text-gray-600 dark:text-slate-300">
+                    Selected: <span className="font-semibold text-gray-900 dark:text-slate-100">{selectedEmbroideryDesign.name || '—'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('styleOptions.title')}</h3>
               </div>
 
               <div className="space-y-5">
-                {[
-                  {
-                    key: 'collar',
-                    title: t('styleOptions.collar'),
-                    options: [
-                      { value: 'classic', label: t('styleOptions.options.collar.classic') },
-                      { value: 'round', label: t('styleOptions.options.collar.round') },
-                      { value: 'mandarin', label: t('styleOptions.options.collar.mandarin') },
-                      { value: 'open', label: t('styleOptions.options.collar.open') }
-                    ]
-                  },
-                  {
-                    key: 'bain',
-                    title: t('styleOptions.bain'),
-                    options: [
-                      { value: 'hidden', label: t('styleOptions.options.bain.hidden') },
-                      { value: 'visible', label: t('styleOptions.options.bain.visible') },
-                      { value: 'zip', label: t('styleOptions.options.bain.zip') },
-                      { value: 'half', label: t('styleOptions.options.bain.half') }
-                    ]
-                  },
-                  {
-                    key: 'cuff',
-                    title: t('styleOptions.cuff'),
-                    options: [
-                      { value: 'single', label: t('styleOptions.options.cuff.single') },
-                      { value: 'double', label: t('styleOptions.options.cuff.double') },
-                      { value: 'round', label: t('styleOptions.options.cuff.round') },
-                      { value: 'angled', label: t('styleOptions.options.cuff.angled') }
-                    ]
-                  },
-                  {
-                    key: 'pocket',
-                    title: t('styleOptions.pocket'),
-                    options: [
-                      { value: 'none', label: t('styleOptions.options.pocket.none') },
-                      { value: 'chest', label: t('styleOptions.options.pocket.chest') },
-                      { value: 'side', label: t('styleOptions.options.pocket.side') },
-                      { value: 'both', label: t('styleOptions.options.pocket.both') }
-                    ]
-                  },
-                  {
-                    key: 'buttons',
-                    title: t('styleOptions.buttons'),
-                    options: [
-                      { value: 'classic', label: t('styleOptions.options.buttons.classic') },
-                      { value: 'hidden', label: t('styleOptions.options.buttons.hidden') },
-                      { value: 'snap', label: t('styleOptions.options.buttons.snap') },
-                      { value: 'premium', label: t('styleOptions.options.buttons.premium') }
-                    ]
-                  },
-                  {
-                    key: 'embroidery',
-                    title: t('styleOptions.embroidery'),
-                    options: [
-                      { value: 'none', label: t('styleOptions.options.embroidery.none') },
-                      { value: 'name', label: t('styleOptions.options.embroidery.name') },
-                      { value: 'logo', label: t('styleOptions.options.embroidery.logo') },
-                      { value: 'premium', label: t('styleOptions.options.embroidery.premium') }
-                    ]
-                  }
-                ].map((group) => (
-                  <div key={group.key}>
-                    <div className="mb-3 text-sm font-semibold text-gray-700 dark:text-slate-200">{group.title}</div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {group.options.map((opt) => {
-                        const selected = (formData.styleOptions || {})[group.key] === opt.value;
-                        const base = `/images/style/${group.key}/${opt.value}`;
-                        return (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => handleStyleOptionChange(group.key, opt.value)}
-                            className={`group relative overflow-hidden rounded-2xl border transition-all duration-200 hover:shadow-lg hover:scale-[1.01] ${
-                              selected
-                                ? 'border-primary-500 ring-2 ring-primary-500 bg-primary-50/70 dark:bg-primary-900/20'
-                                : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 hover:border-gray-300 dark:hover:border-slate-600'
-                            }`}
-                          >
-                            <div className="p-3">
-                              <div className="relative h-20 w-full rounded-xl bg-gradient-to-br from-gray-100 to-white dark:from-slate-800 dark:to-slate-900 overflow-hidden">
-                                <img
-                                  src={`${base}.webp`}
-                                  alt={opt.label}
-                                  className="absolute inset-0 w-full h-full object-cover"
-                                  onError={(e) => {
-                                    if (e.currentTarget.src.endsWith('.webp')) {
-                                      e.currentTarget.src = `${base}.png`;
-                                      return;
-                                    }
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-slate-600 pointer-events-none">
-                                  <svg viewBox="0 0 64 64" fill="currentColor" className="w-10 h-10 opacity-80">
-                                    <path d="M14 18h36v28H14z" opacity="0.35" />
-                                    <path d="M20 26h24v4H20z" />
-                                    <path d="M20 34h16v4H20z" opacity="0.8" />
-                                  </svg>
-                                </div>
-                              </div>
-                              <div className="mt-3 text-center">
-                                <div className={`text-sm font-semibold ${selected ? 'text-primary-700 dark:text-primary-200' : 'text-gray-800 dark:text-slate-100'}`}>{opt.label}</div>
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+                {styleCatalogLoading ? (
+                  <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
+                ) : (
+                  ((styleCatalog?.groups?.length ? styleCatalog.groups : [
+                    { key: 'collar', name: '', enabled: true, sortOrder: 0, options: [ { key: 'classic', name: '' }, { key: 'round', name: '' }, { key: 'mandarin', name: '' }, { key: 'open', name: '' } ] },
+                    { key: 'bain', name: '', enabled: true, sortOrder: 1, options: [ { key: 'hidden', name: '' }, { key: 'visible', name: '' }, { key: 'zip', name: '' }, { key: 'half', name: '' } ] },
+                    { key: 'cuff', name: '', enabled: true, sortOrder: 2, options: [ { key: 'single', name: '' }, { key: 'double', name: '' }, { key: 'round', name: '' }, { key: 'angled', name: '' } ] },
+                    { key: 'pocket', name: '', enabled: true, sortOrder: 3, options: [ { key: 'none', name: '' }, { key: 'chest', name: '' }, { key: 'side', name: '' }, { key: 'both', name: '' } ] },
+                    { key: 'buttons', name: '', enabled: true, sortOrder: 4, options: [ { key: 'classic', name: '' }, { key: 'hidden', name: '' }, { key: 'snap', name: '' }, { key: 'premium', name: '' } ] },
+                    { key: 'embroidery', name: '', enabled: true, sortOrder: 5, options: [ { key: 'none', name: '' }, { key: 'name', name: '' }, { key: 'logo', name: '' }, { key: 'premium', name: '' } ] }
+                  ]))
+                    .filter((g) => g && g.enabled !== false)
+                    .slice()
+                    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                    .map((group) => {
+                      const groupTitle = group.nameI18n?.[langKey] || group.name || t(`styleOptions.${group.key}`, { defaultValue: group.key });
+                      return (
+                        <div key={group.key}>
+                          <div className="mb-3 text-sm font-semibold text-gray-700 dark:text-slate-200">{groupTitle}</div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {(group.options || [])
+                              .filter((o) => o && o.enabled !== false)
+                              .slice()
+                              .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                              .map((opt) => {
+                                const selected = (formData.styleOptions || {})[group.key] === opt.key;
+                                const fallbackBase = `/images/style/${group.key}/${opt.key}`;
+
+                                const uploadUrl = opt.image ? resolveUploadsUrl(opt.image) : null;
+                                const imgSrc = uploadUrl
+                                  ? `${uploadUrl}${opt.imageUpdatedAt ? `?v=${opt.imageUpdatedAt}` : ''}`
+                                  : `${fallbackBase}.webp`;
+
+                                const label = opt.nameI18n?.[langKey] || opt.name || t(`styleOptions.options.${group.key}.${opt.key}`, { defaultValue: opt.key });
+
+                                return (
+                                  <button
+                                    key={opt.key}
+                                    type="button"
+                                    onClick={() => handleStyleOptionChange(group.key, opt.key)}
+                                    className={`group relative overflow-hidden rounded-2xl border transition-all duration-200 hover:shadow-lg hover:scale-[1.01] ${
+                                      selected
+                                        ? 'border-primary-500 ring-2 ring-primary-500 bg-primary-50/70 dark:bg-primary-900/20'
+                                        : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/40 hover:border-gray-300 dark:hover:border-slate-600'
+                                    }`}
+                                  >
+                                    <div className="p-3">
+                                      <div className="relative h-20 w-full rounded-xl bg-gradient-to-br from-gray-100 to-white dark:from-slate-800 dark:to-slate-900 overflow-hidden">
+                                        <img
+                                          src={imgSrc}
+                                          alt={label}
+                                          className="absolute inset-0 w-full h-full object-cover"
+                                          onError={(e) => {
+                                            const src = e.currentTarget.src || '';
+                                            if (!uploadUrl && src.endsWith('.webp')) {
+                                              e.currentTarget.src = `${fallbackBase}.png`;
+                                              return;
+                                            }
+                                            e.currentTarget.style.display = 'none';
+                                          }}
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-slate-600 pointer-events-none">
+                                          <svg viewBox="0 0 64 64" fill="currentColor" className="w-10 h-10 opacity-80">
+                                            <path d="M14 18h36v28H14z" opacity="0.35" />
+                                            <path d="M20 26h24v4H20z" />
+                                            <path d="M20 34h16v4H20z" opacity="0.8" />
+                                          </svg>
+                                        </div>
+                                      </div>
+                                      <div className="mt-3 text-center">
+                                        <div className={`text-sm font-semibold ${selected ? 'text-primary-700 dark:text-primary-200' : 'text-gray-800 dark:text-slate-100'}`}>{label}</div>
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      );
+                    })
+                )}
               </div>
             </div>
 
@@ -696,14 +969,23 @@ const StitchingForm = () => {
               <label className="block text-sm font-semibold text-gray-800 dark:text-slate-100 mb-4">
                 {t('thawbTypes.title')} / نوع الثوب *
               </label>
+              {thawbTypesCatalogLoading && (
+                <div className="text-sm text-gray-500 dark:text-slate-400 mb-4">Loading…</div>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {THAWB_TYPES.map((thawb) => {
-                  const isSelected = formData.thawbType === thawb.value;
+                {thawbTypes.map((thawb) => {
+                  const isSelected = formData.thawbType === thawb.key;
+                  const uploadUrl = thawb.image ? resolveUploadsUrl(thawb.image) : null;
+                  const thawbImage = uploadUrl
+                    ? `${uploadUrl}${thawb.imageUpdatedAt ? `?v=${thawb.imageUpdatedAt}` : ''}`
+                    : (thawb.fallbackImage || '');
+                  const title = thawb.name || t(`thawbTypes.${thawb.key}`, { defaultValue: thawb.fallbackLabel || thawb.key });
+                  const subtitle = thawb.fallbackLabelAr || '';
                   return (
                     <button
-                      key={thawb.value}
+                      key={thawb.key}
                       type="button"
-                      onClick={() => setFormData({ ...formData, thawbType: thawb.value })}
+                      onClick={() => setFormData({ ...formData, thawbType: thawb.key })}
                       className={`relative p-3 rounded-xl border-2 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
                         isSelected 
                           ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 ring-2 ring-amber-500 shadow-md' 
@@ -714,8 +996,8 @@ const StitchingForm = () => {
                       <div className="flex flex-col items-center gap-2">
                         <div className="w-16 h-24 sm:w-20 sm:h-28 relative overflow-hidden rounded-lg bg-gray-100 dark:bg-slate-700">
                           <img 
-                            src={thawb.image} 
-                            alt={thawb.label}
+                            src={thawbImage}
+                            alt={title}
                             className="w-full h-full object-contain"
                             onError={(e) => {
                               e.target.style.display = 'none';
@@ -732,11 +1014,13 @@ const StitchingForm = () => {
                         </div>
                         <div className="text-center">
                           <p className={`text-sm font-semibold ${isSelected ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-slate-200'}`}>
-                            {t(`thawbTypes.${thawb.value}`)}
+                            {title}
                           </p>
-                          <p className={`text-xs ${isSelected ? 'text-amber-500 dark:text-amber-300' : 'text-gray-500 dark:text-slate-400'}`}>
-                            {thawb.labelAr}
-                          </p>
+                          {subtitle ? (
+                            <p className={`text-xs ${isSelected ? 'text-amber-500 dark:text-amber-300' : 'text-gray-500 dark:text-slate-400'}`}>
+                              {subtitle}
+                            </p>
+                          ) : null}
                         </div>
                       </div>
                       {/* Selected checkmark */}
@@ -761,6 +1045,9 @@ const StitchingForm = () => {
                 </label>
                 <span className="text-xs text-gray-400 dark:text-slate-500">(Optional)</span>
               </div>
+              {fabricColorsCatalogLoading && (
+                <div className="text-sm text-gray-500 dark:text-slate-400 mb-4">Loading…</div>
+              )}
               <div className="flex flex-wrap gap-3">
                 {/* No color option */}
                 <button
@@ -774,13 +1061,13 @@ const StitchingForm = () => {
                 >
                   Not specified
                 </button>
-                {FABRIC_COLORS.map((color) => {
-                  const isSelected = formData.fabricColor === color.value;
+                {fabricColors.map((color) => {
+                  const isSelected = formData.fabricColor === color.key;
                   return (
                     <button
-                      key={color.value}
+                      key={color.key}
                       type="button"
-                      onClick={() => setFormData({ ...formData, fabricColor: color.value })}
+                      onClick={() => setFormData({ ...formData, fabricColor: color.key })}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
                         isSelected
                           ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 ring-1 ring-primary-500'
@@ -792,7 +1079,7 @@ const StitchingForm = () => {
                         style={{ backgroundColor: color.hex }}
                       />
                       <span className={`text-sm font-medium ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-slate-200'}`}>
-                        {color.label}
+                        {color.name}
                       </span>
                     </button>
                   );
@@ -867,6 +1154,9 @@ const StitchingForm = () => {
                   </span>
                 )}
               </div>
+              {measurementsCatalogLoading && (
+                <div className="text-sm text-gray-500 dark:text-slate-400 mb-4">Loading…</div>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 {measurementFields.map((field) => (
                   <MeasurementCard
@@ -875,6 +1165,7 @@ const StitchingForm = () => {
                     label={field.label}
                     value={formData.measurements[field.key]}
                     onChange={(value) => handleMeasurementChange(field.key, value)}
+                    imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
                   />
                 ))}
               </div>

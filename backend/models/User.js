@@ -1,6 +1,68 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const i18nTextSchema = new mongoose.Schema({
+  en: { type: String, default: '' },
+  ar: { type: String, default: '' },
+  ur: { type: String, default: '' },
+  hi: { type: String, default: '' },
+  bn: { type: String, default: '' }
+}, { _id: false });
+
+const styleOptionItemSchema = new mongoose.Schema({
+  key: { type: String, required: true, trim: true },
+  name: { type: String, default: '', trim: true },
+  nameI18n: { type: i18nTextSchema, default: () => ({}) },
+  image: { type: String, default: null },
+  imageUpdatedAt: { type: Number, default: null },
+  enabled: { type: Boolean, default: true },
+  sortOrder: { type: Number, default: 0 }
+}, { _id: false });
+
+const styleOptionGroupSchema = new mongoose.Schema({
+  key: { type: String, required: true, trim: true },
+  name: { type: String, default: '', trim: true },
+  nameI18n: { type: i18nTextSchema, default: () => ({}) },
+  enabled: { type: Boolean, default: true },
+  sortOrder: { type: Number, default: 0 },
+  options: { type: [styleOptionItemSchema], default: () => [] }
+}, { _id: false });
+
+const styleOptionsCatalogSchema = new mongoose.Schema({
+  groups: { type: [styleOptionGroupSchema], default: () => [] }
+}, { _id: false });
+
+const catalogImageItemSchema = new mongoose.Schema({
+  key: { type: String, required: true, trim: true },
+  name: { type: String, default: '', trim: true },
+  nameI18n: { type: i18nTextSchema, default: () => ({}) },
+  enabled: { type: Boolean, default: true },
+  sortOrder: { type: Number, default: 0 },
+  image: { type: String, default: null },
+  imageUpdatedAt: { type: Number, default: null }
+}, { _id: false });
+
+const measurementsCatalogSchema = new mongoose.Schema({
+  fields: { type: [catalogImageItemSchema], default: () => [] }
+}, { _id: false });
+
+const thawbTypesCatalogSchema = new mongoose.Schema({
+  types: { type: [catalogImageItemSchema], default: () => [] }
+}, { _id: false });
+
+const fabricColorItemSchema = new mongoose.Schema({
+  key: { type: String, required: true, trim: true },
+  name: { type: String, default: '', trim: true },
+  nameI18n: { type: i18nTextSchema, default: () => ({}) },
+  enabled: { type: Boolean, default: true },
+  sortOrder: { type: Number, default: 0 },
+  hex: { type: String, default: '' }
+}, { _id: false });
+
+const fabricColorsCatalogSchema = new mongoose.Schema({
+  colors: { type: [fabricColorItemSchema], default: () => [] }
+}, { _id: false });
+
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -12,6 +74,10 @@ const userSchema = new mongoose.Schema({
     trim: true,
     default: ''
   },
+  nameI18n: {
+    type: i18nTextSchema,
+    default: () => ({})
+  },
   businessName: {
     type: String,
     required: true,
@@ -21,6 +87,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true,
     default: ''
+  },
+  businessNameI18n: {
+    type: i18nTextSchema,
+    default: () => ({})
   },
   businessAddress: {
     type: String,
@@ -76,6 +146,22 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['light', 'dark'],
     default: 'light'
+  },
+  styleOptionsCatalog: {
+    type: styleOptionsCatalogSchema,
+    default: () => ({ groups: [] })
+  },
+  measurementsCatalog: {
+    type: measurementsCatalogSchema,
+    default: () => ({ fields: [] })
+  },
+  thawbTypesCatalog: {
+    type: thawbTypesCatalogSchema,
+    default: () => ({ types: [] })
+  },
+  fabricColorsCatalog: {
+    type: fabricColorsCatalogSchema,
+    default: () => ({ colors: [] })
   },
   whatsappSettings: {
     enabled: { type: Boolean, default: false },

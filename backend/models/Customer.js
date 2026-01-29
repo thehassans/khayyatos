@@ -1,5 +1,13 @@
 const mongoose = require('mongoose');
 
+const i18nTextSchema = new mongoose.Schema({
+  en: { type: String, default: '' },
+  ar: { type: String, default: '' },
+  ur: { type: String, default: '' },
+  hi: { type: String, default: '' },
+  bn: { type: String, default: '' }
+}, { _id: false });
+
 const measurementSchema = new mongoose.Schema({
   length: { type: Number, default: null },
   shoulderWidth: { type: Number, default: null },
@@ -28,6 +36,10 @@ const customerSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  nameI18n: {
+    type: i18nTextSchema,
+    default: () => ({})
+  },
   phone: {
     type: String,
     required: true,
@@ -52,6 +64,17 @@ const customerSchema = new mongoose.Schema({
   notes: {
     type: String,
     default: ''
+  },
+  relations: {
+    type: [
+      {
+        customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
+        customerName: { type: String, default: '' },
+        customerPhone: { type: String, default: '' },
+        relationType: { type: String, default: '' }
+      }
+    ],
+    default: () => []
   },
   createdAt: {
     type: Date,

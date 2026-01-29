@@ -8,6 +8,7 @@ const { verifyToken, isAdmin } = require('../middleware/auth');
 const { generateToken } = require('../middleware/auth');
 const { calculateEndDate } = require('../utils/subscriptionChecker');
 const upload = require('../middleware/upload');
+const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 
 router.use(verifyToken, isAdmin);
 
@@ -131,8 +132,10 @@ router.post('/users', upload.single('logo'), async (req, res) => {
     const user = new User({
       name,
       nameAr: nameAr || name,
+      nameI18n: {},
       businessName,
       businessNameAr: businessNameAr || businessName,
+      businessNameI18n: {},
       businessAddress: businessAddress || '',
       phone,
       password,
@@ -141,6 +144,15 @@ router.post('/users', upload.single('logo'), async (req, res) => {
       receiptPrefix: receiptPrefix || 'RCP',
       logo: req.file ? `/uploads/${req.file.filename}` : null
     });
+
+    if (typeof name === 'string' && name.trim()) {
+      const translations = await translateMany({ entries: [{ id: 'name', text: name.trim() }] });
+      user.nameI18n = translations.name || buildFallbackI18n(name.trim());
+    }
+    if (typeof businessName === 'string' && businessName.trim()) {
+      const translations = await translateMany({ entries: [{ id: 'businessName', text: businessName.trim() }] });
+      user.businessNameI18n = translations.businessName || buildFallbackI18n(businessName.trim());
+    }
     
     await user.save();
     
@@ -170,9 +182,22 @@ router.put('/users/:id', upload.single('logo'), async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    if (name) user.name = name;
+    if (name) {
+      user.name = name;
+      if (typeof name === 'string' && name.trim()) {
+        const translations = await translateMany({ entries: [{ id: 'name', text: name.trim() }] });
+        user.nameI18n = translations.name || buildFallbackI18n(name.trim());
+      }
+    }
     if (nameAr) user.nameAr = nameAr;
-    if (businessNameAr) user.businessNameAr = businessNameAr;
+    if (businessNameAr) {
+      user.businessNameAr = businessNameAr;
+      const source = typeof businessNameAr === 'string' && businessNameAr.trim() ? businessNameAr.trim() : (user.businessName || '');
+      if (source) {
+        const translations = await translateMany({ entries: [{ id: 'businessName', text: source }] });
+        user.businessNameI18n = translations.businessName || buildFallbackI18n(source);
+      }
+    }
     if (businessAddress !== undefined) user.businessAddress = businessAddress;
     if (phone) user.phone = phone;
     if (receiptPrefix) user.receiptPrefix = receiptPrefix;

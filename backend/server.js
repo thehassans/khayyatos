@@ -16,6 +16,7 @@ const stitchingRoutes = require('./routes/stitching');
 const paymentRoutes = require('./routes/payment');
 const settingsRoutes = require('./routes/settings');
 const whatsappRoutes = require('./routes/whatsapp');
+const embroideryDesignsRoutes = require('./routes/embroideryDesigns');
 
 // ZATCA routes with error handling
 let zatcaRoutes;
@@ -78,6 +79,7 @@ app.use('/api/stitchings', stitchingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/embroidery-designs', embroideryDesignsRoutes);
 app.use('/api/zatca', zatcaRoutes);
 
 // Health check with MongoDB status

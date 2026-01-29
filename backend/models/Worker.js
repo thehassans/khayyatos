@@ -1,6 +1,14 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const i18nTextSchema = new mongoose.Schema({
+  en: { type: String, default: '' },
+  ar: { type: String, default: '' },
+  ur: { type: String, default: '' },
+  hi: { type: String, default: '' },
+  bn: { type: String, default: '' }
+}, { _id: false });
+
 const workerSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -11,6 +19,10 @@ const workerSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
+  },
+  nameI18n: {
+    type: i18nTextSchema,
+    default: () => ({})
   },
   phone: {
     type: String,

@@ -11,11 +11,13 @@ import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
 
 const Workers = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { api } = useAuth();
   const navigate = useNavigate();
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const langKey = (i18n?.language || 'en').split('-')[0];
 
   useEffect(() => {
     fetchWorkers();
@@ -76,9 +78,9 @@ const Workers = () => {
                   <Td>
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
-                        <span className="text-emerald-700 dark:text-emerald-200 font-medium">{worker.name?.charAt(0)}</span>
+                        <span className="text-emerald-700 dark:text-emerald-200 font-medium">{(worker.nameI18n?.[langKey] || worker.name || '')?.charAt(0)}</span>
                       </div>
-                      <span className="font-medium">{worker.name}</span>
+                      <span className="font-medium">{worker.nameI18n?.[langKey] || worker.name}</span>
                     </div>
                   </Td>
                   <Td>{worker.phone}</Td>

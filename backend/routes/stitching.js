@@ -4,6 +4,7 @@ const Stitching = require('../models/Stitching');
 const Customer = require('../models/Customer');
 const Worker = require('../models/Worker');
 const User = require('../models/User');
+const EmbroideryDesign = require('../models/EmbroideryDesign');
 const { verifyToken, isUser } = require('../middleware/auth');
 const whatsappService = require('../utils/whatsappService');
 
@@ -96,6 +97,7 @@ router.post('/', async (req, res) => {
       customerId, 
       measurements, 
       styleOptions,
+      embroideryDesignId,
       quantity, 
       price, 
       paidAmount,
@@ -121,6 +123,21 @@ router.post('/', async (req, res) => {
       finalReceiptNumber = user.generateReceiptNumber();
       await user.save();
     }
+
+    let designIdToSave = null;
+    let designSnapshot = {};
+    if (embroideryDesignId) {
+      const design = await EmbroideryDesign.findOne({ _id: embroideryDesignId, userId: req.user._id });
+      if (!design) {
+        return res.status(400).json({ error: 'Invalid embroidery design' });
+      }
+      designIdToSave = design._id;
+      designSnapshot = {
+        name: design.name || '',
+        image: design.image || null,
+        imageUpdatedAt: design.imageUpdatedAt || null
+      };
+    }
     
     const stitching = new Stitching({
       userId: req.user._id,
@@ -130,6 +147,8 @@ router.post('/', async (req, res) => {
       fabricColor: fabricColor || null,
       measurements: measurements || customer.measurements,
       styleOptions: styleOptions || {},
+      embroideryDesignId: designIdToSave,
+      embroideryDesign: designSnapshot,
       quantity: quantity || 1,
       price,
       paidAmount: paidAmount || 0,
@@ -178,6 +197,7 @@ router.put('/:id', async (req, res) => {
     const { 
       measurements, 
       styleOptions,
+      embroideryDesignId,
       quantity, 
       price, 
       paidAmount,
@@ -199,6 +219,23 @@ router.put('/:id', async (req, res) => {
     
     if (measurements) stitching.measurements = measurements;
     if (styleOptions) stitching.styleOptions = styleOptions;
+    if (embroideryDesignId !== undefined) {
+      if (!embroideryDesignId) {
+        stitching.embroideryDesignId = null;
+        stitching.embroideryDesign = {};
+      } else {
+        const design = await EmbroideryDesign.findOne({ _id: embroideryDesignId, userId: req.user._id });
+        if (!design) {
+          return res.status(400).json({ error: 'Invalid embroidery design' });
+        }
+        stitching.embroideryDesignId = design._id;
+        stitching.embroideryDesign = {
+          name: design.name || '',
+          image: design.image || null,
+          imageUpdatedAt: design.imageUpdatedAt || null
+        };
+      }
+    }
     if (quantity) stitching.quantity = quantity;
     if (price !== undefined) stitching.price = price;
     if (paidAmount !== undefined) stitching.paidAmount = paidAmount;

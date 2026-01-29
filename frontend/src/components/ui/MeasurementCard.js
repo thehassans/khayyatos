@@ -152,20 +152,21 @@ const MeasurementCard = ({
   label, 
   value, 
   onChange, 
+  imageSrc,
   unit = 'cm' 
 }) => {
   const IconComponent = MeasurementIcons[measurementKey] || MeasurementIcons.length;
 
   const base = useMemo(() => `/images/measurements/${measurementKey}`, [measurementKey]);
-  const [imgSrc, setImgSrc] = useState(`${base}.webp`);
+  const [imgSrc, setImgSrc] = useState(imageSrc || `${base}.webp`);
   const [imgOk, setImgOk] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
 
   useEffect(() => {
-    setImgSrc(`${base}.webp`);
+    setImgSrc(imageSrc || `${base}.webp`);
     setImgOk(false);
     setImgFailed(false);
-  }, [base]);
+  }, [base, imageSrc]);
   
   const colorMap = {
     length: 'from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-indigo-200 dark:border-indigo-700',
@@ -212,6 +213,11 @@ const MeasurementCard = ({
             className={`absolute inset-0 w-full h-full object-contain transition-opacity ${imgOk ? 'opacity-100' : 'opacity-0'}`}
             onLoad={() => setImgOk(true)}
             onError={() => {
+              if (imageSrc) {
+                setImgSrc('/images/measurements/placeholder.svg');
+                setImgOk(false);
+                return;
+              }
               if (imgSrc.endsWith('.webp')) {
                 setImgSrc(`${base}.png`);
                 setImgOk(false);

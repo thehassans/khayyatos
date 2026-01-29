@@ -19,7 +19,8 @@ import {
   PanelLeft,
   Globe,
   Check,
-  FileText
+  FileText,
+  Image
 } from 'lucide-react';
 
 const UserLayout = () => {
@@ -153,6 +154,7 @@ const UserLayout = () => {
     { key: 'workerAmounts', to: '/user/worker-amounts', icon: Wallet, label: t('nav.workerAmounts') },
     { key: 'customers', to: '/user/customers', icon: UserPlus, label: t('nav.customers') },
     { key: 'stitchings', to: '/user/stitchings', icon: Scissors, label: t('nav.stitchings') },
+    { key: 'embroideryDesigns', to: '/user/embroidery-designs', icon: Image, label: t('nav.embroideryDesigns', { defaultValue: 'Embroidery Designs' }) },
     { key: 'loyalty', to: '/user/loyalty', icon: Heart, label: t('nav.loyalty') },
     { key: 'whatsapp', to: '/user/whatsapp', icon: MessageCircle, label: t('nav.whatsapp') },
     { key: 'zatca', to: '/user/zatca', icon: FileText, label: t('nav.zatca') },

@@ -24,6 +24,8 @@ const WorkerForm = lazy(() => import('./pages/user/WorkerForm'));
 const WorkerAmounts = lazy(() => import('./pages/user/WorkerAmounts'));
 const Customers = lazy(() => import('./pages/user/Customers'));
 const CustomerForm = lazy(() => import('./pages/user/CustomerForm'));
+const CustomerProfile = lazy(() => import('./pages/user/CustomerProfile'));
+const EmbroideryDesigns = lazy(() => import('./pages/user/EmbroideryDesigns'));
 const Stitchings = lazy(() => import('./pages/user/Stitchings'));
 const StitchingForm = lazy(() => import('./pages/user/StitchingForm'));
 const Loyalty = lazy(() => import('./pages/user/Loyalty'));
@@ -115,7 +117,9 @@ const AppRoutes = () => {
           <Route path="worker-amounts" element={<LazyPage><WorkerAmounts /></LazyPage>} />
           <Route path="customers" element={<LazyPage><Customers /></LazyPage>} />
           <Route path="customers/new" element={<LazyPage skeleton="form"><CustomerForm /></LazyPage>} />
+          <Route path="customers/:id" element={<LazyPage><CustomerProfile /></LazyPage>} />
           <Route path="customers/:id/edit" element={<LazyPage skeleton="form"><CustomerForm /></LazyPage>} />
+          <Route path="embroidery-designs" element={<LazyPage><EmbroideryDesigns /></LazyPage>} />
           <Route path="stitchings" element={<LazyPage><Stitchings /></LazyPage>} />
           <Route path="stitchings/new" element={<LazyPage skeleton="form"><StitchingForm /></LazyPage>} />
           <Route path="stitchings/:id/edit" element={<LazyPage skeleton="form"><StitchingForm /></LazyPage>} />

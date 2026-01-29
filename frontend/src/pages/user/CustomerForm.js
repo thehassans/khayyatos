@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -20,14 +20,18 @@ const RELATION_TYPES = [
 ];
 
 const CustomerForm = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { api } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
 
+  const langKey = (i18n?.language || 'en').split('-')[0];
+
   const [loading, setLoading] = useState(false);
   const [allCustomers, setAllCustomers] = useState([]);
+  const [measurementsCatalog, setMeasurementsCatalog] = useState(null);
+  const [measurementsCatalogLoading, setMeasurementsCatalogLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '+966',
@@ -54,8 +58,25 @@ const CustomerForm = () => {
 
   useEffect(() => {
     fetchAllCustomers();
+    fetchMeasurementsCatalog();
     if (isEdit) fetchCustomer();
   }, [id]);
+
+  const resolveUploadsUrl = useCallback((src) => {
+    if (!src) return src;
+    if (src.startsWith('http://') || src.startsWith('https://')) return src;
+    if (!src.startsWith('/uploads/')) return src;
+    const baseUrl = api?.defaults?.baseURL;
+    if (!baseUrl || typeof baseUrl !== 'string') return src;
+    try {
+      if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+        return `${new URL(baseUrl).origin}${src}`;
+      }
+    } catch (e) {
+      return src;
+    }
+    return src;
+  }, [api]);
 
   const fetchAllCustomers = async () => {
     try {
@@ -65,6 +86,17 @@ const CustomerForm = () => {
     } catch (error) {
       console.error('Error fetching customers:', error);
     }
+  };
+
+  const fetchMeasurementsCatalog = async () => {
+    try {
+      setMeasurementsCatalogLoading(true);
+      const response = await api.get('/settings/measurements-catalog');
+      setMeasurementsCatalog(response.data?.catalog || null);
+    } catch (error) {
+      setMeasurementsCatalog(null);
+    }
+    setMeasurementsCatalogLoading(false);
   };
 
   const fetchCustomer = async () => {
@@ -156,7 +188,7 @@ const CustomerForm = () => {
     setLoading(false);
   };
 
-  const measurementFields = [
+  const fallbackMeasurementFields = [
     { key: 'length', label: t('measurements.length') },
     { key: 'shoulderWidth', label: t('measurements.shoulderWidth') },
     { key: 'chest', label: t('measurements.chest') },
@@ -172,6 +204,19 @@ const CustomerForm = () => {
     { key: 'armhole', label: t('measurements.armhole') },
     { key: 'bottom', label: t('measurements.bottom') }
   ];
+
+  const measurementFields = measurementsCatalog?.fields?.length
+    ? measurementsCatalog.fields
+        .filter((f) => f && f.enabled !== false)
+        .slice()
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+        .map((f) => ({
+          key: f.key,
+          label: f.nameI18n?.[langKey] || f.name || t(`measurements.${f.key}`, { defaultValue: f.key }),
+          image: f.image,
+          imageUpdatedAt: f.imageUpdatedAt
+        }))
+    : fallbackMeasurementFields;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
@@ -276,6 +321,9 @@ const CustomerForm = () => {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">
                 {t('customers.measurements')} <span className="text-sm font-normal text-gray-400 dark:text-slate-500">(optional)</span>
               </h3>
+              {measurementsCatalogLoading && (
+                <div className="text-sm text-gray-500 dark:text-slate-400 mb-4">Loading…</div>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 {measurementFields.map((field) => (
                   <MeasurementCard
@@ -284,6 +332,7 @@ const CustomerForm = () => {
                     label={field.label}
                     value={formData.measurements[field.key]}
                     onChange={(value) => handleMeasurementChange(field.key, value)}
+                    imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
                   />
                 ))}
               </div>
