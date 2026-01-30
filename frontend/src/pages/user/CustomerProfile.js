@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -44,8 +44,15 @@ const CustomerProfile = () => {
   const [familySelected, setFamilySelected] = useState(null);
   const [familySaving, setFamilySaving] = useState(false);
 
+  const treeScrollRef = useRef(null);
+  const treeDidCenterRef = useRef(false);
+
   useEffect(() => {
     fetchCustomerProfile();
+  }, [id]);
+
+  useEffect(() => {
+    treeDidCenterRef.current = false;
   }, [id]);
 
   const fetchCustomerProfile = async () => {
@@ -81,19 +88,44 @@ const CustomerProfile = () => {
 
   const relationTargetId = (rel) => rel?.customerId?._id || rel?.customerId;
 
-  const relationDisplayName = (rel) => {
-    const fromRef = rel?.customerId?.nameI18n?.[langKey] || rel?.customerId?.name;
-    return fromRef || rel?.customerName || '—';
+  const formatBilingualName = (en, ar, fallback = '—') => {
+    const cleanEn = typeof en === 'string' ? en.trim() : '';
+    const cleanAr = typeof ar === 'string' ? ar.trim() : '';
+    if (cleanEn && cleanAr && cleanEn !== cleanAr) return `${cleanEn} / ${cleanAr}`;
+    return cleanEn || cleanAr || fallback;
   };
+
+  const customerNameParts = (c, fallback) => {
+    if (!c || typeof c !== 'object') {
+      const fb = fallback || '—';
+      return { en: fb, ar: '', full: fb };
+    }
+
+    const en = c?.nameI18n?.en || c?.nameI18n?.['en'] || '';
+    const ar = c?.nameI18n?.ar || c?.nameI18n?.['ar'] || '';
+    const fb = fallback || c?.name || '—';
+    return { en: en || fb, ar: ar || '', full: formatBilingualName(en || fb, ar || '', fb) };
+  };
+
+  const relationNameParts = (rel) => {
+    const ref = rel?.customerId;
+    if (ref && typeof ref === 'object') return customerNameParts(ref, rel?.customerName || '—');
+    const fb = rel?.customerName || '—';
+    return { en: fb, ar: '', full: fb };
+  };
+
+  const relationDisplayName = (rel) => relationNameParts(rel).full;
 
   const relationDisplayPhone = (rel) => rel?.customerId?.phone || rel?.customerPhone || '';
 
   const normalizeRelation = (rel) => {
     const rid = relationTargetId(rel);
+    const fallbackName = rel?.customerId?.nameI18n?.[langKey] || rel?.customerId?.name || rel?.customerName || '';
+    const fallbackPhone = rel?.customerId?.phone || rel?.customerPhone || '';
     return {
       customerId: rid,
-      customerName: relationDisplayName(rel),
-      customerPhone: relationDisplayPhone(rel),
+      customerName: fallbackName,
+      customerPhone: fallbackPhone,
       relationType: rel?.relationType
     };
   };
@@ -156,6 +188,17 @@ const CustomerProfile = () => {
 
     return () => clearTimeout(timer);
   }, [addFamilyOpen, api, customer?._id, customer?.relations, familyQuery]);
+
+  useEffect(() => {
+    const el = treeScrollRef.current;
+    if (!el || treeDidCenterRef.current) return;
+    const timer = setTimeout(() => {
+      const target = Math.max(0, Math.floor((el.scrollWidth - el.clientWidth) / 2));
+      el.scrollLeft = target;
+      treeDidCenterRef.current = true;
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [customer?._id, customer?.relations?.length]);
 
   const openAddFamily = (prefillType = 'son') => {
     if (isDemo) {
@@ -220,7 +263,7 @@ const CustomerProfile = () => {
 
   const displayName = customer?.nameI18n?.[langKey] || customer.name;
 
-  const FamilyNode = ({ title, subtitle, tone = 'gold', dashed = false, onClick, icon }) => {
+  const FamilyNode = ({ nameParts, subtitle, tone = 'gold', dashed = false, onClick, icon }) => {
     const ring = {
       gold: 'ring-[#D5B25B]/70',
       slate: 'ring-slate-300/70 dark:ring-slate-600/60',
@@ -240,10 +283,11 @@ const CustomerProfile = () => {
       >
         <div className="flex items-center gap-3">
           <div className={`w-12 h-12 rounded-full ring-2 ${ring} bg-gradient-to-br from-white to-gray-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center text-slate-900 dark:text-slate-100 font-semibold`}>
-            {icon ? icon : <span className="text-base">{(title || '—').charAt(0)}</span>}
+            {icon ? icon : <span className="text-base">{(nameParts?.en || nameParts?.ar || '—').charAt(0)}</span>}
           </div>
           <div className="min-w-0 text-left">
-            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{title || '—'}</div>
+            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{nameParts?.en || nameParts?.ar || '—'}</div>
+            {nameParts?.ar ? <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate" dir="rtl">{nameParts.ar}</div> : null}
             {subtitle ? <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 truncate">{subtitle}</div> : null}
           </div>
         </div>
@@ -322,19 +366,19 @@ const CustomerProfile = () => {
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Family Tree / شجرة العائلة</h2>
               </div>
 
-              <div className="rounded-3xl border border-gray-200 dark:border-slate-700 bg-gradient-to-b from-white to-gray-50 dark:from-slate-900/25 dark:to-slate-900/10 p-4 overflow-x-auto">
-                <div className="min-w-[680px] flex flex-col items-center py-4">
+              <div ref={treeScrollRef} className="rounded-3xl border border-gray-200 dark:border-slate-700 bg-gradient-to-b from-white to-gray-50 dark:from-slate-900/25 dark:to-slate-900/10 p-4 overflow-x-auto">
+                <div className="min-w-full w-max flex flex-col items-center py-4 px-8">
                   <div className="relative flex flex-col items-center">
                     {familyTree.father ? (
                       <FamilyNode
-                        title={relationDisplayName(familyTree.father)}
+                        nameParts={relationNameParts(familyTree.father)}
                         subtitle={relationLabel('father')}
                         tone="blue"
                         onClick={() => navigate(`/user/customers/${relationTargetId(familyTree.father)}`)}
                       />
                     ) : (
                       <FamilyNode
-                        title="Add Father"
+                        nameParts={{ en: 'Add Father', ar: 'إضافة الأب' }}
                         subtitle={relationLabel('father')}
                         dashed
                         tone="blue"
@@ -346,7 +390,7 @@ const CustomerProfile = () => {
                     <div className="h-10 w-px bg-[#D5B25B]/35" />
 
                     <FamilyNode
-                      title={displayName}
+                      nameParts={customerNameParts(customer, displayName)}
                       subtitle="Customer / العميل"
                       tone="gold"
                       onClick={() => {}}
@@ -355,14 +399,14 @@ const CustomerProfile = () => {
 
                   <div className="relative mt-10 w-full">
                     <div className="absolute left-1/2 -translate-x-1/2 top-0 h-8 w-px bg-[#D5B25B]/35" />
-                    <div className="absolute left-10 right-10 top-8 h-px bg-[#D5B25B]/30" />
+                    <div className="absolute left-6 right-6 top-8 h-px bg-[#D5B25B]/30" />
 
-                    <div className="pt-10 flex flex-wrap justify-center gap-x-10 gap-y-8 px-6">
+                    <div className="pt-10 flex flex-nowrap justify-center gap-x-10 gap-y-8 px-6 w-max mx-auto">
                       {(familyTree.sons || []).map((rel) => (
                         <div key={relationKey(rel)} className="relative">
                           <div className="absolute -top-10 left-1/2 -translate-x-1/2 h-10 w-px bg-[#D5B25B]/30" />
                           <FamilyNode
-                            title={relationDisplayName(rel)}
+                            nameParts={relationNameParts(rel)}
                             subtitle={relationLabel('son')}
                             tone="green"
                             onClick={() => navigate(`/user/customers/${relationTargetId(rel)}`)}
@@ -373,7 +417,7 @@ const CustomerProfile = () => {
                       <div className="relative">
                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 h-10 w-px bg-[#D5B25B]/30" />
                         <FamilyNode
-                          title="Add Member"
+                          nameParts={{ en: 'Add Member', ar: 'إضافة فرد' }}
                           subtitle="Add family member"
                           dashed
                           tone="gold"
@@ -570,7 +614,7 @@ const CustomerProfile = () => {
                 <div className="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">No matches</div>
               ) : null}
               {familyResults.map((c) => {
-                const name = c?.nameI18n?.[langKey] || c?.name || '—';
+                const np = customerNameParts(c, c?.name || '—');
                 const active = String(familySelected?._id) === String(c?._id);
                 return (
                   <button
@@ -580,11 +624,12 @@ const CustomerProfile = () => {
                     className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 hover:bg-white dark:hover:bg-slate-900/40 transition-colors ${active ? 'bg-white dark:bg-slate-900/50' : ''}`}
                   >
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{name}</div>
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{np.en || np.ar || '—'}</div>
+                      {np.ar ? <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate" dir="rtl">{np.ar}</div> : null}
                       <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{c.phone || ''}</div>
                     </div>
                     <div className={`w-9 h-9 rounded-full ring-2 ${active ? 'ring-[#D5B25B]/80' : 'ring-slate-300/70 dark:ring-slate-700/60'} bg-gradient-to-br from-white to-gray-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center text-sm font-semibold text-slate-900 dark:text-slate-100`}>
-                      {(name || '—').charAt(0)}
+                      {(np.en || np.ar || '—').charAt(0)}
                     </div>
                   </button>
                 );
