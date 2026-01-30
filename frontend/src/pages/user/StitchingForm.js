@@ -5,8 +5,9 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Select, Textarea } from '../../components/ui/Input';
+import { Modal } from '../../components/ui/Modal';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
-import { ArrowLeft, ChevronDown, Calendar, Printer, Users, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Calendar, Printer, Users, Image as ImageIcon, Plus, UserPlus, Search, User } from 'lucide-react';
 import MeasurementCard from '../../components/ui/MeasurementCard';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
@@ -30,6 +31,16 @@ const THAWB_TYPES = [
   { value: 'noum', label: 'Noum', labelAr: 'نوم', image: '/images/noum.png' }
 ];
 
+const RELATION_TYPES = [
+  { value: 'father', label: 'Father / الأب' },
+  { value: 'son', label: 'Son / الابن' },
+  { value: 'brother', label: 'Brother / الأخ' },
+  { value: 'uncle', label: 'Uncle / العم' },
+  { value: 'cousin', label: 'Cousin / ابن العم' },
+  { value: 'friend', label: 'Friend / صديق' },
+  { value: 'other', label: 'Other / آخر' }
+];
+
 const StitchingForm = () => {
   const { t, i18n } = useTranslation();
   const { api, user } = useAuth();
@@ -51,7 +62,6 @@ const StitchingForm = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedRelation, setSelectedRelation] = useState(null);
   const selectedRelationIdRef = useRef(null);
-  const [relationDropdownOpen, setRelationDropdownOpen] = useState(false);
   const [createdOrder, setCreatedOrder] = useState(null);
   const [customerDetailsLoading, setCustomerDetailsLoading] = useState(false);
   const [customerMeasurementsOpen, setCustomerMeasurementsOpen] = useState(true);
@@ -68,6 +78,16 @@ const StitchingForm = () => {
   const [fabrics, setFabrics] = useState([]);
   const [fabricsLoading, setFabricsLoading] = useState(false);
   const [selectedEmbroideryDesign, setSelectedEmbroideryDesign] = useState(null);
+
+  const [addFamilyOpen, setAddFamilyOpen] = useState(false);
+  const [addFamilyType, setAddFamilyType] = useState('son');
+  const [familyQuery, setFamilyQuery] = useState('');
+  const [familySearching, setFamilySearching] = useState(false);
+  const [familyResults, setFamilyResults] = useState([]);
+  const [familySelected, setFamilySelected] = useState(null);
+  const [familySaving, setFamilySaving] = useState(false);
+  const [newFamilyName, setNewFamilyName] = useState('');
+  const [newFamilyPhone, setNewFamilyPhone] = useState('');
   const [formData, setFormData] = useState({
     quantity: 1,
     price: '',
@@ -143,6 +163,7 @@ const StitchingForm = () => {
         ...prev,
         measurements: fetched.measurements || {}
       }));
+      return fetched;
     } catch (e) {
 
     } finally {
@@ -299,10 +320,12 @@ const StitchingForm = () => {
           measurements: stitch.measurements || {},
           raw: null
         });
+        selectedRelationIdRef.current = String(relId);
         setCustomerMeasurementsOpen(false);
         setOrderForMeasurementsOpen(true);
       } else {
         setSelectedRelation(null);
+        selectedRelationIdRef.current = null;
         setCustomerMeasurementsOpen(true);
         setOrderForMeasurementsOpen(false);
       }
@@ -333,6 +356,116 @@ const StitchingForm = () => {
       measurements,
       raw: rel
     };
+  };
+
+  const normalizeRelationForSave = (rel) => {
+    const ref = rel?.customerId && typeof rel.customerId === 'object' ? rel.customerId : null;
+    const id = ref?._id || rel?.customerId || rel?._id || null;
+    const relationType = rel?.relationType || rel?.type || '';
+    const customerName = ref?.nameI18n?.[langKey] || ref?.name || rel?.customerName || rel?.name || '';
+    const customerPhone = ref?.phone || rel?.customerPhone || rel?.phone || '';
+    return {
+      customerId: id,
+      customerName,
+      customerPhone,
+      relationType
+    };
+  };
+
+  const openAddFamily = (prefillType = 'son') => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
+    setAddFamilyType(prefillType);
+    setFamilyQuery('');
+    setFamilySearching(false);
+    setFamilyResults([]);
+    setFamilySelected(null);
+    setNewFamilyName('');
+    setNewFamilyPhone('');
+    setAddFamilyOpen(true);
+  };
+
+  useEffect(() => {
+    if (!addFamilyOpen) return;
+
+    const q = String(familyQuery || '').trim();
+    if (!q) {
+      setFamilyResults([]);
+      setFamilySearching(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setFamilySearching(true);
+        const resp = await api.get(`/customers/search?q=${encodeURIComponent(q)}`);
+        const list = Array.isArray(resp.data?.customers)
+          ? resp.data.customers
+          : Array.isArray(resp.data)
+            ? resp.data
+            : [];
+        const existingIds = new Set((selectedCustomer?.relations || []).map((r) => String(normalizeRelationForSave(r)?.customerId || '')));
+        const filtered = list.filter((c) => String(c?._id) !== String(selectedCustomer?._id) && !existingIds.has(String(c?._id)));
+        setFamilyResults(filtered);
+      } catch (e) {
+        setFamilyResults([]);
+      }
+      setFamilySearching(false);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [addFamilyOpen, api, familyQuery, selectedCustomer?._id, selectedCustomer?.relations]);
+
+  const saveFamilyMember = async () => {
+    if (!selectedCustomer?._id) return;
+    if (!addFamilyType) return;
+    if (familySaving) return;
+
+    try {
+      setFamilySaving(true);
+
+      let target = familySelected;
+
+      if (!target?._id) {
+        const nm = String(newFamilyName || '').trim();
+        const ph = String(newFamilyPhone || '').trim();
+        if (!nm || !ph) {
+          toast.error('Enter name and phone');
+          setFamilySaving(false);
+          return;
+        }
+        const created = await api.post('/customers', { name: nm, phone: ph });
+        target = created.data?.customer || created.data;
+      }
+
+      if (!target?._id) {
+        toast.error('Select a customer');
+        setFamilySaving(false);
+        return;
+      }
+
+      const next = (selectedCustomer?.relations || [])
+        .map(normalizeRelationForSave)
+        .filter((r) => r?.customerId);
+      next.push({
+        customerId: target._id,
+        customerName: target?.nameI18n?.[langKey] || target?.name || '',
+        customerPhone: target?.phone || '',
+        relationType: addFamilyType
+      });
+
+      await api.put(`/customers/${selectedCustomer._id}`, { relations: next });
+      setAddFamilyOpen(false);
+
+      await loadCustomerDetails(selectedCustomer._id);
+      handleRelationSelect({ customerId: target, relationType: addFamilyType });
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Operation failed');
+    }
+
+    setFamilySaving(false);
   };
 
   const loadOrderForMeasurements = useCallback(async (relationCustomerId) => {
@@ -372,7 +505,6 @@ const StitchingForm = () => {
         }
       });
     }
-    setRelationDropdownOpen(false);
   };
 
   const clearRelation = () => {
@@ -484,8 +616,8 @@ const StitchingForm = () => {
     const orderForNameAr = createdOrder?.relationId?.nameI18n?.ar || createdOrder?.relationName || customerNameAr;
     const orderForDisplay = labelLang === 'en' ? orderForNameEn : labelLang === 'ar' ? orderForNameAr : `${orderForNameEn} / ${orderForNameAr}`;
 
-    const relTypeValue = createdOrder?.relationType || '';
-    const fabricDisplay = createdOrder?.fabricId?.name ? `${createdOrder.fabricId.name}${createdOrder.fabricId.madeIn ? ` · ${createdOrder.fabricId.madeIn}` : ''}` : '-';
+    const relTypeValue = createdOrder?.relationType ? `${String(createdOrder.relationType).charAt(0).toUpperCase()}${String(createdOrder.relationType).slice(1)}` : '';
+    const fabricDisplay = createdOrder?.fabricId?.name ? `${createdOrder.fabricId.name}` : '-';
     const rollsUsedDisplay = (createdOrder?.rollsUsed !== undefined && createdOrder?.rollsUsed !== null) ? String(createdOrder.rollsUsed) : '0';
     const thawbTypeDisplay = createdOrder?.thawbType || formData.thawbType || '-';
     
@@ -1030,8 +1162,7 @@ const StitchingForm = () => {
                   { value: '', label: 'Not specified' },
                   ...(Array.isArray(fabrics) ? fabrics : []).map((f) => {
                     const stock = Number(f?.rollsInStock) || 0;
-                    const madeIn = f?.madeIn ? ` · ${f.madeIn}` : '';
-                    const label = `${f?.name || '—'}${madeIn} · Stock: ${stock}`;
+                    const label = `${f?.name || '—'} · Stock: ${stock}`;
                     return { value: f._id, label };
                   })
                 ]}
@@ -1213,81 +1344,117 @@ const StitchingForm = () => {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
 
-            {/* Order For - Relation/Sibling Selector */}
             {selectedCustomer && (
-              <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Users className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                  <label className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                    Order For (Son / Brother / Relation)
-                  </label>
-                </div>
-                
-                {selectedRelation ? (
-                  <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-700">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                        <span className="text-amber-700 dark:text-amber-200 font-medium">{selectedRelation.name?.charAt(0)}</span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-slate-100">{selectedRelation.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-slate-400 capitalize">{selectedRelation.type}</p>
-                      </div>
+              <div className="rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/20 dark:to-slate-900/50 p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Users className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Family / شجرة العائلة</h3>
                     </div>
+                    <div className="mt-1 text-sm text-amber-800/80 dark:text-amber-200/80">Choose who this order is for (default: customer).</div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => openAddFamily('son')}
+                    icon={UserPlus}
+                    disabled={isDemo}
+                  >
+                    Add Member
+                  </Button>
+                </div>
+
+                <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/80 dark:bg-slate-900/25 p-4">
+                    <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Order for</div>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                          {selectedRelation ? (
+                            <span className="text-amber-700 dark:text-amber-200 font-semibold">{(selectedRelation.name || '?').charAt(0)}</span>
+                          ) : (
+                            <User className="w-5 h-5 text-amber-700 dark:text-amber-200" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
+                            {selectedRelation ? selectedRelation.name : (selectedCustomer.nameI18n?.[langKey] || selectedCustomer.name)}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-slate-400 truncate">
+                            {selectedRelation ? (selectedRelation.type || '') : 'Self'}
+                          </div>
+                        </div>
+                      </div>
+                      {selectedRelation ? (
+                        <button
+                          type="button"
+                          onClick={clearRelation}
+                          className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline"
+                        >
+                          Use Self
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 p-4">
+                    <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Quick add</div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button type="button" onClick={() => openAddFamily('son')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Son</button>
+                      <button type="button" onClick={() => openAddFamily('brother')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Brother</button>
+                      <button type="button" onClick={() => openAddFamily('father')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Father</button>
+                      <button type="button" onClick={() => openAddFamily('other')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Other</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Select from family</div>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/user/customers/${selectedCustomer._id}`)}
+                      className="text-xs font-semibold text-amber-700 dark:text-amber-300 hover:underline"
+                    >
+                      View Family Tree
+                    </button>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={clearRelation}
-                      className="text-sm text-rose-600 dark:text-rose-400 hover:underline"
+                      className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-colors ${!selectedRelation ? 'border-amber-400 bg-amber-100/60 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100' : 'border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-slate-800 dark:text-slate-100 hover:bg-white'}`}
                     >
-                      Use Customer Instead
+                      Self
                     </button>
-                  </div>
-                ) : (
-                  <div className="relative">
+
+                    {(selectedCustomer.relations || []).map((r, idx) => {
+                      const relUi = normalizeRelationForUi(r);
+                      const active = selectedRelation && String(selectedRelation._id) === String(relUi._id);
+                      return (
+                        <button
+                          key={`${relUi._id || idx}`}
+                          type="button"
+                          onClick={() => handleRelationSelect(r)}
+                          className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-colors ${active ? 'border-amber-400 bg-amber-100/60 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100' : 'border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-slate-800 dark:text-slate-100 hover:bg-white'}`}
+                          title={relUi.phone || ''}
+                        >
+                          {relUi.name || '-'}{relUi.type ? ` · ${relUi.type}` : ''}
+                        </button>
+                      );
+                    })}
+
                     <button
                       type="button"
-                      onClick={() => setRelationDropdownOpen(!relationDropdownOpen)}
-                      className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
+                      onClick={() => openAddFamily('son')}
+                      className="px-3 py-2 rounded-xl border border-dashed border-amber-300 dark:border-amber-800/60 bg-white/40 dark:bg-slate-900/10 text-xs font-semibold text-amber-800 dark:text-amber-200 hover:bg-white"
                     >
-                      <span className="text-gray-600 dark:text-slate-300">
-                        For {selectedCustomer.nameI18n?.[langKey] || selectedCustomer.name} (Main Customer)
-                      </span>
-                      <ChevronDown className={`w-4 h-4 text-amber-500 transition-transform ${relationDropdownOpen ? 'rotate-180' : ''}`} />
+                      <span className="inline-flex items-center gap-2"><Plus className="w-4 h-4" />Add</span>
                     </button>
-                    
-                    {relationDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-amber-200 dark:border-amber-700 z-50 max-h-48 overflow-y-auto">
-                        {selectedCustomer.relations && selectedCustomer.relations.length > 0 ? (
-                          selectedCustomer.relations.map((relation, idx) => {
-                            const relUi = normalizeRelationForUi(relation);
-                            return (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => handleRelationSelect(relation)}
-                              className="w-full p-3 hover:bg-amber-50 dark:hover:bg-amber-900/30 flex items-center gap-3 text-left transition-colors border-b border-gray-100 dark:border-slate-700 last:border-b-0"
-                            >
-                              <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                                <span className="text-amber-700 dark:text-amber-200 font-medium text-sm">{(relUi.name || '?').charAt(0)}</span>
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-900 dark:text-slate-100">{relUi.name || '-'}</p>
-                                <p className="text-xs text-gray-500 dark:text-slate-400 capitalize">{relUi.type || ''}</p>
-                              </div>
-                            </button>
-                            );
-                          })
-                        ) : (
-                          <div className="p-4 text-center text-gray-500 dark:text-slate-400 text-sm">
-                            No relations added for this customer.
-                            <br />
-                            <span className="text-xs">Add relations in Customer edit page</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
-                )}
+                </div>
               </div>
             )}
 
@@ -1299,6 +1466,121 @@ const StitchingForm = () => {
                 {t('common.cancel')}
               </Button>
             </div>
+
+            <Modal
+              isOpen={addFamilyOpen}
+              onClose={() => setAddFamilyOpen(false)}
+              title="Add Family Member"
+              size="lg"
+            >
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-1">
+                    <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Relation type</div>
+                    <select
+                      value={addFamilyType}
+                      onChange={(e) => setAddFamilyType(e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D5B25B]/40"
+                    >
+                      {RELATION_TYPES.map((rt) => (
+                        <option key={rt.value} value={rt.value}>{rt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Search existing customer</div>
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        value={familyQuery}
+                        onChange={(e) => {
+                          setFamilyQuery(e.target.value);
+                          setFamilySelected(null);
+                        }}
+                        placeholder="Search by name or phone"
+                        className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D5B25B]/40"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                  <div className="px-4 py-3 bg-white dark:bg-slate-900/40 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
+                    <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">Results</div>
+                    {familySearching ? <div className="text-xs text-slate-400">Searching…</div> : null}
+                  </div>
+                  <div className="max-h-56 overflow-y-auto bg-gray-50/40 dark:bg-slate-900/20">
+                    {!familyQuery ? (
+                      <div className="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">Type to search customers</div>
+                    ) : null}
+                    {(familyQuery && !familySearching && familyResults.length === 0) ? (
+                      <div className="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">No matches</div>
+                    ) : null}
+                    {familyResults.map((c) => {
+                      const display = c?.nameI18n?.[langKey] || c?.name || '—';
+                      const active = String(familySelected?._id) === String(c?._id);
+                      return (
+                        <button
+                          key={c._id}
+                          type="button"
+                          onClick={() => setFamilySelected(c)}
+                          className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 hover:bg-white dark:hover:bg-slate-900/40 transition-colors ${active ? 'bg-white dark:bg-slate-900/50' : ''}`}
+                        >
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{display}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{c?.phone || ''}</div>
+                          </div>
+                          <div className={`w-9 h-9 rounded-full ring-2 ${active ? 'ring-[#D5B25B]/80' : 'ring-slate-300/70 dark:ring-slate-700/60'} bg-gradient-to-br from-white to-gray-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center text-sm font-semibold text-slate-900 dark:text-slate-100`}>
+                            {String(display || '—').charAt(0)}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 p-4">
+                  <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">Or create new customer</div>
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                      value={newFamilyName}
+                      onChange={(e) => {
+                        setNewFamilyName(e.target.value);
+                        setFamilySelected(null);
+                      }}
+                      placeholder="Name"
+                      className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D5B25B]/40"
+                    />
+                    <input
+                      value={newFamilyPhone}
+                      onChange={(e) => {
+                        setNewFamilyPhone(e.target.value);
+                        setFamilySelected(null);
+                      }}
+                      placeholder="Phone"
+                      className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D5B25B]/40"
+                    />
+                  </div>
+                  <div className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">If you select an existing customer above, these fields are ignored.</div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <Button type="button" variant="secondary" onClick={() => setAddFamilyOpen(false)}>
+                    {t('common.cancel', { defaultValue: 'Cancel' })}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={saveFamilyMember}
+                    loading={familySaving}
+                    disabled={familySaving}
+                    icon={UserPlus}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
+            </Modal>
 
             <DemoBlockedModal
               isOpen={demoBlockedOpen}

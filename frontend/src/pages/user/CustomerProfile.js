@@ -270,31 +270,44 @@ const CustomerProfile = () => {
   const displayName = customer?.nameI18n?.[langKey] || customer.name;
 
   const FamilyNode = ({ nameParts, subtitle, tone = 'gold', dashed = false, onClick, icon }) => {
-    const ring = {
-      gold: 'ring-[#D5B25B]/70',
-      slate: 'ring-slate-300/70 dark:ring-slate-600/60',
-      blue: 'ring-sky-300/70 dark:ring-sky-700/40',
-      green: 'ring-emerald-300/70 dark:ring-emerald-700/40'
-    }[tone] || 'ring-[#D5B25B]/70';
+    const glow = {
+      gold: 'from-[#D5B25B]/35 via-amber-200/15 to-white/0 dark:from-[#D5B25B]/20 dark:via-amber-300/10 dark:to-transparent',
+      slate: 'from-slate-300/35 via-slate-200/15 to-white/0 dark:from-slate-500/20 dark:via-slate-400/10 dark:to-transparent',
+      blue: 'from-sky-300/35 via-sky-200/15 to-white/0 dark:from-sky-700/25 dark:via-sky-600/10 dark:to-transparent',
+      green: 'from-emerald-300/35 via-emerald-200/15 to-white/0 dark:from-emerald-700/25 dark:via-emerald-600/10 dark:to-transparent'
+    }[tone] || 'from-[#D5B25B]/35 via-amber-200/15 to-white/0';
 
-    const base = dashed
-      ? 'border-dashed border-slate-300 dark:border-slate-700 bg-white/40 dark:bg-slate-900/25 hover:bg-white/70 dark:hover:bg-slate-900/40'
-      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/35 hover:bg-white/90 dark:hover:bg-slate-900/55';
+    const borderGrad = {
+      gold: 'from-[#D5B25B]/70 via-amber-200/60 to-slate-200/40 dark:from-[#D5B25B]/55 dark:via-amber-700/20 dark:to-slate-700/60',
+      slate: 'from-slate-300/80 via-slate-200/60 to-slate-200/30 dark:from-slate-500/45 dark:via-slate-500/15 dark:to-slate-700/60',
+      blue: 'from-sky-400/70 via-sky-200/60 to-slate-200/30 dark:from-sky-600/45 dark:via-sky-700/20 dark:to-slate-700/60',
+      green: 'from-emerald-400/70 via-emerald-200/60 to-slate-200/30 dark:from-emerald-600/45 dark:via-emerald-700/20 dark:to-slate-700/60'
+    }[tone] || 'from-[#D5B25B]/70 via-amber-200/60 to-slate-200/40';
+
+    const inner = dashed
+      ? 'border border-dashed border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/25'
+      : 'border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/35';
 
     return (
       <button
         type="button"
         onClick={onClick}
-        className={`group w-[220px] max-w-[78vw] rounded-2xl border ${base} shadow-[0_1px_0_rgba(15,23,42,0.04)] hover:shadow-lg transition-all px-4 py-3`}
+        className="group relative w-[240px] max-w-[82vw] rounded-2xl transition-transform hover:scale-[1.01]"
       >
-        <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-full ring-2 ${ring} bg-gradient-to-br from-white to-gray-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center text-slate-900 dark:text-slate-100 font-semibold`}>
-            {icon ? icon : <span className="text-base">{(nameParts?.en || nameParts?.ar || '—').charAt(0)}</span>}
-          </div>
-          <div className="min-w-0 text-left">
-            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{nameParts?.en || nameParts?.ar || '—'}</div>
-            {nameParts?.ar ? <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate" dir="rtl">{nameParts.ar}</div> : null}
-            {subtitle ? <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 truncate">{subtitle}</div> : null}
+        <div className={`pointer-events-none absolute -inset-1 rounded-[18px] bg-gradient-to-br ${glow} blur-md opacity-60 group-hover:opacity-90 transition-opacity`} />
+        <div className={`relative rounded-2xl p-[1px] bg-gradient-to-br ${borderGrad} shadow-[0_10px_30px_rgba(15,23,42,0.08)] group-hover:shadow-[0_16px_40px_rgba(15,23,42,0.14)] transition-shadow`}>
+          <div className={`rounded-2xl ${inner} px-4 py-3`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-white to-gray-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200/70 dark:border-slate-700 flex items-center justify-center text-slate-900 dark:text-slate-100 font-semibold">
+                {icon ? icon : <span className="text-base">{(nameParts?.en || nameParts?.ar || '—').charAt(0)}</span>}
+              </div>
+              <div className="min-w-0 text-left">
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{nameParts?.en || nameParts?.ar || '—'}</div>
+                {nameParts?.ar ? <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate" dir="rtl">{nameParts.ar}</div> : null}
+                {subtitle ? <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 truncate">{subtitle}</div> : null}
+              </div>
+            </div>
           </div>
         </div>
       </button>
@@ -427,8 +440,11 @@ const CustomerProfile = () => {
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Family Tree / شجرة العائلة</h2>
               </div>
 
-              <div ref={treeScrollRef} className="rounded-3xl border border-gray-200 dark:border-slate-700 bg-gradient-to-b from-white to-gray-50 dark:from-slate-900/25 dark:to-slate-900/10 p-4 overflow-x-auto">
-                <div className="min-w-full w-max flex flex-col items-center py-4 px-8">
+              <div ref={treeScrollRef} className="relative rounded-3xl border border-gray-200 dark:border-slate-700 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white via-amber-50/40 to-gray-50 dark:from-slate-900/35 dark:via-[#D5B25B]/5 dark:to-slate-900/10 p-4 overflow-x-auto">
+                <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-white via-white/70 to-transparent dark:from-slate-950/30 dark:via-slate-950/10 dark:to-transparent" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-white via-white/70 to-transparent dark:from-slate-950/30 dark:via-slate-950/10 dark:to-transparent" />
+
+                <div className="min-w-full w-max flex flex-col items-center py-6 px-10">
                   <div className="relative flex flex-col items-center">
                     {familyTree.father ? (
                       <FamilyNode
@@ -448,7 +464,7 @@ const CustomerProfile = () => {
                       />
                     )}
 
-                    <div className="h-10 w-px bg-[#D5B25B]/35" />
+                    <div className="h-10 w-px bg-gradient-to-b from-[#D5B25B]/30 via-[#D5B25B]/20 to-transparent" />
 
                     <FamilyNode
                       nameParts={customerNameParts(customer, displayName)}
@@ -459,13 +475,13 @@ const CustomerProfile = () => {
                   </div>
 
                   <div className="relative mt-10 w-full">
-                    <div className="absolute left-1/2 -translate-x-1/2 top-0 h-8 w-px bg-[#D5B25B]/35" />
-                    <div className="absolute left-6 right-6 top-8 h-px bg-[#D5B25B]/30" />
+                    <div className="absolute left-1/2 -translate-x-1/2 top-0 h-9 w-px bg-gradient-to-b from-[#D5B25B]/30 via-[#D5B25B]/20 to-transparent" />
+                    <div className="absolute left-8 right-8 top-9 h-px bg-gradient-to-r from-transparent via-[#D5B25B]/30 to-transparent" />
 
-                    <div className="pt-10 flex flex-nowrap justify-center gap-x-10 gap-y-8 px-6 w-max mx-auto">
+                    <div className="pt-12 flex flex-nowrap justify-center gap-x-12 gap-y-8 px-8 w-max mx-auto">
                       {(familyTree.sons || []).map((rel) => (
                         <div key={relationKey(rel)} className="relative">
-                          <div className="absolute -top-10 left-1/2 -translate-x-1/2 h-10 w-px bg-[#D5B25B]/30" />
+                          <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-12 w-px bg-gradient-to-b from-transparent via-[#D5B25B]/25 to-[#D5B25B]/10" />
                           <FamilyNode
                             nameParts={relationNameParts(rel)}
                             subtitle={relationLabel('son')}
@@ -476,7 +492,7 @@ const CustomerProfile = () => {
                       ))}
 
                       <div className="relative">
-                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 h-10 w-px bg-[#D5B25B]/30" />
+                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-12 w-px bg-gradient-to-b from-transparent via-[#D5B25B]/25 to-[#D5B25B]/10" />
                         <FamilyNode
                           nameParts={{ en: 'Add Member', ar: 'إضافة فرد' }}
                           subtitle="Add family member"
@@ -499,7 +515,7 @@ const CustomerProfile = () => {
                               key={relationKey(rel)}
                               type="button"
                               onClick={() => navigate(`/user/customers/${relationTargetId(rel)}`)}
-                              className="group inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/35 px-3 py-2 hover:shadow-md transition-all"
+                              className="group inline-flex items-center gap-2 rounded-full border border-slate-200/80 dark:border-slate-700 bg-white/80 dark:bg-slate-900/35 px-3 py-2 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)] transition-all"
                             >
                               <span className="w-7 h-7 rounded-full ring-2 ring-slate-300/70 dark:ring-slate-600/60 bg-gradient-to-br from-white to-gray-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center text-xs font-semibold text-slate-900 dark:text-slate-100">
                                 {(relationDisplayName(rel) || '—').charAt(0)}
@@ -543,7 +559,7 @@ const CustomerProfile = () => {
                               key={relationKey(rel)}
                               type="button"
                               onClick={() => navigate(`/user/customers/${relationTargetId(rel)}`)}
-                              className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/35 px-3 py-2 hover:shadow-md transition-all"
+                              className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 dark:border-slate-700 bg-white/80 dark:bg-slate-900/35 px-3 py-2 hover:shadow-[0_10px_20px_rgba(15,23,42,0.10)] transition-all"
                             >
                               <span className="w-7 h-7 rounded-full ring-2 ring-[#D5B25B]/60 bg-gradient-to-br from-white to-gray-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center text-xs font-semibold text-slate-900 dark:text-slate-100">
                                 {(relationDisplayName(rel) || '—').charAt(0)}
