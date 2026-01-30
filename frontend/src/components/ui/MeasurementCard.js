@@ -153,7 +153,8 @@ const MeasurementCard = ({
   value, 
   onChange, 
   imageSrc,
-  unit = 'cm' 
+  unit = 'cm', 
+  disabled = false 
 }) => {
   const IconComponent = MeasurementIcons[measurementKey] || MeasurementIcons.length;
 
@@ -203,7 +204,7 @@ const MeasurementCard = ({
   };
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br ${colorMap[measurementKey] || colorMap.length} p-4 transition-all hover:shadow-lg hover:scale-[1.02]`}>
+    <div className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br ${colorMap[measurementKey] || colorMap.length} p-4 transition-all ${disabled ? '' : 'hover:shadow-lg hover:scale-[1.02]'}`}>
       {/* Icon */}
       <div className="relative w-16 h-16 mx-auto mb-3">
         {!imgFailed && (
@@ -248,10 +249,14 @@ const MeasurementCard = ({
         <input
           type="number"
           value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            if (disabled) return;
+            onChange(e.target.value);
+          }}
           step="0.1"
           placeholder="0"
-          className={`w-full px-3 py-2.5 pr-10 bg-white/80 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-xl text-center text-lg font-medium text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 ${inputColorMap[measurementKey] || inputColorMap.length} transition-all`}
+          disabled={disabled}
+          className={`w-full px-3 py-2.5 pr-10 bg-white/80 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-600 rounded-xl text-center text-lg font-medium text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 ${inputColorMap[measurementKey] || inputColorMap.length} transition-all ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-400 dark:text-slate-500">
           {unit}

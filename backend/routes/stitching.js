@@ -56,6 +56,7 @@ router.get('/', async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .populate('customerId', 'name phone nameI18n')
+      .populate('relationId', 'name phone nameI18n')
       .populate('workerId', 'name phone nameI18n')
       .populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
     
@@ -106,6 +107,7 @@ router.get('/search', async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(20)
       .populate('customerId', 'name phone nameI18n')
+      .populate('relationId', 'name phone nameI18n')
       .populate('workerId', 'name phone nameI18n');
 
     if (phone) {
@@ -129,6 +131,7 @@ router.get('/:id', async (req, res) => {
       userId: req.user._id 
     })
       .populate('customerId')
+      .populate('relationId', 'name phone nameI18n')
       .populate('workerId', 'name phone')
       .populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
     
@@ -147,6 +150,10 @@ router.post('/', blockDemoWrites, async (req, res) => {
   try {
     const { 
       customerId, 
+      relationId,
+      relationName,
+      relationType,
+      orderFor,
       measurements, 
       styleOptions,
       embroideryDesignId,
@@ -169,6 +176,13 @@ router.post('/', blockDemoWrites, async (req, res) => {
     
     if (!customer) {
       return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    let relationToSave = null;
+    if (relationId) {
+      const relExists = await Customer.findOne({ _id: relationId, userId: req.user._id }).select('_id name phone nameI18n measurements');
+      if (!relExists) return res.status(400).json({ error: 'Invalid relation customer' });
+      relationToSave = relExists;
     }
     
     let finalReceiptNumber = receiptNumber;
@@ -216,15 +230,21 @@ router.post('/', blockDemoWrites, async (req, res) => {
       if (!exists) return res.status(400).json({ error: 'Invalid fabric' });
     }
     
+    const defaultMeasurements = relationToSave ? relationToSave.measurements : customer.measurements;
+
     const stitching = new Stitching({
       userId: req.user._id,
       customerId,
+      relationId: relationToSave?._id || null,
+      relationName: (relationToSave ? (relationToSave.nameI18n?.en || relationToSave.name) : null) || relationName || null,
+      relationType: relationType || null,
+      orderFor: (relationToSave ? (relationToSave.nameI18n?.en || relationToSave.name) : null) || orderFor || null,
       receiptNumber: finalReceiptNumber,
       thawbType: thawbType || 'saudi',
       fabricColor: fabricColor || null,
       fabricId: fabricToUse,
       rollsUsed: rollsToUse,
-      measurements: measurements || customer.measurements,
+      measurements: measurements || defaultMeasurements,
       styleOptions: styleOptions || {},
       embroideryDesignId: designIdToSave,
       embroideryDesign: designSnapshot,
@@ -240,12 +260,20 @@ router.post('/', blockDemoWrites, async (req, res) => {
     customer.totalSpent += price;
     customer.totalOrders += 1;
     customer.loyaltyPoints += Math.floor(price / 100);
-    if (measurements) {
-      customer.measurements = { ...customer.measurements.toObject(), ...measurements };
-    }
     await customer.save();
+
+    if (measurements) {
+      if (relationToSave) {
+        relationToSave.measurements = { ...relationToSave.measurements.toObject(), ...measurements };
+        await relationToSave.save();
+      } else {
+        customer.measurements = { ...customer.measurements.toObject(), ...measurements };
+        await customer.save();
+      }
+    }
     
     await stitching.populate('customerId', 'name phone nameI18n');
+    await stitching.populate('relationId', 'name phone nameI18n');
     await stitching.populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
     
     // Send WhatsApp notification for new order
@@ -275,6 +303,10 @@ router.post('/', blockDemoWrites, async (req, res) => {
 router.put('/:id', blockDemoWrites, async (req, res) => {
   try {
     const { 
+      relationId,
+      relationName,
+      relationType,
+      orderFor,
       measurements, 
       styleOptions,
       embroideryDesignId,
@@ -389,6 +421,28 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
     if (fabricColor !== undefined) stitching.fabricColor = fabricColor;
     if (fabricId !== undefined) stitching.fabricId = nextFabricId;
     if (rollsUsed !== undefined) stitching.rollsUsed = nextRollsUsed;
+
+    if (relationId !== undefined || relationName !== undefined || relationType !== undefined || orderFor !== undefined) {
+      let relToSave = null;
+      if (relationId) {
+        const relExists = await Customer.findOne({ _id: relationId, userId: req.user._id }).select('_id name phone nameI18n');
+        if (!relExists) return res.status(400).json({ error: 'Invalid relation customer' });
+        relToSave = relExists;
+      }
+      stitching.relationId = relToSave?._id || (relationId ? relationId : null);
+      stitching.relationName = (relToSave ? (relToSave.nameI18n?.en || relToSave.name) : null) || (relationName !== undefined ? relationName : stitching.relationName);
+      stitching.relationType = relationType !== undefined ? relationType : stitching.relationType;
+      stitching.orderFor = (relToSave ? (relToSave.nameI18n?.en || relToSave.name) : null) || (orderFor !== undefined ? orderFor : stitching.orderFor);
+    }
+
+    if (measurements) {
+      const targetId = stitching.relationId ? (stitching.relationId._id || stitching.relationId) : (stitching.customerId?._id || stitching.customerId);
+      const targetCustomer = await Customer.findOne({ _id: targetId, userId: req.user._id });
+      if (targetCustomer) {
+        targetCustomer.measurements = { ...targetCustomer.measurements.toObject(), ...measurements };
+        await targetCustomer.save();
+      }
+    }
     if (status) {
       stitching.status = status;
       if (status === 'completed') stitching.completedDate = new Date();
@@ -444,6 +498,7 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
     
     await stitching.save();
     await stitching.populate('customerId', 'name phone nameI18n');
+    await stitching.populate('relationId', 'name phone nameI18n');
     await stitching.populate('workerId', 'name phone nameI18n');
     await stitching.populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
     

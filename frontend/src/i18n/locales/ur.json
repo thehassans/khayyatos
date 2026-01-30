@@ -30,7 +30,9 @@
     "noData": "کوئی ڈیٹا دستیاب نہیں",
     "success": "کامیاب",
     "error": "خرابی",
-    "welcome": "خوش آمدید"
+    "welcome": "خوش آمدید",
+    "required": "ضروری",
+    "invalidAmount": "غلط رقم"
   },
   "auth": {
     "login": "لاگ ان",
@@ -56,6 +58,7 @@
     "customers": "گاہک",
     "embroideryDesigns": "کڑھائی ڈیزائنز",
     "laundry": "لانڈری",
+    "fabrics": "کپڑا",
     "stitchings": "سلائی",
     "loyalty": "گاہک وفاداری",
     "whatsapp": "واٹس ایپ",
@@ -63,6 +66,31 @@
     "settings": "ترتیبات",
     "users": "صارفین",
     "amounts": "ادائیگی"
+  },
+  "fabrics": {
+    "title": "Fabric Rollar",
+    "subtitle": "کپڑے بنائیں، فی رول قیمت، ملکِ ساخت اور اسٹاک مینیج کریں۔",
+    "addFabric": "کپڑا شامل کریں",
+    "totalRollsInStock": "کل رولز اسٹاک میں",
+    "inventoryValue": "اسٹاک کی قیمت",
+    "listTitle": "کپڑے",
+    "name": "نام",
+    "madeIn": "ملکِ ساخت",
+    "pricePerRoll": "قیمت / رول",
+    "stock": "اسٹاک",
+    "value": "قیمت",
+    "stockAction": "اسٹاک",
+    "addModalTitle": "کپڑا شامل کریں",
+    "editModalTitle": "کپڑا ترمیم کریں",
+    "adjustStockTitle": "اسٹاک ایڈجسٹ کریں",
+    "adjustStockHint": "مثبت نمبر سے رولز بڑھائیں، منفی نمبر سے کم کریں۔",
+    "deltaLabel": "تبدیلی (± رولز)",
+    "quickAddOne": "+1",
+    "quickSubtractOne": "-1",
+    "deleteConfirmMessage": "یہ کپڑا حذف کریں؟",
+    "deleteConfirmSubtitle": "یہ عمل واپس نہیں ہو سکتا۔ اگر کپڑا آرڈرز میں استعمال ہو تو حذف نہیں ہو سکے گا۔",
+    "rollsUnit": "رولز",
+    "perRollUnit": "/ رول"
   },
   "dashboard": {
     "title": "ڈیش بورڈ",

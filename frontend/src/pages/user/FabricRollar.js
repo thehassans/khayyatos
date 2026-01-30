@@ -236,22 +236,22 @@ const FabricRollar = () => {
             <Layers className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Fabric Rollar</h1>
-            <div className="text-sm text-gray-500 dark:text-slate-400">Create fabrics, manage price per roll, made in, and stock.</div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('fabrics.title', { defaultValue: 'Fabric Rollar' })}</h1>
+            <div className="text-sm text-gray-500 dark:text-slate-400">{t('fabrics.subtitle', { defaultValue: 'Create fabrics, manage price per roll, made in, and stock.' })}</div>
           </div>
         </div>
         <Button onClick={openCreate} icon={Plus} className="rounded-2xl px-5 py-3">
-          Add Fabric
+          {t('fabrics.addFabric', { defaultValue: 'Add Fabric' })}
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="p-6">
-          <div className="text-sm text-gray-500 dark:text-slate-400">Total Rolls In Stock</div>
+          <div className="text-sm text-gray-500 dark:text-slate-400">{t('fabrics.totalRollsInStock', { defaultValue: 'Total Rolls In Stock' })}</div>
           <div className="mt-2 text-3xl font-bold text-gray-900 dark:text-slate-100">{computed.totalRolls}</div>
         </Card>
         <Card className="p-6">
-          <div className="text-sm text-gray-500 dark:text-slate-400">Inventory Value</div>
+          <div className="text-sm text-gray-500 dark:text-slate-400">{t('fabrics.inventoryValue', { defaultValue: 'Inventory Value' })}</div>
           <div className="mt-2 text-3xl font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
             {computed.totalValue.toFixed(2)} <SARIcon className="w-5 h-5" />
           </div>
@@ -260,7 +260,7 @@ const FabricRollar = () => {
 
       <Card>
         <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
-          <div className="font-semibold text-gray-900 dark:text-slate-100">Fabrics</div>
+          <div className="font-semibold text-gray-900 dark:text-slate-100">{t('fabrics.listTitle', { defaultValue: 'Fabrics' })}</div>
         </div>
 
         {loading ? (
@@ -271,11 +271,11 @@ const FabricRollar = () => {
           <Table>
             <Thead>
               <Tr>
-                <Th>Name</Th>
-                <Th>Made In</Th>
-                <Th>Price / Roll</Th>
-                <Th>Stock</Th>
-                <Th>Value</Th>
+                <Th>{t('fabrics.name', { defaultValue: 'Name' })}</Th>
+                <Th>{t('fabrics.madeIn', { defaultValue: 'Made In' })}</Th>
+                <Th>{t('fabrics.pricePerRoll', { defaultValue: 'Price / Roll' })}</Th>
+                <Th>{t('fabrics.stock', { defaultValue: 'Stock' })}</Th>
+                <Th>{t('fabrics.value', { defaultValue: 'Value' })}</Th>
                 <Th>{t('common.actions', { defaultValue: 'Actions' })}</Th>
               </Tr>
             </Thead>
@@ -304,7 +304,7 @@ const FabricRollar = () => {
                           disabled={isDemo}
                           icon={Layers}
                         >
-                          Stock
+                          {t('fabrics.stockAction', { defaultValue: 'Stock' })}
                         </Button>
                         <button
                           type="button"
@@ -336,12 +336,12 @@ const FabricRollar = () => {
         )}
       </Card>
 
-      <Modal isOpen={createOpen} onClose={closeCreate} title="Add Fabric" size="lg">
+      <Modal isOpen={createOpen} onClose={closeCreate} title={t('fabrics.addModalTitle', { defaultValue: 'Add Fabric' })} size="lg">
         <div className="space-y-4">
-          <Input label="Name" value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} />
-          <Input label="Made In" value={createForm.madeIn} onChange={(e) => setCreateForm((p) => ({ ...p, madeIn: e.target.value }))} />
-          <Input label="Price / Roll" type="number" min="0" step="0.01" value={createForm.pricePerRoll} onChange={(e) => setCreateForm((p) => ({ ...p, pricePerRoll: e.target.value }))} />
-          <Input label="Rolls In Stock" type="number" min="0" step="1" value={createForm.rollsInStock} onChange={(e) => setCreateForm((p) => ({ ...p, rollsInStock: e.target.value }))} />
+          <Input label={t('fabrics.name', { defaultValue: 'Name' })} value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} />
+          <Input label={t('fabrics.madeIn', { defaultValue: 'Made In' })} value={createForm.madeIn} onChange={(e) => setCreateForm((p) => ({ ...p, madeIn: e.target.value }))} />
+          <Input label={t('fabrics.pricePerRoll', { defaultValue: 'Price / Roll' })} type="number" min="0" step="0.01" value={createForm.pricePerRoll} onChange={(e) => setCreateForm((p) => ({ ...p, pricePerRoll: e.target.value }))} />
+          <Input label={t('fabrics.stock', { defaultValue: 'Stock' })} type="number" min="0" step="1" value={createForm.rollsInStock} onChange={(e) => setCreateForm((p) => ({ ...p, rollsInStock: e.target.value }))} />
           <div className="flex gap-3 pt-2">
             <Button onClick={submitCreate} className="flex-1 rounded-2xl" disabled={isDemo}>{t('common.save', { defaultValue: 'Save' })}</Button>
             <Button variant="secondary" onClick={closeCreate} className="flex-1 rounded-2xl">{t('common.cancel', { defaultValue: 'Cancel' })}</Button>
@@ -349,12 +349,12 @@ const FabricRollar = () => {
         </div>
       </Modal>
 
-      <Modal isOpen={editOpen} onClose={closeEdit} title={t('common.edit', { defaultValue: 'Edit' })} size="lg">
+      <Modal isOpen={editOpen} onClose={closeEdit} title={t('fabrics.editModalTitle', { defaultValue: 'Edit Fabric' })} size="lg">
         <div className="space-y-4">
-          <Input label="Name" value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
-          <Input label="Made In" value={editForm.madeIn} onChange={(e) => setEditForm((p) => ({ ...p, madeIn: e.target.value }))} />
-          <Input label="Price / Roll" type="number" min="0" step="0.01" value={editForm.pricePerRoll} onChange={(e) => setEditForm((p) => ({ ...p, pricePerRoll: e.target.value }))} />
-          <Input label="Rolls In Stock" type="number" min="0" step="1" value={editForm.rollsInStock} onChange={(e) => setEditForm((p) => ({ ...p, rollsInStock: e.target.value }))} />
+          <Input label={t('fabrics.name', { defaultValue: 'Name' })} value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
+          <Input label={t('fabrics.madeIn', { defaultValue: 'Made In' })} value={editForm.madeIn} onChange={(e) => setEditForm((p) => ({ ...p, madeIn: e.target.value }))} />
+          <Input label={t('fabrics.pricePerRoll', { defaultValue: 'Price / Roll' })} type="number" min="0" step="0.01" value={editForm.pricePerRoll} onChange={(e) => setEditForm((p) => ({ ...p, pricePerRoll: e.target.value }))} />
+          <Input label={t('fabrics.stock', { defaultValue: 'Stock' })} type="number" min="0" step="1" value={editForm.rollsInStock} onChange={(e) => setEditForm((p) => ({ ...p, rollsInStock: e.target.value }))} />
           <div className="flex gap-3 pt-2">
             <Button onClick={submitEdit} className="flex-1 rounded-2xl" disabled={isDemo}>{t('common.save', { defaultValue: 'Save' })}</Button>
             <Button variant="secondary" onClick={closeEdit} className="flex-1 rounded-2xl">{t('common.cancel', { defaultValue: 'Cancel' })}</Button>
@@ -362,17 +362,17 @@ const FabricRollar = () => {
         </div>
       </Modal>
 
-      <Modal isOpen={stockOpen} onClose={closeStock} title="Adjust Stock" size="lg">
+      <Modal isOpen={stockOpen} onClose={closeStock} title={t('fabrics.adjustStockTitle', { defaultValue: 'Adjust Stock' })} size="lg">
         <div className="space-y-4">
           <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 p-4">
             <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{stockForm.name || ''}</div>
-            <div className="text-xs text-gray-500 dark:text-slate-400">Use a positive number to add rolls, or negative to subtract.</div>
+            <div className="text-xs text-gray-500 dark:text-slate-400">{t('fabrics.adjustStockHint', { defaultValue: 'Use a positive number to add rolls, or negative to subtract.' })}</div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
               <Input
-                label="Delta (± rolls)"
+                label={t('fabrics.deltaLabel', { defaultValue: 'Delta (± rolls)' })}
                 type="number"
                 step="1"
                 value={stockForm.delta}
@@ -386,7 +386,7 @@ const FabricRollar = () => {
                 className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 hover:bg-gray-50 dark:hover:bg-slate-900/60 text-gray-700 dark:text-slate-200"
               >
                 <Plus className="w-4 h-4" />
-                +1
+                {t('fabrics.quickAddOne', { defaultValue: '+1' })}
               </button>
               <button
                 type="button"
@@ -394,7 +394,7 @@ const FabricRollar = () => {
                 className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 hover:bg-gray-50 dark:hover:bg-slate-900/60 text-gray-700 dark:text-slate-200"
               >
                 <Minus className="w-4 h-4" />
-                -1
+                {t('fabrics.quickSubtractOne', { defaultValue: '-1' })}
               </button>
             </div>
           </div>
@@ -410,8 +410,8 @@ const FabricRollar = () => {
         isOpen={deleteModal.open}
         onClose={closeDelete}
         title={t('common.delete', { defaultValue: 'Delete' })}
-        message="Delete this fabric?"
-        subtitle="This action cannot be undone. If this fabric is used by orders, deletion will be blocked."
+        message={t('fabrics.deleteConfirmMessage', { defaultValue: 'Delete this fabric?' })}
+        subtitle={t('fabrics.deleteConfirmSubtitle', { defaultValue: 'This action cannot be undone. If this fabric is used by orders, deletion will be blocked.' })}
         confirmText={t('common.delete', { defaultValue: 'Delete' })}
         cancelText={t('common.cancel', { defaultValue: 'Cancel' })}
         confirmVariant="danger"
@@ -420,7 +420,7 @@ const FabricRollar = () => {
         previewTitle={deleteModal?.fabric?.name || ''}
         previewSubtitle={deleteModal?.fabric ? (
           <span className="inline-flex items-center gap-1">
-            {Number(deleteModal.fabric.rollsInStock || 0)} rolls · {Number(deleteModal.fabric.pricePerRoll || 0).toFixed(2)} <SARIcon className="w-3 h-3" /> / roll
+            {Number(deleteModal.fabric.rollsInStock || 0)} {t('fabrics.rollsUnit', { defaultValue: 'rolls' })} · {Number(deleteModal.fabric.pricePerRoll || 0).toFixed(2)} <SARIcon className="w-3 h-3" /> {t('fabrics.perRollUnit', { defaultValue: '/ roll' })}
           </span>
         ) : ''}
       />

@@ -30,7 +30,9 @@
     "noData": "কোন তথ্য নেই",
     "success": "সফল",
     "error": "ত্রুটি",
-    "welcome": "স্বাগতম"
+    "welcome": "স্বাগতম",
+    "required": "আবশ্যক",
+    "invalidAmount": "অবৈধ পরিমাণ"
   },
   "auth": {
     "login": "লগইন",
@@ -56,6 +58,7 @@
     "customers": "গ্রাহক",
     "embroideryDesigns": "কাঠি/কড়াই ডিজাইন",
     "laundry": "লন্ড্রি",
+    "fabrics": "কাপড়",
     "stitchings": "সেলাই",
     "loyalty": "গ্রাহক আনুগত্য",
     "whatsapp": "হোয়াটসঅ্যাপ",
@@ -63,6 +66,31 @@
     "settings": "সেটিংস",
     "users": "ব্যবহারকারী",
     "amounts": "পেমেন্ট"
+  },
+  "fabrics": {
+    "title": "Fabric Rollar",
+    "subtitle": "কাপড় তৈরি করুন, প্রতি রোল দাম, উৎপত্তি এবং স্টক ম্যানেজ করুন।",
+    "addFabric": "কাপড় যোগ করুন",
+    "totalRollsInStock": "মোট রোল স্টকে",
+    "inventoryValue": "ইনভেন্টরি ভ্যালু",
+    "listTitle": "কাপড়",
+    "name": "নাম",
+    "madeIn": "Made In",
+    "pricePerRoll": "দাম / রোল",
+    "stock": "স্টক",
+    "value": "ভ্যালু",
+    "stockAction": "স্টক",
+    "addModalTitle": "কাপড় যোগ করুন",
+    "editModalTitle": "কাপড় সম্পাদনা",
+    "adjustStockTitle": "স্টক পরিবর্তন",
+    "adjustStockHint": "রোল যোগ করতে পজিটিভ নম্বর, কমাতে নেগেটিভ নম্বর।",
+    "deltaLabel": "পরিবর্তন (± রোল)",
+    "quickAddOne": "+1",
+    "quickSubtractOne": "-1",
+    "deleteConfirmMessage": "এই কাপড় মুছবেন?",
+    "deleteConfirmSubtitle": "এই কাজটি আর ফেরত নেওয়া যাবে না। যদি এই কাপড় অর্ডারে ব্যবহৃত হয়, মুছতে বাধা দেওয়া হবে।",
+    "rollsUnit": "রোল",
+    "perRollUnit": "/ রোল"
   },
   "dashboard": {
     "title": "ড্যাশবোর্ড",

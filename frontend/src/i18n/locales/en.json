@@ -30,7 +30,9 @@
     "noData": "No data available",
     "success": "Success",
     "error": "Error",
-    "welcome": "Welcome"
+    "welcome": "Welcome",
+    "required": "Required",
+    "invalidAmount": "Invalid amount"
   },
   "auth": {
     "login": "Login",
@@ -56,6 +58,7 @@
     "customers": "Customers",
     "embroideryDesigns": "Embroidery Designs",
     "laundry": "Laundry",
+    "fabrics": "Fabrics",
     "stitchings": "Stitchings",
     "loyalty": "Customer Loyalty",
     "whatsapp": "WhatsApp",
@@ -63,6 +66,31 @@
     "settings": "Settings",
     "users": "Users",
     "amounts": "Amounts"
+  },
+  "fabrics": {
+    "title": "Fabric Rollar",
+    "subtitle": "Create fabrics, manage price per roll, made in, and stock.",
+    "addFabric": "Add Fabric",
+    "totalRollsInStock": "Total Rolls In Stock",
+    "inventoryValue": "Inventory Value",
+    "listTitle": "Fabrics",
+    "name": "Name",
+    "madeIn": "Made In",
+    "pricePerRoll": "Price / Roll",
+    "stock": "Stock",
+    "value": "Value",
+    "stockAction": "Stock",
+    "addModalTitle": "Add Fabric",
+    "editModalTitle": "Edit Fabric",
+    "adjustStockTitle": "Adjust Stock",
+    "adjustStockHint": "Use a positive number to add rolls, or negative to subtract.",
+    "deltaLabel": "Delta (± rolls)",
+    "quickAddOne": "+1",
+    "quickSubtractOne": "-1",
+    "deleteConfirmMessage": "Delete this fabric?",
+    "deleteConfirmSubtitle": "This action cannot be undone. If this fabric is used by orders, deletion will be blocked.",
+    "rollsUnit": "rolls",
+    "perRollUnit": "/ roll"
   },
   "dashboard": {
     "title": "Dashboard",

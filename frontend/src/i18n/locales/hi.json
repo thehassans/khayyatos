@@ -30,7 +30,9 @@
     "noData": "कोई डेटा उपलब्ध नहीं",
     "success": "सफल",
     "error": "त्रुटि",
-    "welcome": "स्वागत है"
+    "welcome": "स्वागत है",
+    "required": "आवश्यक",
+    "invalidAmount": "अमान्य राशि"
   },
   "auth": {
     "login": "लॉगिन",
@@ -56,6 +58,7 @@
     "customers": "ग्राहक",
     "embroideryDesigns": "कढ़ाई डिज़ाइन्स",
     "laundry": "लॉन्ड्री",
+    "fabrics": "कपड़ा",
     "stitchings": "सिलाई",
     "loyalty": "ग्राहक लॉयल्टी",
     "whatsapp": "व्हाट्सएप",
@@ -63,6 +66,31 @@
     "settings": "सेटिंग्स",
     "users": "उपयोगकर्ता",
     "amounts": "भुगतान"
+  },
+  "fabrics": {
+    "title": "Fabric Rollar",
+    "subtitle": "कपड़े बनाएं, प्रति रोल कीमत, बना हुआ देश और स्टॉक प्रबंधित करें।",
+    "addFabric": "कपड़ा जोड़ें",
+    "totalRollsInStock": "कुल रोल स्टॉक में",
+    "inventoryValue": "इन्वेंट्री वैल्यू",
+    "listTitle": "कपड़े",
+    "name": "नाम",
+    "madeIn": "Made In",
+    "pricePerRoll": "कीमत / रोल",
+    "stock": "स्टॉक",
+    "value": "वैल्यू",
+    "stockAction": "स्टॉक",
+    "addModalTitle": "कपड़ा जोड़ें",
+    "editModalTitle": "कपड़ा संपादित करें",
+    "adjustStockTitle": "स्टॉक बदलें",
+    "adjustStockHint": "रोल जोड़ने के लिए पॉजिटिव नंबर, घटाने के लिए नेगेटिव नंबर।",
+    "deltaLabel": "परिवर्तन (± रोल)",
+    "quickAddOne": "+1",
+    "quickSubtractOne": "-1",
+    "deleteConfirmMessage": "यह कपड़ा हटाएं?",
+    "deleteConfirmSubtitle": "यह क्रिया वापस नहीं हो सकती। अगर यह कपड़ा ऑर्डर में उपयोग हो रहा है तो हटाना रोक दिया जाएगा।",
+    "rollsUnit": "रोल",
+    "perRollUnit": "/ रोल"
   },
   "dashboard": {
     "title": "डैशबोर्ड",

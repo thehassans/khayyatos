@@ -43,6 +43,23 @@ const stitchingSchema = new mongoose.Schema({
     ref: 'Customer',
     required: true
   },
+  relationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Customer',
+    default: null
+  },
+  relationName: {
+    type: String,
+    default: null
+  },
+  relationType: {
+    type: String,
+    default: null
+  },
+  orderFor: {
+    type: String,
+    default: null
+  },
   workerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Worker',

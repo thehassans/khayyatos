@@ -30,7 +30,9 @@
     "noData": "لا توجد بيانات",
     "success": "نجاح",
     "error": "خطأ",
-    "welcome": "مرحباً"
+    "welcome": "مرحباً",
+    "required": "مطلوب",
+    "invalidAmount": "قيمة غير صحيحة"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -56,6 +58,7 @@
     "customers": "العملاء",
     "embroideryDesigns": "تصاميم التطريز",
     "laundry": "الغسيل",
+    "fabrics": "الأقمشة",
     "stitchings": "الخياطة",
     "loyalty": "ولاء العملاء",
     "whatsapp": "واتساب",
@@ -63,6 +66,31 @@
     "settings": "الإعدادات",
     "users": "المستخدمين",
     "amounts": "المبالغ"
+  },
+  "fabrics": {
+    "title": "رولات القماش",
+    "subtitle": "أنشئ الأقمشة وادِر سعر الرول وبلد الصنع والمخزون.",
+    "addFabric": "إضافة قماش",
+    "totalRollsInStock": "إجمالي الرولات في المخزون",
+    "inventoryValue": "قيمة المخزون",
+    "listTitle": "الأقمشة",
+    "name": "الاسم",
+    "madeIn": "بلد الصنع",
+    "pricePerRoll": "سعر / رول",
+    "stock": "المخزون",
+    "value": "القيمة",
+    "stockAction": "المخزون",
+    "addModalTitle": "إضافة قماش",
+    "editModalTitle": "تعديل القماش",
+    "adjustStockTitle": "تعديل المخزون",
+    "adjustStockHint": "اكتب رقمًا موجبًا لإضافة رولات أو رقمًا سالبًا للخصم.",
+    "deltaLabel": "التغيير (± رولات)",
+    "quickAddOne": "+1",
+    "quickSubtractOne": "-1",
+    "deleteConfirmMessage": "حذف هذا القماش؟",
+    "deleteConfirmSubtitle": "لا يمكن التراجع عن هذا الإجراء. إذا كان القماش مستخدمًا في طلبات فسيتم منع الحذف.",
+    "rollsUnit": "رولات",
+    "perRollUnit": "/ رول"
   },
   "dashboard": {
     "title": "لوحة التحكم",

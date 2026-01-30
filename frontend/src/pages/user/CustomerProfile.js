@@ -8,7 +8,7 @@ import { Modal } from '../../components/ui/Modal';
 import { StatusBadge } from '../../components/ui/Badge';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import SARIcon from '../../components/ui/SARIcon';
-import { ArrowLeft, Users, Phone, Plus, Edit, Receipt, Calendar, Search, UserPlus } from 'lucide-react';
+import { ArrowLeft, Users, Phone, Plus, Edit, Receipt, Calendar, Search, UserPlus, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const RELATION_TYPES = [
@@ -44,6 +44,8 @@ const CustomerProfile = () => {
   const [familySelected, setFamilySelected] = useState(null);
   const [familySaving, setFamilySaving] = useState(false);
 
+  const [orderHistoryOpen, setOrderHistoryOpen] = useState(false);
+
   const treeScrollRef = useRef(null);
   const treeDidCenterRef = useRef(false);
 
@@ -53,6 +55,10 @@ const CustomerProfile = () => {
 
   useEffect(() => {
     treeDidCenterRef.current = false;
+  }, [id]);
+
+  useEffect(() => {
+    setOrderHistoryOpen(false);
   }, [id]);
 
   const fetchCustomerProfile = async () => {
@@ -358,7 +364,62 @@ const CustomerProfile = () => {
               </div>
             </CardBody>
           </Card>
+        </div>
 
+        <div className="lg:col-span-2">
+          <Card className="overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('customers.orderHistory')}</h2>
+                <p className="text-sm text-gray-500 dark:text-slate-400">{sortedOrders.length} orders</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOrderHistoryOpen((p) => !p)}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 hover:bg-gray-50 dark:hover:bg-slate-900/40 text-sm text-slate-700 dark:text-slate-200"
+              >
+                <span>{orderHistoryOpen ? t('common.close', { defaultValue: 'Close' }) : t('common.view', { defaultValue: 'View' })}</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${orderHistoryOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+            {orderHistoryOpen ? (
+              <CardBody>
+                {sortedOrders.length > 0 ? (
+                  <div className="divide-y divide-gray-100 dark:divide-slate-800">
+                    {sortedOrders.map((o) => (
+                      <button
+                        key={o._id}
+                        type="button"
+                        onClick={() => navigate(`/user/stitchings/${o._id}/edit`)}
+                        className="w-full text-left py-4 px-2 rounded-xl hover:bg-[#D5B25B]/5 dark:hover:bg-[#D5B25B]/10 transition-colors"
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{o.receiptNumber || o._id?.slice(-6)}</span>
+                              <StatusBadge status={o.status} />
+                            </div>
+                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
+                              <span className="inline-flex items-center gap-1"><Calendar className="w-4 h-4" />{o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '—'}</span>
+                              <span className="inline-flex items-center gap-1"><SARIcon className="w-4 h-4" />{o.price || 0}</span>
+                              <span className="inline-flex items-center gap-1">Paid: {o.paidAmount || 0}</span>
+                              {o.workerId?.name ? <span className="inline-flex items-center gap-1">Worker: {o.workerId?.nameI18n?.[langKey] || o.workerId.name}</span> : null}
+                            </div>
+                          </div>
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 whitespace-nowrap">Open</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 dark:text-slate-400">{t('common.noData')}</div>
+                )}
+              </CardBody>
+            ) : null}
+          </Card>
+        </div>
+
+        <div className="lg:col-span-3">
           <Card className="overflow-hidden">
             <CardBody>
               <div className="flex items-center gap-2 mb-4">
@@ -522,49 +583,6 @@ const CustomerProfile = () => {
                   </div>
                 </div>
               </div>
-            </CardBody>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-2">
-          <Card className="overflow-hidden">
-            <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('customers.orderHistory')}</h2>
-                <p className="text-sm text-gray-500 dark:text-slate-400">{sortedOrders.length} orders</p>
-              </div>
-            </div>
-            <CardBody>
-              {sortedOrders.length > 0 ? (
-                <div className="divide-y divide-gray-100 dark:divide-slate-800">
-                  {sortedOrders.map((o) => (
-                    <button
-                      key={o._id}
-                      type="button"
-                      onClick={() => navigate(`/user/stitchings/${o._id}/edit`)}
-                      className="w-full text-left py-4 px-2 rounded-xl hover:bg-[#D5B25B]/5 dark:hover:bg-[#D5B25B]/10 transition-colors"
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{o.receiptNumber || o._id?.slice(-6)}</span>
-                            <StatusBadge status={o.status} />
-                          </div>
-                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
-                            <span className="inline-flex items-center gap-1"><Calendar className="w-4 h-4" />{o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '—'}</span>
-                            <span className="inline-flex items-center gap-1"><SARIcon className="w-4 h-4" />{o.price || 0}</span>
-                            <span className="inline-flex items-center gap-1">Paid: {o.paidAmount || 0}</span>
-                            {o.workerId?.name ? <span className="inline-flex items-center gap-1">Worker: {o.workerId?.nameI18n?.[langKey] || o.workerId.name}</span> : null}
-                          </div>
-                        </div>
-                        <div className="text-[11px] text-slate-400 dark:text-slate-500 whitespace-nowrap">Open</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-sm text-gray-500 dark:text-slate-400">{t('common.noData')}</div>
-              )}
             </CardBody>
           </Card>
         </div>

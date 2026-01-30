@@ -50,8 +50,13 @@ const StitchingForm = () => {
   const [customerSearch, setCustomerSearch] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedRelation, setSelectedRelation] = useState(null);
+  const selectedRelationIdRef = useRef(null);
   const [relationDropdownOpen, setRelationDropdownOpen] = useState(false);
   const [createdOrder, setCreatedOrder] = useState(null);
+  const [customerDetailsLoading, setCustomerDetailsLoading] = useState(false);
+  const [customerMeasurementsOpen, setCustomerMeasurementsOpen] = useState(true);
+  const [orderForMeasurementsOpen, setOrderForMeasurementsOpen] = useState(false);
+  const [orderForDetailsLoading, setOrderForDetailsLoading] = useState(false);
   const [styleCatalog, setStyleCatalog] = useState(null);
   const [styleCatalogLoading, setStyleCatalogLoading] = useState(false);
   const [measurementsCatalog, setMeasurementsCatalog] = useState(null);
@@ -122,6 +127,29 @@ const StitchingForm = () => {
     }
   };
 
+  const loadCustomerDetails = useCallback(async (customerId) => {
+    if (!customerId) return;
+    try {
+      setCustomerDetailsLoading(true);
+      const resp = await api.get(`/customers/${customerId}`);
+      const fetched = resp.data?.customer || null;
+      if (!fetched) return;
+      setSelectedCustomer(fetched);
+      setSelectedRelation(null);
+      selectedRelationIdRef.current = null;
+      setCustomerMeasurementsOpen(true);
+      setOrderForMeasurementsOpen(false);
+      setFormData((prev) => ({
+        ...prev,
+        measurements: fetched.measurements || {}
+      }));
+    } catch (e) {
+
+    } finally {
+      setCustomerDetailsLoading(false);
+    }
+  }, [api]);
+
   useEffect(() => {
     const preselectCustomer = async () => {
       if (isEdit) return;
@@ -131,33 +159,19 @@ const StitchingForm = () => {
 
       const fromList = (allCustomers || []).find((c) => c?._id === customerId);
       if (fromList) {
-        setSelectedCustomer(fromList);
-        setSelectedRelation(null);
-        setFormData((prev) => ({
-          ...prev,
-          measurements: fromList.measurements || {}
-        }));
+        await loadCustomerDetails(fromList._id);
         return;
       }
 
       try {
-        const resp = await api.get(`/customers/${customerId}`);
-        const fetched = resp.data?.customer || null;
-        if (fetched) {
-          setSelectedCustomer(fetched);
-          setSelectedRelation(null);
-          setFormData((prev) => ({
-            ...prev,
-            measurements: fetched.measurements || {}
-          }));
-        }
+        await loadCustomerDetails(customerId);
       } catch (e) {
 
       }
     };
 
     preselectCustomer();
-  }, [api, allCustomers, isEdit, searchParams, selectedCustomer?._id]);
+  }, [allCustomers, isEdit, loadCustomerDetails, searchParams, selectedCustomer?._id]);
 
   useEffect(() => {
     const preselectEmbroideryDesign = async () => {
@@ -240,7 +254,17 @@ const StitchingForm = () => {
     try {
       const response = await api.get(`/stitchings/${id}`);
       const stitch = response.data.stitching || response.data;
+      const customerIdToLoad = typeof stitch.customerId === 'object' ? stitch.customerId?._id : stitch.customerId;
       setSelectedCustomer(stitch.customerId);
+      if (customerIdToLoad) {
+        try {
+          const custResp = await api.get(`/customers/${customerIdToLoad}`);
+          const fetched = custResp.data?.customer || null;
+          if (fetched) setSelectedCustomer(fetched);
+        } catch (e) {
+
+        }
+      }
       const designId = typeof stitch.embroideryDesignId === 'object' ? stitch.embroideryDesignId?._id : stitch.embroideryDesignId;
       const designSnap = stitch.embroideryDesign || {};
       setSelectedEmbroideryDesign(designId ? {
@@ -264,29 +288,88 @@ const StitchingForm = () => {
         styleOptions: stitch.styleOptions || {},
         embroideryDesignId: designId || null
       });
+
+      const relId = typeof stitch.relationId === 'object' ? stitch.relationId?._id : stitch.relationId;
+      if (relId) {
+        setSelectedRelation({
+          _id: relId,
+          name: stitch.relationName || stitch.relationId?.nameI18n?.[langKey] || stitch.relationId?.name || '',
+          phone: stitch.relationId?.phone || '',
+          type: stitch.relationType || '',
+          measurements: stitch.measurements || {},
+          raw: null
+        });
+        setCustomerMeasurementsOpen(false);
+        setOrderForMeasurementsOpen(true);
+      } else {
+        setSelectedRelation(null);
+        setCustomerMeasurementsOpen(true);
+        setOrderForMeasurementsOpen(false);
+      }
     } catch (error) {
       toast.error('Failed to load');
       navigate('/user/stitchings');
     }
   };
 
-  const handleCustomerSelect = (customer) => {
-    setSelectedCustomer(customer);
-    setSelectedRelation(null); // Reset relation when customer changes
-    setFormData({
-      ...formData,
-      measurements: customer.measurements || {}
-    });
+  const handleCustomerSelect = async (customer) => {
     setDropdownOpen(false);
+    await loadCustomerDetails(customer?._id);
   };
 
+  const normalizeRelationForUi = (rel) => {
+    const ref = rel?.customerId && typeof rel.customerId === 'object' ? rel.customerId : null;
+    const id = ref?._id || rel?.customerId || rel?._id || null;
+    const type = rel?.relationType || rel?.type || '';
+    const name = ref?.nameI18n?.[langKey] || ref?.name || rel?.customerName || rel?.name || '';
+    const phone = ref?.phone || rel?.customerPhone || rel?.phone || '';
+    const measurements = ref?.measurements || rel?.measurements || {};
+
+    return {
+      _id: id,
+      name,
+      phone,
+      type,
+      measurements,
+      raw: rel
+    };
+  };
+
+  const loadOrderForMeasurements = useCallback(async (relationCustomerId) => {
+    if (!relationCustomerId) return {};
+    try {
+      setOrderForDetailsLoading(true);
+      const resp = await api.get(`/customers/${relationCustomerId}`);
+      const fetched = resp.data?.customer || null;
+      return fetched?.measurements || {};
+    } catch (e) {
+      return {};
+    } finally {
+      setOrderForDetailsLoading(false);
+    }
+  }, [api]);
+
   const handleRelationSelect = (relation) => {
-    setSelectedRelation(relation);
-    // Load relation's measurements if available
-    if (relation?.measurements) {
-      setFormData({
-        ...formData,
-        measurements: relation.measurements
+    const normalized = normalizeRelationForUi(relation);
+    setSelectedRelation(normalized);
+    selectedRelationIdRef.current = normalized?._id ? String(normalized._id) : null;
+    setCustomerMeasurementsOpen(false);
+    setOrderForMeasurementsOpen(true);
+    setFormData((prev) => ({
+      ...prev,
+      measurements: normalized.measurements || {}
+    }));
+    if (normalized?._id) {
+      loadOrderForMeasurements(normalized._id).then((m) => {
+        if (String(selectedRelationIdRef.current || '') !== String(normalized._id)) return;
+        if (m && Object.keys(m).length > 0) {
+          setSelectedRelation((p) => {
+            if (!p) return p;
+            if (String(p._id) !== String(normalized._id)) return p;
+            return { ...p, measurements: m };
+          });
+          setFormData((prev) => ({ ...prev, measurements: m }));
+        }
       });
     }
     setRelationDropdownOpen(false);
@@ -294,11 +377,14 @@ const StitchingForm = () => {
 
   const clearRelation = () => {
     setSelectedRelation(null);
+    selectedRelationIdRef.current = null;
+    setCustomerMeasurementsOpen(true);
+    setOrderForMeasurementsOpen(false);
     // Restore customer's measurements
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       measurements: selectedCustomer?.measurements || {}
-    });
+    }));
   };
 
   const handlePrintLabel = async () => {
@@ -348,6 +434,8 @@ const StitchingForm = () => {
     // Bilingual labels
     const labels = {
       customer: { en: 'Customer', ar: 'العميل' },
+      orderFor: { en: 'Order For', ar: 'الطلب لـ' },
+      relationType: { en: 'Relation', ar: 'الصلة' },
       phone: { en: 'Phone', ar: 'الهاتف' },
       quantity: { en: 'Quantity', ar: 'الكمية' },
       price: { en: 'Price', ar: 'السعر' },
@@ -355,6 +443,9 @@ const StitchingForm = () => {
       balance: { en: 'Balance', ar: 'المتبقي' },
       dueDate: { en: 'Due Date', ar: 'تاريخ التسليم' },
       status: { en: 'Status', ar: 'الحالة' },
+      thawbType: { en: 'Thawb', ar: 'الثوب' },
+      fabric: { en: 'Fabric', ar: 'القماش' },
+      rollsUsed: { en: 'Rolls Used', ar: 'الرولات المستخدمة' },
       scanToTrack: { en: 'Scan to track order', ar: 'امسح لتتبع الطلب' }
     };
     
@@ -384,6 +475,19 @@ const StitchingForm = () => {
     const sarSvg = `<svg viewBox="0 0 1124.14 1256.39" width="14" height="14" style="display:inline;vertical-align:middle;margin:0 2px;" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z" /><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z" /></svg>`;
     
     const isRTL = labelLang === 'ar';
+
+    const customerNameEn = selectedCustomer?.nameI18n?.en || selectedCustomer?.name || '-';
+    const customerNameAr = selectedCustomer?.nameI18n?.ar || selectedCustomer?.name || '-';
+    const customerDisplay = labelLang === 'en' ? customerNameEn : labelLang === 'ar' ? customerNameAr : `${customerNameEn} / ${customerNameAr}`;
+
+    const orderForNameEn = createdOrder?.relationId?.nameI18n?.en || createdOrder?.relationName || customerNameEn;
+    const orderForNameAr = createdOrder?.relationId?.nameI18n?.ar || createdOrder?.relationName || customerNameAr;
+    const orderForDisplay = labelLang === 'en' ? orderForNameEn : labelLang === 'ar' ? orderForNameAr : `${orderForNameEn} / ${orderForNameAr}`;
+
+    const relTypeValue = createdOrder?.relationType || '';
+    const fabricDisplay = createdOrder?.fabricId?.name ? `${createdOrder.fabricId.name}${createdOrder.fabricId.madeIn ? ` · ${createdOrder.fabricId.madeIn}` : ''}` : '-';
+    const rollsUsedDisplay = (createdOrder?.rollsUsed !== undefined && createdOrder?.rollsUsed !== null) ? String(createdOrder.rollsUsed) : '0';
+    const thawbTypeDisplay = createdOrder?.thawbType || formData.thawbType || '-';
     
     const printWindow = window.open('', '_blank', 'width=320,height=650');
     printWindow.document.write(`
@@ -423,8 +527,13 @@ const StitchingForm = () => {
           ${user?.businessAddress ? `<div class="shop-address">${user.businessAddress}</div>` : ''}
         </div>
         <div class="receipt-no">#${createdOrder.receiptNumber || createdOrder._id?.slice(-6)}</div>
-        <div class="row"><span class="label">${getLabel('customer')}:</span><span class="value">${selectedCustomer?.name || '-'}</span></div>
+        <div class="row"><span class="label">${getLabel('customer')}:</span><span class="value">${customerDisplay}</span></div>
+        <div class="row"><span class="label">${getLabel('orderFor')}:</span><span class="value">${orderForDisplay}</span></div>
+        ${relTypeValue ? `<div class="row"><span class="label">${getLabel('relationType')}:</span><span class="value">${relTypeValue}</span></div>` : ''}
         <div class="row"><span class="label">${getLabel('phone')}:</span><span class="value">${selectedCustomer?.phone || '-'}</span></div>
+        <div class="row"><span class="label">${getLabel('thawbType')}:</span><span class="value">${thawbTypeDisplay}</span></div>
+        <div class="row"><span class="label">${getLabel('fabric')}:</span><span class="value">${fabricDisplay}</span></div>
+        <div class="row"><span class="label">${getLabel('rollsUsed')}:</span><span class="value">${rollsUsedDisplay}</span></div>
         <div class="row"><span class="label">${getLabel('quantity')}:</span><span class="value">${formData.quantity}</span></div>
         <div class="row"><span class="label">${getLabel('price')}:</span><span class="value">${formData.price || 0} ${sarSvg}</span></div>
         <div class="row"><span class="label">${getLabel('paid')}:</span><span class="value">${formData.paidAmount || 0} ${sarSvg}</span></div>
@@ -1004,34 +1113,98 @@ const StitchingForm = () => {
             </div>
 
             {/* Measurements - Premium Visual UI */}
-            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('customers.measurements')}</h3>
-                {selectedRelation?.measurements && Object.keys(selectedRelation.measurements).length > 0 ? (
-                  <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-full">
-                    ✓ Auto-filled from {selectedRelation.name}
-                  </span>
-                ) : selectedCustomer?.measurements && Object.keys(selectedCustomer.measurements).length > 0 && (
-                  <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded-full">
-                    ✓ Auto-filled from customer
-                  </span>
-                )}
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
+                <button
+                  type="button"
+                  onClick={() => setCustomerMeasurementsOpen((p) => !p)}
+                  className="w-full flex items-center justify-between"
+                >
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('customers.measurements')} ({selectedCustomer?.nameI18n?.[langKey] || selectedCustomer?.name || ''})</h3>
+                  <ChevronDown className={`w-5 h-5 text-gray-400 dark:text-slate-400 transition-transform ${customerMeasurementsOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                <div className="mt-2 flex items-center gap-2">
+                  {selectedCustomer?.measurements && Object.keys(selectedCustomer.measurements).length > 0 ? (
+                    <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded-full">
+                      ✓ Auto-filled from customer
+                    </span>
+                  ) : null}
+                  {selectedRelation ? (
+                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-full">
+                      Read-only
+                    </span>
+                  ) : null}
+                </div>
+
+                {customerMeasurementsOpen ? (
+                  <>
+                    {measurementsCatalogLoading && (
+                      <div className="text-sm text-gray-500 dark:text-slate-400 mt-4">Loading…</div>
+                    )}
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {measurementFields.map((field) => (
+                        <MeasurementCard
+                          key={field.key}
+                          measurementKey={field.key}
+                          label={field.label}
+                          value={(selectedRelation ? (selectedCustomer?.measurements || {}) : (formData.measurements || {}))[field.key]}
+                          onChange={(value) => {
+                            if (selectedRelation) return;
+                            handleMeasurementChange(field.key, value);
+                          }}
+                          disabled={!!selectedRelation}
+                          imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
+                        />
+                      ))}
+                    </div>
+                  </>
+                ) : null}
               </div>
-              {measurementsCatalogLoading && (
-                <div className="text-sm text-gray-500 dark:text-slate-400 mb-4">Loading…</div>
-              )}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {measurementFields.map((field) => (
-                  <MeasurementCard
-                    key={field.key}
-                    measurementKey={field.key}
-                    label={field.label}
-                    value={formData.measurements[field.key]}
-                    onChange={(value) => handleMeasurementChange(field.key, value)}
-                    imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
-                  />
-                ))}
-              </div>
+
+              {selectedRelation ? (
+                <div className="rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-gradient-to-br from-amber-50/60 to-white dark:from-amber-900/20 dark:to-slate-900/50 p-6">
+                  <button
+                    type="button"
+                    onClick={() => setOrderForMeasurementsOpen((p) => !p)}
+                    className="w-full flex items-center justify-between"
+                  >
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('customers.measurements')} ({selectedRelation?.name || ''})</h3>
+                    <ChevronDown className={`w-5 h-5 text-amber-500 transition-transform ${orderForMeasurementsOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <div className="mt-2 flex items-center gap-2">
+                    {orderForDetailsLoading ? (
+                      <span className="text-xs text-gray-500 dark:text-slate-400">Loading…</span>
+                    ) : null}
+                    {selectedRelation?.measurements && Object.keys(selectedRelation.measurements).length > 0 ? (
+                      <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-full">
+                        ✓ Auto-filled from {selectedRelation.name}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {orderForMeasurementsOpen ? (
+                    <>
+                      {measurementsCatalogLoading && (
+                        <div className="text-sm text-gray-500 dark:text-slate-400 mt-4">Loading…</div>
+                      )}
+                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {measurementFields.map((field) => (
+                          <MeasurementCard
+                            key={field.key}
+                            measurementKey={field.key}
+                            label={field.label}
+                            value={formData.measurements[field.key]}
+                            onChange={(value) => handleMeasurementChange(field.key, value)}
+                            imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
             <Textarea
@@ -1085,7 +1258,9 @@ const StitchingForm = () => {
                     {relationDropdownOpen && (
                       <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-amber-200 dark:border-amber-700 z-50 max-h-48 overflow-y-auto">
                         {selectedCustomer.relations && selectedCustomer.relations.length > 0 ? (
-                          selectedCustomer.relations.map((relation, idx) => (
+                          selectedCustomer.relations.map((relation, idx) => {
+                            const relUi = normalizeRelationForUi(relation);
+                            return (
                             <button
                               key={idx}
                               type="button"
@@ -1093,14 +1268,15 @@ const StitchingForm = () => {
                               className="w-full p-3 hover:bg-amber-50 dark:hover:bg-amber-900/30 flex items-center gap-3 text-left transition-colors border-b border-gray-100 dark:border-slate-700 last:border-b-0"
                             >
                               <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                                <span className="text-amber-700 dark:text-amber-200 font-medium text-sm">{relation.name?.charAt(0)}</span>
+                                <span className="text-amber-700 dark:text-amber-200 font-medium text-sm">{(relUi.name || '?').charAt(0)}</span>
                               </div>
                               <div>
-                                <p className="font-medium text-gray-900 dark:text-slate-100">{relation.name}</p>
-                                <p className="text-xs text-gray-500 dark:text-slate-400 capitalize">{relation.type}</p>
+                                <p className="font-medium text-gray-900 dark:text-slate-100">{relUi.name || '-'}</p>
+                                <p className="text-xs text-gray-500 dark:text-slate-400 capitalize">{relUi.type || ''}</p>
                               </div>
                             </button>
-                          ))
+                            );
+                          })
                         ) : (
                           <div className="p-4 text-center text-gray-500 dark:text-slate-400 text-sm">
                             No relations added for this customer.
