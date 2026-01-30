@@ -62,6 +62,16 @@ const stitchingSchema = new mongoose.Schema({
     enum: ['white', 'cream', 'offwhite', 'beige', 'grey', 'black', 'navy', 'brown', null],
     default: null
   },
+  fabricId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Fabric',
+    default: null
+  },
+  rollsUsed: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   measurements: {
     type: measurementSchema,
     default: () => ({})

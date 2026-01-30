@@ -5,6 +5,7 @@ const Customer = require('../models/Customer');
 const Worker = require('../models/Worker');
 const User = require('../models/User');
 const EmbroideryDesign = require('../models/EmbroideryDesign');
+const Fabric = require('../models/Fabric');
 const { verifyToken, isUser } = require('../middleware/auth');
 const { blockDemoWrites } = require('../middleware/demoGuard');
 const whatsappService = require('../utils/whatsappService');
@@ -55,7 +56,8 @@ router.get('/', async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .populate('customerId', 'name phone nameI18n')
-      .populate('workerId', 'name phone nameI18n');
+      .populate('workerId', 'name phone nameI18n')
+      .populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
     
     const total = await Stitching.countDocuments(query);
     
@@ -127,7 +129,8 @@ router.get('/:id', async (req, res) => {
       userId: req.user._id 
     })
       .populate('customerId')
-      .populate('workerId', 'name phone');
+      .populate('workerId', 'name phone')
+      .populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
     
     if (!stitching) {
       return res.status(404).json({ error: 'Stitching not found' });
@@ -154,7 +157,9 @@ router.post('/', blockDemoWrites, async (req, res) => {
       dueDate,
       receiptNumber,
       thawbType,
-      fabricColor 
+      fabricColor,
+      fabricId,
+      rollsUsed
     } = req.body;
     
     const customer = await Customer.findOne({ 
@@ -187,6 +192,29 @@ router.post('/', blockDemoWrites, async (req, res) => {
         imageUpdatedAt: design.imageUpdatedAt || null
       };
     }
+
+    const rollsUsedNum = Number(rollsUsed);
+    if (rollsUsed !== undefined && (!Number.isFinite(rollsUsedNum) || rollsUsedNum < 0)) {
+      return res.status(400).json({ error: 'Invalid rolls used' });
+    }
+    const rollsToUse = Number.isFinite(rollsUsedNum) ? rollsUsedNum : 0;
+    const fabricToUse = fabricId ? String(fabricId) : null;
+
+    if (fabricToUse && rollsToUse > 0) {
+      const updated = await Fabric.findOneAndUpdate(
+        { _id: fabricToUse, userId: req.user._id, rollsInStock: { $gte: rollsToUse } },
+        { $inc: { rollsInStock: -rollsToUse } },
+        { new: true }
+      );
+      if (!updated) {
+        const exists = await Fabric.findOne({ _id: fabricToUse, userId: req.user._id }).select('_id');
+        if (!exists) return res.status(400).json({ error: 'Invalid fabric' });
+        return res.status(400).json({ error: 'Insufficient fabric stock' });
+      }
+    } else if (fabricToUse) {
+      const exists = await Fabric.findOne({ _id: fabricToUse, userId: req.user._id }).select('_id');
+      if (!exists) return res.status(400).json({ error: 'Invalid fabric' });
+    }
     
     const stitching = new Stitching({
       userId: req.user._id,
@@ -194,6 +222,8 @@ router.post('/', blockDemoWrites, async (req, res) => {
       receiptNumber: finalReceiptNumber,
       thawbType: thawbType || 'saudi',
       fabricColor: fabricColor || null,
+      fabricId: fabricToUse,
+      rollsUsed: rollsToUse,
       measurements: measurements || customer.measurements,
       styleOptions: styleOptions || {},
       embroideryDesignId: designIdToSave,
@@ -216,6 +246,7 @@ router.post('/', blockDemoWrites, async (req, res) => {
     await customer.save();
     
     await stitching.populate('customerId', 'name phone nameI18n');
+    await stitching.populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
     
     // Send WhatsApp notification for new order
     const user = await User.findById(req.user._id);
@@ -254,7 +285,9 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
       dueDate,
       status,
       thawbType,
-      fabricColor 
+      fabricColor,
+      fabricId,
+      rollsUsed
     } = req.body;
     
     const stitching = await Stitching.findOne({ 
@@ -270,6 +303,63 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
     const oldQty = Number(stitching.quantity) || 0;
     const wasCredited = !!stitching.workerEarningsCredited;
     const workerId = stitching.workerId;
+
+    const oldFabricId = stitching.fabricId ? String(stitching.fabricId) : null;
+    const oldRollsUsed = Number(stitching.rollsUsed) || 0;
+
+    let nextFabricId = oldFabricId;
+    if (fabricId !== undefined) {
+      nextFabricId = fabricId ? String(fabricId) : null;
+    }
+
+    let nextRollsUsed = oldRollsUsed;
+    if (rollsUsed !== undefined) {
+      const n = Number(rollsUsed);
+      if (!Number.isFinite(n) || n < 0) {
+        return res.status(400).json({ error: 'Invalid rolls used' });
+      }
+      nextRollsUsed = n;
+    }
+
+    if (nextFabricId) {
+      const exists = await Fabric.findOne({ _id: nextFabricId, userId: req.user._id }).select('_id');
+      if (!exists) return res.status(400).json({ error: 'Invalid fabric' });
+    }
+
+    if (oldFabricId === nextFabricId) {
+      const delta = nextRollsUsed - oldRollsUsed;
+      if (delta > 0 && nextFabricId) {
+        const updated = await Fabric.findOneAndUpdate(
+          { _id: nextFabricId, userId: req.user._id, rollsInStock: { $gte: delta } },
+          { $inc: { rollsInStock: -delta } },
+          { new: true }
+        );
+        if (!updated) return res.status(400).json({ error: 'Insufficient fabric stock' });
+      } else if (delta < 0 && nextFabricId) {
+        await Fabric.findOneAndUpdate(
+          { _id: nextFabricId, userId: req.user._id },
+          { $inc: { rollsInStock: Math.abs(delta) } },
+          { new: true }
+        );
+      }
+    } else {
+      if (nextFabricId && nextRollsUsed > 0) {
+        const updated = await Fabric.findOneAndUpdate(
+          { _id: nextFabricId, userId: req.user._id, rollsInStock: { $gte: nextRollsUsed } },
+          { $inc: { rollsInStock: -nextRollsUsed } },
+          { new: true }
+        );
+        if (!updated) return res.status(400).json({ error: 'Insufficient fabric stock' });
+      }
+
+      if (oldFabricId && oldRollsUsed > 0) {
+        await Fabric.findOneAndUpdate(
+          { _id: oldFabricId, userId: req.user._id },
+          { $inc: { rollsInStock: oldRollsUsed } },
+          { new: true }
+        );
+      }
+    }
     
     if (measurements) stitching.measurements = measurements;
     if (styleOptions) stitching.styleOptions = styleOptions;
@@ -297,6 +387,8 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
     if (dueDate !== undefined) stitching.dueDate = dueDate;
     if (thawbType) stitching.thawbType = thawbType;
     if (fabricColor !== undefined) stitching.fabricColor = fabricColor;
+    if (fabricId !== undefined) stitching.fabricId = nextFabricId;
+    if (rollsUsed !== undefined) stitching.rollsUsed = nextRollsUsed;
     if (status) {
       stitching.status = status;
       if (status === 'completed') stitching.completedDate = new Date();
@@ -353,6 +445,7 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
     await stitching.save();
     await stitching.populate('customerId', 'name phone nameI18n');
     await stitching.populate('workerId', 'name phone nameI18n');
+    await stitching.populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
     
     // Send WhatsApp notification on status change
     if (status && status !== oldStatus) {
@@ -463,6 +556,16 @@ router.delete('/:id', blockDemoWrites, async (req, res) => {
       customer.totalSpent -= stitching.price;
       customer.totalOrders -= 1;
       await customer.save();
+    }
+
+    const fid = stitching.fabricId ? String(stitching.fabricId) : null;
+    const ru = Number(stitching.rollsUsed) || 0;
+    if (fid && ru > 0) {
+      await Fabric.findOneAndUpdate(
+        { _id: fid, userId: req.user._id },
+        { $inc: { rollsInStock: ru } },
+        { new: true }
+      );
     }
     
     await Stitching.findByIdAndDelete(req.params.id);

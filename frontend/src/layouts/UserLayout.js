@@ -21,7 +21,8 @@ import {
   Check,
   FileText,
   Image,
-  Droplets
+  Droplets,
+  Layers
 } from 'lucide-react';
 
 const UserLayout = () => {
@@ -158,6 +159,7 @@ const UserLayout = () => {
     { key: 'stitchings', to: '/user/stitchings', icon: Scissors, label: t('nav.stitchings') },
     { key: 'embroideryDesigns', to: '/user/embroidery-designs', icon: Image, label: t('nav.embroideryDesigns', { defaultValue: 'Embroidery Designs' }) },
     { key: 'laundry', to: '/user/laundry', icon: Droplets, label: t('nav.laundry', { defaultValue: 'Laundry' }) },
+    { key: 'fabrics', to: '/user/fabrics', icon: Layers, label: t('nav.fabrics', { defaultValue: 'Fabrics' }) },
     { key: 'loyalty', to: '/user/loyalty', icon: Heart, label: t('nav.loyalty') },
     { key: 'whatsapp', to: '/user/whatsapp', icon: MessageCircle, label: t('nav.whatsapp') },
     { key: 'zatca', to: '/user/zatca', icon: FileText, label: t('nav.zatca') },

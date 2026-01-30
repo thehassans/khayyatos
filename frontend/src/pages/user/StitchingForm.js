@@ -60,6 +60,8 @@ const StitchingForm = () => {
   const [thawbTypesCatalogLoading, setThawbTypesCatalogLoading] = useState(false);
   const [fabricColorsCatalog, setFabricColorsCatalog] = useState(null);
   const [fabricColorsCatalogLoading, setFabricColorsCatalogLoading] = useState(false);
+  const [fabrics, setFabrics] = useState([]);
+  const [fabricsLoading, setFabricsLoading] = useState(false);
   const [selectedEmbroideryDesign, setSelectedEmbroideryDesign] = useState(null);
   const [formData, setFormData] = useState({
     quantity: 1,
@@ -70,6 +72,8 @@ const StitchingForm = () => {
     status: 'pending',
     thawbType: 'saudi',
     fabricColor: '',
+    fabricId: '',
+    rollsUsed: '',
     measurements: {},
     styleOptions: {},
     embroideryDesignId: null
@@ -88,6 +92,7 @@ const StitchingForm = () => {
     fetchMeasurementsCatalog();
     fetchThawbTypesCatalog();
     fetchFabricColorsCatalog();
+    fetchFabrics();
     if (isEdit) fetchStitching();
   }, [id]);
 
@@ -220,6 +225,17 @@ const StitchingForm = () => {
     setFabricColorsCatalogLoading(false);
   };
 
+  const fetchFabrics = async () => {
+    try {
+      setFabricsLoading(true);
+      const res = await api.get('/fabrics');
+      setFabrics(Array.isArray(res.data?.fabrics) ? res.data.fabrics : []);
+    } catch (e) {
+      setFabrics([]);
+    }
+    setFabricsLoading(false);
+  };
+
   const fetchStitching = async () => {
     try {
       const response = await api.get(`/stitchings/${id}`);
@@ -242,6 +258,8 @@ const StitchingForm = () => {
         status: stitch.status || 'pending',
         thawbType: stitch.thawbType || 'saudi',
         fabricColor: stitch.fabricColor || '',
+        fabricId: (typeof stitch.fabricId === 'object' ? stitch.fabricId?._id : stitch.fabricId) || '',
+        rollsUsed: (stitch.rollsUsed !== undefined && stitch.rollsUsed !== null) ? String(stitch.rollsUsed) : '',
         measurements: stitch.measurements || {},
         styleOptions: stitch.styleOptions || {},
         embroideryDesignId: designId || null
@@ -477,6 +495,19 @@ const StitchingForm = () => {
     setLoading(true);
 
     try {
+      const rollsUsedValue = formData.rollsUsed === '' ? 0 : Number(formData.rollsUsed);
+      if (rollsUsedValue !== undefined && (!Number.isFinite(rollsUsedValue) || rollsUsedValue < 0)) {
+        toast.error('Invalid rolls used');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.fabricId && Number(rollsUsedValue) > 0) {
+        toast.error('Select fabric');
+        setLoading(false);
+        return;
+      }
+
       const data = {
         customerId: selectedCustomer._id,
         customerName: selectedCustomer.name,
@@ -492,6 +523,8 @@ const StitchingForm = () => {
         status: formData.status,
         thawbType: formData.thawbType,
         fabricColor: formData.fabricColor || null,
+        fabricId: formData.fabricId ? formData.fabricId : null,
+        rollsUsed: rollsUsedValue,
         measurements: formData.measurements,
         styleOptions: formData.styleOptions,
         embroideryDesignId: formData.embroideryDesignId || null
@@ -867,6 +900,53 @@ const StitchingForm = () => {
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* Fabric (Roll) Selector (Optional) */}
+            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-sm font-semibold text-gray-800 dark:text-slate-100">
+                  Fabric / القماش
+                </label>
+                <span className="text-xs text-gray-400 dark:text-slate-500">(Optional)</span>
+              </div>
+              {fabricsLoading ? (
+                <div className="text-sm text-gray-500 dark:text-slate-400 mb-4">Loading…</div>
+              ) : null}
+              <Select
+                value={formData.fabricId}
+                onChange={(e) => setFormData((p) => ({ ...p, fabricId: e.target.value }))}
+                options={[
+                  { value: '', label: 'Not specified' },
+                  ...(Array.isArray(fabrics) ? fabrics : []).map((f) => {
+                    const stock = Number(f?.rollsInStock) || 0;
+                    const madeIn = f?.madeIn ? ` · ${f.madeIn}` : '';
+                    const label = `${f?.name || '—'}${madeIn} · Stock: ${stock}`;
+                    return { value: f._id, label };
+                  })
+                ]}
+                className="rounded-2xl bg-white/70 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700"
+              />
+
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Rolls Used / رول مستخدم</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.rollsUsed}
+                    onChange={(e) => setFormData((p) => ({ ...p, rollsUsed: e.target.value }))}
+                    placeholder="0"
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/30 p-4">
+                  <div className="text-xs text-gray-500 dark:text-slate-400">Tip</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100">Stock auto-updates</div>
+                  <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">On create/update/delete, fabric stock will be adjusted automatically.</div>
+                </div>
               </div>
             </div>
 
