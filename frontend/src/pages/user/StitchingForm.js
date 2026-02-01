@@ -82,9 +82,10 @@ const StitchingForm = () => {
   const [selectedEmbroideryDesign, setSelectedEmbroideryDesign] = useState(null);
 
   const [orderItems, setOrderItems] = useState([]);
-  const [familyControlsOpen, setFamilyControlsOpen] = useState(true);
+  const [familyControlsOpen, setFamilyControlsOpen] = useState(false);
   const [expandedOrderItemId, setExpandedOrderItemId] = useState(null);
   const autoExpandAfterRemoveRef = useRef(false);
+  const [addOrderPickerOpen, setAddOrderPickerOpen] = useState(false);
 
   const [addFamilyOpen, setAddFamilyOpen] = useState(false);
   const [addFamilyType, setAddFamilyType] = useState('son');
@@ -345,8 +346,10 @@ const StitchingForm = () => {
   const handleCustomerSelect = async (customer) => {
     setDropdownOpen(false);
     setOrderItems([]);
-    setFamilyControlsOpen(true);
+    setFamilyControlsOpen(false);
     setExpandedOrderItemId(null);
+    setSelectedRelation(null);
+    selectedRelationIdRef.current = null;
     await loadCustomerDetails(customer?._id);
   };
 
@@ -529,20 +532,27 @@ const StitchingForm = () => {
     }));
   };
 
-  const addCurrentToOrder = () => {
+  const addOrderForTarget = async (relationOrNull) => {
     if (!selectedCustomer?._id) return;
 
-    const isSelf = !selectedRelation;
-    const personKey = isSelf ? 'self' : String(selectedRelation?._id || '');
+    const isSelf = !relationOrNull;
+    const personKey = isSelf ? 'self' : String(relationOrNull?._id || '');
     const personName = isSelf
       ? (selectedCustomer?.nameI18n?.[langKey] || selectedCustomer?.name || '')
-      : (selectedRelation?.name || '');
+      : (relationOrNull?.name || '');
 
     if (!personName || !personKey) return;
 
-    const measurementsSnap = { ...(formData.measurements || {}) };
-    const newId = `${personKey}-${Date.now()}`;
+    let measurementsSnap = isSelf
+      ? { ...(selectedCustomer?.measurements || {}) }
+      : { ...(relationOrNull?.measurements || {}) };
 
+    if (!isSelf && Object.keys(measurementsSnap || {}).length === 0) {
+      const fetched = await loadOrderForMeasurements(relationOrNull?._id);
+      measurementsSnap = { ...(fetched || {}) };
+    }
+
+    const newId = `${personKey}-${Date.now()}`;
     const existing = orderItems.find((x) => String(x.personKey) === String(personKey));
     setExpandedOrderItemId(existing?.id || newId);
 
@@ -559,9 +569,9 @@ const StitchingForm = () => {
       return prev.concat({
         id: newId,
         personKey,
-        relationId: isSelf ? null : (selectedRelation?._id || null),
-        relationName: isSelf ? null : (selectedRelation?.name || null),
-        relationType: isSelf ? null : (selectedRelation?.type || null),
+        relationId: isSelf ? null : (relationOrNull?._id || null),
+        relationName: isSelf ? null : (relationOrNull?.name || null),
+        relationType: isSelf ? null : (relationOrNull?.type || null),
         orderFor: personName,
         quantity: 1,
         price: '',
@@ -572,6 +582,8 @@ const StitchingForm = () => {
 
     setFamilyControlsOpen(false);
   };
+
+  const addCurrentToOrder = () => addOrderForTarget(selectedRelation);
 
   const updateOrderItem = (id, patch) => {
     setOrderItems((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
@@ -1828,19 +1840,17 @@ const StitchingForm = () => {
                       <Users className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Family / شجرة العائلة</h3>
                     </div>
-                    <div className="mt-1 text-sm text-amber-800/80 dark:text-amber-200/80">Choose who this order is for (default: customer).</div>
+                    <div className="mt-1 text-sm text-amber-800/80 dark:text-amber-200/80">Choose who this order is for.</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {orderItems.length > 0 ? (
-                      <button
-                        type="button"
-                        onClick={() => setFamilyControlsOpen((p) => !p)}
-                        className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-xs font-semibold text-amber-800 dark:text-amber-200 hover:bg-white inline-flex items-center gap-2"
-                      >
-                        <span>{familyControlsOpen ? 'Hide' : 'Show'} Controls</span>
-                        <ChevronDown className={`w-4 h-4 transition-transform ${familyControlsOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setFamilyControlsOpen((p) => !p)}
+                      className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-xs font-semibold text-amber-800 dark:text-amber-200 hover:bg-white inline-flex items-center gap-2"
+                    >
+                      <span>{familyControlsOpen ? 'Hide' : 'Show'} Controls</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${familyControlsOpen ? 'rotate-180' : ''}`} />
+                    </button>
                     <Button
                       type="button"
                       variant="outline"
@@ -1853,153 +1863,44 @@ const StitchingForm = () => {
                   </div>
                 </div>
 
-                {(familyControlsOpen || orderItems.length === 0) ? (
+                {familyControlsOpen ? (
                   <>
-                    <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/80 dark:bg-slate-900/25 p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Order for</div>
-                          <div className="text-[11px] font-semibold text-amber-900/70 dark:text-amber-100/70">Use “Add Order” above</div>
-                        </div>
-                        <div className="mt-3 flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                              {selectedRelation ? (
-                                <span className="text-amber-700 dark:text-amber-200 font-semibold">{(selectedRelation.name || '?').charAt(0)}</span>
-                              ) : (
-                                <User className="w-5 h-5 text-amber-700 dark:text-amber-200" />
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
-                                {selectedRelation ? selectedRelation.name : (selectedCustomer.nameI18n?.[langKey] || selectedCustomer.name)}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-slate-400 truncate">
-                                {selectedRelation ? (selectedRelation.type || '') : 'Self'}
-                              </div>
-                            </div>
-                          </div>
-                          {selectedRelation ? (
-                            <button
-                              type="button"
-                              onClick={clearRelation}
-                              className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline"
-                            >
-                              Use Self
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 p-4">
-                        <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Quick add</div>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <button type="button" onClick={() => openAddFamily('son')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Son</button>
-                          <button type="button" onClick={() => openAddFamily('brother')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Brother</button>
-                          <button type="button" onClick={() => openAddFamily('father')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Father</button>
-                          <button type="button" onClick={() => openAddFamily('other')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Other</button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-5">
+                    <div className="mt-5 rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 p-4">
                       <div className="flex items-center justify-between gap-3">
-                        <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Select from family</div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Manage family</div>
+                          <div className="mt-1 text-xs text-amber-900/70 dark:text-amber-100/70 truncate">Add members or review the family tree.</div>
+                        </div>
                         <button
                           type="button"
                           onClick={() => navigate(`/user/customers/${selectedCustomer._id}`)}
-                          className="text-xs font-semibold text-amber-700 dark:text-amber-300 hover:underline"
+                          className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-xs font-semibold text-amber-800 dark:text-amber-200 hover:bg-white"
                         >
                           View Family Tree
                         </button>
                       </div>
-
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={clearRelation}
-                          className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-colors ${!selectedRelation ? 'border-amber-400 bg-amber-100/60 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100' : 'border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-slate-800 dark:text-slate-100 hover:bg-white'}`}
-                        >
-                          Self
-                        </button>
-
-                        {(selectedCustomer.relations || []).map((r, idx) => {
-                          const relUi = normalizeRelationForUi(r);
-                          const active = selectedRelation && String(selectedRelation._id) === String(relUi._id);
-                          return (
-                            <button
-                              key={`${relUi._id || idx}`}
-                              type="button"
-                              onClick={() => handleRelationSelect(r)}
-                              className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-colors ${active ? 'border-amber-400 bg-amber-100/60 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100' : 'border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-slate-800 dark:text-slate-100 hover:bg-white'}`}
-                              title={relUi.phone || ''}
-                            >
-                              {relUi.name || '-'}{relUi.type ? ` · ${relUi.type}` : ''}
-                            </button>
-                          );
-                        })}
-
-                        <button
-                          type="button"
-                          onClick={() => openAddFamily('son')}
-                          className="px-3 py-2 rounded-xl border border-dashed border-amber-300 dark:border-amber-800/60 bg-white/40 dark:bg-slate-900/10 text-xs font-semibold text-amber-800 dark:text-amber-200 hover:bg-white"
-                        >
-                          <span className="inline-flex items-center gap-2"><Plus className="w-4 h-4" />Add</span>
-                        </button>
-                      </div>
                     </div>
                   </>
-                ) : (
-                  <div className="mt-5 rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 p-4">
-                    <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Controls hidden</div>
-                    <div className="mt-1 text-xs text-amber-900/70 dark:text-amber-100/70">Use “Show Controls” to add more members.</div>
-                  </div>
-                )}
+                ) : null}
 
                 <div className="mt-6 space-y-3">
                   <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="text-xs font-semibold text-amber-900/80 dark:text-amber-100/80">Add Order</div>
-                        <div className="mt-1 flex items-center gap-2 min-w-0">
-                          <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                            {selectedRelation ? (
-                              <span className="text-amber-700 dark:text-amber-200 font-semibold">{(selectedRelation.name || '?').charAt(0)}</span>
-                            ) : (
-                              <User className="w-4 h-4 text-amber-700 dark:text-amber-200" />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
-                              {selectedRelation ? selectedRelation.name : (selectedCustomer?.nameI18n?.[langKey] || selectedCustomer?.name || '-')}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-slate-400 truncate">
-                              {selectedRelation ? (selectedRelation.type || '') : 'Self'}
-                            </div>
-                          </div>
-                        </div>
+                        <div className="mt-1 text-[11px] text-amber-900/60 dark:text-amber-100/60">Tap “Add” then pick a person.</div>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => setFamilyControlsOpen(true)}
-                          className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-xs font-semibold text-amber-800 dark:text-amber-200 hover:bg-white"
-                        >
-                          Change
-                        </button>
-                        <button
-                          type="button"
-                          onClick={addCurrentToOrder}
+                          onClick={() => setAddOrderPickerOpen(true)}
                           disabled={isDemo}
                           className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-100/70 dark:bg-amber-900/25 text-xs font-semibold text-amber-900 dark:text-amber-100 hover:bg-amber-100 disabled:opacity-60"
                         >
                           <span className="inline-flex items-center gap-2"><Plus className="w-4 h-4" />Add</span>
                         </button>
                       </div>
-                    </div>
-                    <div className="mt-2 text-[11px] text-amber-900/60 dark:text-amber-100/60">
-                      Tip: New orders open automatically. Previous orders collapse to keep the page clean.
                     </div>
                   </div>
 
@@ -2238,6 +2139,63 @@ const StitchingForm = () => {
                   >
                     Add
                   </Button>
+                </div>
+              </div>
+            </Modal>
+
+            <Modal
+              isOpen={addOrderPickerOpen}
+              onClose={() => setAddOrderPickerOpen(false)}
+              title="Add Order"
+              size="md"
+            >
+              <div className="space-y-3">
+                <div className="text-xs text-slate-600 dark:text-slate-300">Choose who this order is for</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAddOrderPickerOpen(false);
+                      addOrderForTarget(null);
+                    }}
+                    className="w-full text-left rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 px-3 py-3 hover:bg-white dark:hover:bg-slate-900/40 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                        <User className="w-4 h-4 text-slate-600 dark:text-slate-200" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{selectedCustomer?.nameI18n?.[langKey] || selectedCustomer?.name || 'Self'}</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Self</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  {(selectedCustomer?.relations || []).map((r, idx) => {
+                    const relUi = normalizeRelationForUi(r);
+                    const display = relUi?.name || '-';
+                    return (
+                      <button
+                        key={`${relUi?._id || idx}`}
+                        type="button"
+                        onClick={() => {
+                          setAddOrderPickerOpen(false);
+                          addOrderForTarget(relUi);
+                        }}
+                        className="w-full text-left rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 px-3 py-3 hover:bg-white dark:hover:bg-slate-900/40 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                            <span className="text-amber-700 dark:text-amber-200 font-semibold">{String(display).charAt(0)}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{display}</div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{relUi?.type || ''}</div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </Modal>

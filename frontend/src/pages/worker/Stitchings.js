@@ -133,59 +133,51 @@ const WorkerStitchings = () => {
     const filledCount = rows.filter((r) => r.hasValue).length;
     const totalCount = rows.length;
     const missingCount = totalCount - filledCount;
+    const progress = totalCount > 0 ? Math.round((filledCount / totalCount) * 100) : 0;
 
     return (
-      <div className="space-y-4">
-        <div className="rounded-2xl border border-gray-100 bg-gradient-to-br from-white to-gray-50 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-2xl bg-emerald-50 flex items-center justify-center">
-                  <Ruler className="w-4 h-4 text-emerald-700" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{t('customers.measurements')}</p>
-                  <p className="text-xs text-gray-500 truncate">{t('common.manage', { defaultValue: 'Review carefully before stitching' })}</p>
-                </div>
+      <div className="rounded-2xl border border-gray-100 bg-white">
+        <div className="p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-9 h-9 rounded-2xl bg-emerald-50 flex items-center justify-center">
+                <Ruler className="w-4 h-4 text-emerald-700" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-gray-900 truncate">{t('customers.measurements')}</div>
+                <div className="text-[11px] text-gray-500 truncate">{t('common.filled', { defaultValue: 'Filled' })}: {filledCount}/{totalCount}</div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-xs font-semibold text-gray-700">{filledCount}/{totalCount}</div>
-              <div className="text-[11px] text-gray-500">{t('common.completed', { defaultValue: 'Filled' })}</div>
-            </div>
+
+            {missingCount > 0 ? (
+              <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700">
+                <AlertCircle className="w-3.5 h-3.5" />
+                {t('common.missing', { defaultValue: 'Missing' })}: {missingCount}
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
+                <CheckCircle className="w-3.5 h-3.5" />
+                {t('common.ready', { defaultValue: 'Ready' })}
+              </div>
+            )}
           </div>
 
-          {missingCount > 0 ? (
-            <div className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2">
-              <AlertCircle className="w-4 h-4 text-amber-700 mt-0.5" />
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-amber-900">{t('common.warning', { defaultValue: 'Some measurements are missing' })}</div>
-                <div className="text-[11px] text-amber-800/80">{t('common.note', { defaultValue: 'Confirm missing values with the shop before starting work.' })}</div>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-3 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2">
-              <CheckCircle className="w-4 h-4 text-emerald-700" />
-              <div className="text-xs font-semibold text-emerald-900">{t('common.ready', { defaultValue: 'All measurements are filled' })}</div>
-            </div>
-          )}
+          <div className="mt-3 h-2 w-full rounded-full bg-gray-100 overflow-hidden">
+            <div className="h-full rounded-full bg-emerald-600" style={{ width: `${progress}%` }} />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {rows.map((r) => (
-            <div
-              key={r.key}
-              className={`rounded-2xl border p-3 text-center transition-colors ${
-                r.hasValue
-                  ? 'border-emerald-100 bg-white shadow-sm'
-                  : 'border-dashed border-gray-200 bg-gray-50/60'
-              }`}
-            >
-              <p className="text-[11px] font-semibold text-gray-600 mb-1 truncate">{measurementLabels[r.key] || r.key}</p>
-              <p className={`text-base font-extrabold ${r.hasValue ? 'text-gray-900' : 'text-gray-400'}`}>{r.hasValue ? r.value : '—'}</p>
-              <p className={`mt-1 text-[11px] ${r.hasValue ? 'text-emerald-700' : 'text-gray-400'}`}>{r.hasValue ? t('common.filled', { defaultValue: 'Filled' }) : t('common.missing', { defaultValue: 'Missing' })}</p>
-            </div>
-          ))}
+        <div className="border-t border-gray-100" />
+
+        <div className="p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+            {rows.map((r) => (
+              <div key={r.key} className="py-2 flex items-center justify-between gap-3">
+                <div className="text-xs font-semibold text-gray-600 truncate">{measurementLabels[r.key] || r.key}</div>
+                <div className={`text-sm font-semibold ${r.hasValue ? 'text-gray-900' : 'text-gray-400'}`}>{r.hasValue ? r.value : '—'}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -266,38 +258,35 @@ const WorkerStitchings = () => {
                   </div>
                   <p className="text-sm font-semibold text-gray-900">{t('customers.measurements')}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {getPrimaryMeasurements(stitch.measurements).length > 0 ? (
-                    getPrimaryMeasurements(stitch.measurements).map(([key, value]) => (
-                      <div key={key} className="flex items-center justify-between rounded-xl bg-gray-50/60 px-3 py-2">
-                        <span className="text-[11px] font-medium text-gray-500 truncate">{measurementLabels[key] || key}</span>
-                        <span className="text-xs font-semibold text-gray-900">{value}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="col-span-2 text-sm text-gray-500">{t('common.noData')}</div>
-                  )}
-                </div>
-
                 {(() => {
                   const meta = getMeasurementsMeta(stitch.measurements);
+                  const progress = meta.total > 0 ? Math.round((meta.filled / meta.total) * 100) : 0;
+                  const prim = getPrimaryMeasurements(stitch.measurements).slice(0, 2);
                   return (
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="text-[11px] font-semibold text-gray-600">
-                        {t('common.filled', { defaultValue: 'Filled' })}: {meta.filled}/{meta.total}
+                    <>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-[11px] font-semibold text-gray-600">{t('common.filled', { defaultValue: 'Filled' })}: {meta.filled}/{meta.total}</div>
+                        {meta.missing > 0 ? (
+                          <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            {meta.missing}
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            {t('common.ready', { defaultValue: 'Ready' })}
+                          </div>
+                        )}
                       </div>
-                      {meta.missing > 0 ? (
-                        <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700">
-                          <AlertCircle className="w-3.5 h-3.5" />
-                          {t('common.missing', { defaultValue: 'Missing' })}: {meta.missing}
-                        </div>
-                      ) : (
-                        <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          {t('common.ready', { defaultValue: 'Ready' })}
-                        </div>
-                      )}
-                    </div>
+
+                      <div className="mt-2 h-2 w-full rounded-full bg-gray-100 overflow-hidden">
+                        <div className="h-full rounded-full bg-emerald-600" style={{ width: `${progress}%` }} />
+                      </div>
+
+                      <div className="mt-2 text-[11px] text-gray-500">
+                        {prim.length > 0 ? prim.map(([k, v]) => `${measurementLabels[k] || k}: ${v}`).join(' · ') : t('common.noData')}
+                      </div>
+                    </>
                   );
                 })()}
               </div>
