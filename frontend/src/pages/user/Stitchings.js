@@ -395,7 +395,16 @@ const Stitchings = () => {
                   </Td>
                   <Td className="flex items-center gap-1">{stitch.price} <SARIcon className="w-3 h-3" /></Td>
                   <Td>
-                    {(parseFloat(stitch.paidAmount) || 0) >= (parseFloat(stitch.price) || 0) ? (
+                    {stitch.status === 'delivered' ? (
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-slate-700 to-slate-900 shadow-lg shadow-slate-500/20">
+                        <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <span className="text-xs font-bold text-white tracking-wide">DELIVERED</span>
+                      </div>
+                    ) : (parseFloat(stitch.paidAmount) || 0) >= (parseFloat(stitch.price) || 0) ? (
                       <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/30">
                         <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
                           <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

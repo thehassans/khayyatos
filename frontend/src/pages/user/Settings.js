@@ -98,6 +98,15 @@ const Settings = () => {
       .replace(/[^a-z0-9_-]/g, '');
   };
 
+  const computeReceiptPrefix = (businessName) => {
+    const rawShop = typeof businessName === 'string' ? businessName : '';
+    const shop = rawShop.trim().replace(/\s+/g, '-');
+    const safeShop = shop.replace(/[^\p{L}\p{N}-]/gu, '').slice(0, 24);
+    return safeShop || 'SHOP';
+  };
+
+  const autoReceiptPrefix = computeReceiptPrefix(settings.businessName || user?.businessName || '');
+
   const resolveUploadsUrl = useCallback((src) => {
     if (!src) return src;
     if (src.startsWith('http://') || src.startsWith('https://')) return src;
@@ -276,7 +285,7 @@ const Settings = () => {
       const data = new FormData();
       data.append('language', settings.language);
       data.append('theme', settings.theme);
-      data.append('receiptPrefix', settings.receiptPrefix);
+      data.append('receiptPrefix', autoReceiptPrefix);
       data.append('businessName', settings.businessName);
       if (settings.logo) data.append('logo', settings.logo);
 
@@ -797,10 +806,11 @@ const Settings = () => {
                       <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">{t('settings.receiptPrefix', { defaultValue: 'Receipt Prefix' })}</label>
                       <input
                         type="text"
-                        value={settings.receiptPrefix}
-                        onChange={(e) => setSettings({ ...settings, receiptPrefix: e.target.value })}
+                        value={autoReceiptPrefix}
                         className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border-0 rounded-xl"
                         placeholder={t('settings.placeholders.receiptPrefix', { defaultValue: 'RCP' })}
+                        disabled
+                        readOnly
                       />
                     </div>
                     <div>

@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Settings as SettingsIcon, Globe } from 'lucide-react';
+import { Settings as SettingsIcon, Globe, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const WorkerSettings = () => {
   const { t, i18n } = useTranslation();
-  const { api, user } = useAuth();
+  const { api, user, logout } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [language, setLanguage] = useState(user?.language || i18n.language || 'en');
 
@@ -76,6 +78,18 @@ const WorkerSettings = () => {
       {/* Save Button */}
       <Button onClick={handleSave} loading={loading} className="w-full">
         {t('common.save')} {t('settings.title')}
+      </Button>
+
+      <Button
+        variant="secondary"
+        onClick={() => {
+          logout();
+          navigate('/login');
+        }}
+        className="w-full"
+        icon={LogOut}
+      >
+        {t('auth.logout')}
       </Button>
     </div>
   );

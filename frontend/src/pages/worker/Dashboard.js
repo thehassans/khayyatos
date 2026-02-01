@@ -45,7 +45,7 @@ const WorkerDashboard = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Clock}
           label={t('stitchings.statusAssigned')}
@@ -78,31 +78,64 @@ const WorkerDashboard = () => {
           <h2 className="font-semibold text-gray-900">{t('dashboard.recentOrders')}</h2>
         </div>
         {data?.recentStitchings?.length > 0 ? (
-          <Table>
-            <Thead>
-              <Tr>
-                <Th>{t('stitchings.receiptNumber')}</Th>
-                <Th>{t('stitchings.customer')}</Th>
-                <Th>{t('stitchings.quantity')}</Th>
-                <Th>{t('common.status')}</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
+          <>
+            <div className="sm:hidden divide-y divide-gray-100">
               {data.recentStitchings.map((stitch) => (
-                <Tr key={stitch._id}>
-                  <Td className="font-medium">{stitch.receiptNumber}</Td>
-                  <Td>
-                    <div>
-                      <p>{stitch.customerId?.nameI18n?.[langKey] || stitch.customerId?.name || '-'}</p>
-                      <p className="text-xs text-gray-500">{stitch.customerId?.phone}</p>
+                <div key={stitch._id} className="px-6 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-gray-900 truncate">{stitch.receiptNumber}</div>
+                      <div className="mt-1 text-xs text-gray-500 truncate">
+                        {stitch.customerId?.nameI18n?.[langKey] || stitch.customerId?.name || '-'}
+                        {stitch.customerId?.phone ? ` · ${stitch.customerId.phone}` : ''}
+                      </div>
                     </div>
-                  </Td>
-                  <Td>{stitch.quantity}</Td>
-                  <Td><StatusBadge status={stitch.status} /></Td>
-                </Tr>
+                    <div className="flex-shrink-0">
+                      <StatusBadge status={stitch.status} />
+                    </div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+                      <p className="text-[11px] font-medium text-gray-500">{t('stitchings.quantity')}</p>
+                      <p className="mt-1 text-sm font-semibold text-gray-900">{stitch.quantity}</p>
+                    </div>
+                    <div className="rounded-2xl border border-gray-100 bg-white p-3">
+                      <p className="text-[11px] font-medium text-gray-500">{t('common.status')}</p>
+                      <p className="mt-1 text-sm font-semibold text-gray-900 capitalize">{String(stitch.status || '').replace('_', ' ')}</p>
+                    </div>
+                  </div>
+                </div>
               ))}
-            </Tbody>
-          </Table>
+            </div>
+
+            <div className="hidden sm:block">
+              <Table>
+                <Thead>
+                  <Tr>
+                    <Th>{t('stitchings.receiptNumber')}</Th>
+                    <Th>{t('stitchings.customer')}</Th>
+                    <Th>{t('stitchings.quantity')}</Th>
+                    <Th>{t('common.status')}</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {data.recentStitchings.map((stitch) => (
+                    <Tr key={stitch._id}>
+                      <Td className="font-medium">{stitch.receiptNumber}</Td>
+                      <Td>
+                        <div>
+                          <p>{stitch.customerId?.nameI18n?.[langKey] || stitch.customerId?.name || '-'}</p>
+                          <p className="text-xs text-gray-500">{stitch.customerId?.phone}</p>
+                        </div>
+                      </Td>
+                      <Td>{stitch.quantity}</Td>
+                      <Td><StatusBadge status={stitch.status} /></Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </div>
+          </>
         ) : (
           <div className="p-12 text-center text-gray-500">
             {t('common.noData')}

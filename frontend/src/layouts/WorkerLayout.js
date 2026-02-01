@@ -39,7 +39,8 @@ const WorkerLayout = () => {
   const bottomNavItems = [
     { to: '/worker/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
     { to: '/worker/stitchings', icon: Scissors, label: t('nav.stitchings') },
-    { to: '/worker/amounts', icon: Wallet, label: t('nav.amounts') }
+    { to: '/worker/amounts', icon: Wallet, label: t('nav.amounts') },
+    { to: '/worker/settings', icon: Settings, label: t('nav.settings') }
   ];
 
   const languages = [
@@ -106,11 +107,11 @@ const WorkerLayout = () => {
       </aside>
 
       <div className="lg:ml-64">
-        <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
+        <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-gray-200/70">
           <div className="flex items-center justify-between px-4 py-3 lg:px-6">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 hover:bg-gray-100 rounded-lg lg:hidden"
+              className="hidden"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -132,7 +133,7 @@ const WorkerLayout = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="relative">
+              <div className="relative hidden sm:block">
                 <button
                   onClick={() => setLangOpen(!langOpen)}
                   className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-xl border border-gray-200/70 shadow-sm"
@@ -160,21 +161,17 @@ const WorkerLayout = () => {
                 )}
               </div>
 
-              <NavLink
-                to="/worker/settings"
-                className={({ isActive }) => `p-2 rounded-xl border shadow-sm transition-colors ${
-                  isActive ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200/70 text-gray-600 hover:bg-gray-50'
-                }`}
-                aria-label={t('nav.settings')}
-              >
-                <Settings className="w-5 h-5" />
-              </NavLink>
-
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-emerald-700">
-                    {user?.name?.charAt(0) || 'W'}
-                  </span>
+              <div className="hidden sm:flex items-center gap-3">
+                <div className="px-3 py-2 rounded-xl border border-gray-200/70 bg-white shadow-sm flex items-center gap-2">
+                  <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-emerald-700">
+                      {user?.name?.charAt(0) || 'W'}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-gray-900 truncate">{user?.name || ''}</div>
+                    <div className="text-[11px] text-gray-500 truncate">Worker</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -187,8 +184,9 @@ const WorkerLayout = () => {
 
         <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
           <div className="mx-auto max-w-screen-sm">
-            <div className="bg-white/90 backdrop-blur-xl border-t border-gray-200/70 shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
-              <div className="grid grid-cols-3">
+            <div className="px-3 pb-3">
+              <div className="rounded-3xl bg-white/90 backdrop-blur-xl border border-gray-200/70 shadow-[0_10px_30px_rgba(0,0,0,0.10)] overflow-hidden">
+                <div className="grid grid-cols-4">
                 {bottomNavItems.map((item) => (
                   <NavLink
                     key={item.to}
@@ -201,6 +199,7 @@ const WorkerLayout = () => {
                     <span className="text-[11px] font-medium leading-none">{item.label}</span>
                   </NavLink>
                 ))}
+                </div>
               </div>
             </div>
           </div>

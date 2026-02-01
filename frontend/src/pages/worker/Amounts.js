@@ -80,26 +80,56 @@ const WorkerAmounts = () => {
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div>
           </div>
         ) : data.payments?.length > 0 ? (
-          <Table>
-            <Thead>
-              <Tr>
-                <Th>{t('common.date')}</Th>
-                <Th>{t('common.amount')}</Th>
-                <Th>Type</Th>
-                <Th>Description</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
+          <>
+            <div className="sm:hidden divide-y divide-gray-100">
               {data.payments.map((payment) => (
-                <Tr key={payment._id}>
-                  <Td>{new Date(payment.createdAt).toLocaleDateString()}</Td>
-                  <Td className="font-medium text-emerald-600"><span className="inline-flex items-center gap-1">+{payment.amount} <SARIcon className="w-3 h-3" /></span></Td>
-                  <Td className="capitalize">{payment.type?.replace('_', ' ')}</Td>
-                  <Td className="text-gray-500">{payment.description || '-'}</Td>
-                </Tr>
+                <div key={payment._id} className="px-6 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-gray-900 truncate">{new Date(payment.createdAt).toLocaleDateString()}</div>
+                      <div className="mt-1 text-xs text-gray-500 truncate">{payment.description || '-'}</div>
+                    </div>
+                    <div className="flex-shrink-0 text-emerald-600 font-semibold inline-flex items-center gap-1">
+                      +{payment.amount} <SARIcon className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+                      <p className="text-[11px] font-medium text-gray-500">Type</p>
+                      <p className="mt-1 text-sm font-semibold text-gray-900 capitalize">{payment.type?.replace('_', ' ')}</p>
+                    </div>
+                    <div className="rounded-2xl border border-gray-100 bg-white p-3">
+                      <p className="text-[11px] font-medium text-gray-500">{t('common.amount')}</p>
+                      <p className="mt-1 text-sm font-semibold text-emerald-600 inline-flex items-center gap-1">+{payment.amount} <SARIcon className="w-4 h-4" /></p>
+                    </div>
+                  </div>
+                </div>
               ))}
-            </Tbody>
-          </Table>
+            </div>
+
+            <div className="hidden sm:block">
+              <Table>
+                <Thead>
+                  <Tr>
+                    <Th>{t('common.date')}</Th>
+                    <Th>{t('common.amount')}</Th>
+                    <Th>Type</Th>
+                    <Th>Description</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {data.payments.map((payment) => (
+                    <Tr key={payment._id}>
+                      <Td>{new Date(payment.createdAt).toLocaleDateString()}</Td>
+                      <Td className="font-medium text-emerald-600"><span className="inline-flex items-center gap-1">+{payment.amount} <SARIcon className="w-3 h-3" /></span></Td>
+                      <Td className="capitalize">{payment.type?.replace('_', ' ')}</Td>
+                      <Td className="text-gray-500">{payment.description || '-'}</Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </div>
+          </>
         ) : (
           <div className="p-12 text-center text-gray-500">
             {t('common.noData')}

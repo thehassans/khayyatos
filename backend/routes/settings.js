@@ -97,6 +97,13 @@ const sanitizeExactKey = (value) => {
   return String(value).trim();
 };
 
+const computeReceiptPrefixFromBusinessName = (businessName) => {
+  const rawShop = typeof businessName === 'string' ? businessName : '';
+  const shop = rawShop.trim().replace(/\s+/g, '-');
+  const safeShop = shop.replace(/[^\p{L}\p{N}-]/gu, '').slice(0, 24);
+  return safeShop || 'SHOP';
+};
+
 const buildDefaultStyleOptionsCatalog = () => ({
   groups: [
     {
@@ -840,14 +847,15 @@ router.delete('/style-options/option', async (req, res) => {
 // Update settings
 router.put('/', upload.single('logo'), async (req, res) => {
   try {
-    const { language, receiptPrefix, businessName, theme } = req.body;
+    const { language, businessName, theme } = req.body;
     
     if (language) req.user.language = language;
-    if (receiptPrefix) req.user.receiptPrefix = receiptPrefix;
     if (businessName) {
       const oldBusinessName = req.user.businessName;
       const oldBusinessNameAr = req.user.businessNameAr;
       req.user.businessName = businessName;
+
+      req.user.receiptPrefix = computeReceiptPrefixFromBusinessName(businessName);
 
       if (typeof businessName === 'string' && businessName.trim()) {
         const translations = await translateMany({ entries: [{ id: 'businessName', text: businessName.trim() }] });
@@ -886,9 +894,9 @@ router.put('/', upload.single('logo'), async (req, res) => {
 // Update receipt settings
 router.put('/receipt', async (req, res) => {
   try {
-    const { receiptPrefix, receiptCounter } = req.body;
-    
-    if (receiptPrefix) req.user.receiptPrefix = receiptPrefix;
+    const { receiptCounter } = req.body;
+
+    req.user.receiptPrefix = computeReceiptPrefixFromBusinessName(req.user.businessName);
     if (receiptCounter) req.user.receiptCounter = receiptCounter;
     
     await req.user.save();
