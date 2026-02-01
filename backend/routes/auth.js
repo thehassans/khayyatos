@@ -119,6 +119,7 @@ router.post('/login', async (req, res) => {
               phone: worker.phone,
               language: worker.language,
               shopName: worker.userId.businessName,
+              shopLogo: worker.userId.logo,
               role: 'worker'
             }
           });
@@ -281,7 +282,7 @@ router.get('/verify', verifyToken, async (req, res) => {
     } else if (req.userRole === 'user') {
       user = await User.findById(req.userId).select('-password');
     } else if (req.userRole === 'worker') {
-      user = await Worker.findById(req.userId).select('-password').populate('userId', 'businessName');
+      user = await Worker.findById(req.userId).select('-password').populate('userId', 'businessName logo');
     }
     
     if (!user) {

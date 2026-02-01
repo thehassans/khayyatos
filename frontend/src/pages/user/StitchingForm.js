@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { Select, Textarea } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
-import { ArrowLeft, ChevronDown, Calendar, Printer, Users, Image as ImageIcon, Plus, UserPlus, Search, User } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Calendar, Printer, Users, Image as ImageIcon, Plus, UserPlus, Search, User, X } from 'lucide-react';
 import MeasurementCard from '../../components/ui/MeasurementCard';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
@@ -63,12 +63,14 @@ const StitchingForm = () => {
   const [selectedRelation, setSelectedRelation] = useState(null);
   const selectedRelationIdRef = useRef(null);
   const [createdOrder, setCreatedOrder] = useState(null);
+  const [createdOrders, setCreatedOrders] = useState([]);
   const [customerDetailsLoading, setCustomerDetailsLoading] = useState(false);
   const [customerMeasurementsOpen, setCustomerMeasurementsOpen] = useState(true);
   const [orderForMeasurementsOpen, setOrderForMeasurementsOpen] = useState(false);
   const [orderForDetailsLoading, setOrderForDetailsLoading] = useState(false);
   const [styleCatalog, setStyleCatalog] = useState(null);
   const [styleCatalogLoading, setStyleCatalogLoading] = useState(false);
+  const [styleOptionsOpen, setStyleOptionsOpen] = useState(false);
   const [measurementsCatalog, setMeasurementsCatalog] = useState(null);
   const [measurementsCatalogLoading, setMeasurementsCatalogLoading] = useState(false);
   const [thawbTypesCatalog, setThawbTypesCatalog] = useState(null);
@@ -78,6 +80,9 @@ const StitchingForm = () => {
   const [fabrics, setFabrics] = useState([]);
   const [fabricsLoading, setFabricsLoading] = useState(false);
   const [selectedEmbroideryDesign, setSelectedEmbroideryDesign] = useState(null);
+
+  const [orderItems, setOrderItems] = useState([]);
+  const [familyControlsOpen, setFamilyControlsOpen] = useState(true);
 
   const [addFamilyOpen, setAddFamilyOpen] = useState(false);
   const [addFamilyType, setAddFamilyType] = useState('son');
@@ -337,6 +342,8 @@ const StitchingForm = () => {
 
   const handleCustomerSelect = async (customer) => {
     setDropdownOpen(false);
+    setOrderItems([]);
+    setFamilyControlsOpen(true);
     await loadCustomerDetails(customer?._id);
   };
 
@@ -519,11 +526,134 @@ const StitchingForm = () => {
     }));
   };
 
-  const handlePrintLabel = async () => {
-    if (!createdOrder) return;
+  const addCurrentToOrder = () => {
+    if (!selectedCustomer?._id) return;
+
+    const isSelf = !selectedRelation;
+    const personKey = isSelf ? 'self' : String(selectedRelation?._id || '');
+    const personName = isSelf
+      ? (selectedCustomer?.nameI18n?.[langKey] || selectedCustomer?.name || '')
+      : (selectedRelation?.name || '');
+
+    if (!personName || !personKey) return;
+
+    const measurementsSnap = { ...(formData.measurements || {}) };
+
+    setOrderItems((prev) => {
+      const idx = prev.findIndex((x) => String(x.personKey) === String(personKey));
+      if (idx >= 0) {
+        const next = prev.slice();
+        next[idx] = {
+          ...next[idx],
+          quantity: (Number(next[idx]?.quantity) || 1) + 1
+        };
+        return next;
+      }
+      return prev.concat({
+        id: `${personKey}-${Date.now()}`,
+        personKey,
+        relationId: isSelf ? null : (selectedRelation?._id || null),
+        relationName: isSelf ? null : (selectedRelation?.name || null),
+        relationType: isSelf ? null : (selectedRelation?.type || null),
+        orderFor: personName,
+        quantity: 1,
+        price: '',
+        paidAmount: '',
+        measurements: measurementsSnap
+      });
+    });
+
+    setFamilyControlsOpen(false);
+  };
+
+  const updateOrderItem = (id, patch) => {
+    setOrderItems((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  };
+
+  const removeOrderItem = (id) => {
+    setOrderItems((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  const computeAllocations = (items, field, overrideTotal) => {
+    const explicit = new Map();
+    let sumExplicit = 0;
+    let sumQtyEmpty = 0;
+
+    items.forEach((it) => {
+      const v = String(it?.[field] ?? '').trim();
+      if (v === '') {
+        sumQtyEmpty += Number(it?.quantity) || 0;
+        return;
+      }
+      const num = Number(v);
+      if (!Number.isFinite(num) || num < 0) {
+        sumQtyEmpty += Number(it?.quantity) || 0;
+        return;
+      }
+      explicit.set(it.id, num);
+      sumExplicit += num;
+    });
+
+    const total = overrideTotal;
+    if (total === null) {
+      const map = new Map();
+      items.forEach((it) => map.set(it.id, explicit.get(it.id) ?? 0));
+      return map;
+    }
+
+    const remaining = Math.max(0, total - sumExplicit);
+    const map = new Map();
+    let distributed = 0;
+
+    const emptyItems = items.filter((it) => !explicit.has(it.id));
+    emptyItems.forEach((it, idx) => {
+      if (sumQtyEmpty <= 0) {
+        map.set(it.id, 0);
+        return;
+      }
+      if (idx === emptyItems.length - 1) {
+        map.set(it.id, Number((remaining - distributed).toFixed(2)));
+        return;
+      }
+      const share = remaining * ((Number(it?.quantity) || 0) / sumQtyEmpty);
+      const rounded = Number(share.toFixed(2));
+      distributed += rounded;
+      map.set(it.id, rounded);
+    });
+
+    items.forEach((it) => map.set(it.id, explicit.get(it.id) ?? map.get(it.id) ?? 0));
+    return map;
+  };
+
+  const allocateRollsUsed = (items, totalRolls) => {
+    const total = Number(totalRolls) || 0;
+    const sumQty = items.reduce((s, it) => s + (Number(it?.quantity) || 0), 0);
+    const map = new Map();
+    if (total <= 0 || sumQty <= 0) {
+      items.forEach((it) => map.set(it.id, 0));
+      return map;
+    }
+
+    let used = 0;
+    items.forEach((it, idx) => {
+      if (idx === items.length - 1) {
+        map.set(it.id, Number((total - used).toFixed(2)));
+        return;
+      }
+      const share = total * ((Number(it?.quantity) || 0) / sumQty);
+      const rounded = Number(share.toFixed(2));
+      used += rounded;
+      map.set(it.id, rounded);
+    });
+    return map;
+  };
+
+  const handlePrintLabel = async (orderToPrint) => {
+    const order = orderToPrint || createdOrder || createdOrders?.[0];
+    if (!order) return;
     
     const logoSrc = user?.logo && user.logo !== 'null' && user.logo !== 'undefined' ? user.logo : '';
-    const trackUrl = `${window.location.origin}/track-order?id=${createdOrder._id}`;
+    const trackUrl = `${window.location.origin}/track-order?id=${order._id}`;
     const labelLang = user?.labelLanguage || 'both';
     
     // Generate QR codes
@@ -536,7 +666,7 @@ const StitchingForm = () => {
       
       if (zatcaEnabled && user?.zatcaSettings?.vatNumber) {
         const vatRate = 0.15;
-        const total = parseFloat(formData.price) || 0;
+        const total = parseFloat(order.price) || 0;
         const vatAmount = (total * vatRate / (1 + vatRate)).toFixed(2);
         const timestamp = new Date().toISOString();
         
@@ -596,7 +726,7 @@ const StitchingForm = () => {
     };
     
     const getStatus = () => {
-      const status = formData.status || 'pending';
+      const status = order.status || formData.status || 'pending';
       const s = statusLabels[status] || statusLabels.pending;
       if (labelLang === 'en') return s.en;
       if (labelLang === 'ar') return s.ar;
@@ -612,14 +742,15 @@ const StitchingForm = () => {
     const customerNameAr = selectedCustomer?.nameI18n?.ar || selectedCustomer?.name || '-';
     const customerDisplay = labelLang === 'en' ? customerNameEn : labelLang === 'ar' ? customerNameAr : `${customerNameEn} / ${customerNameAr}`;
 
-    const orderForNameEn = createdOrder?.relationId?.nameI18n?.en || createdOrder?.relationName || customerNameEn;
-    const orderForNameAr = createdOrder?.relationId?.nameI18n?.ar || createdOrder?.relationName || customerNameAr;
+    const orderForNameEn = order?.relationId?.nameI18n?.en || order?.relationName || customerNameEn;
+    const orderForNameAr = order?.relationId?.nameI18n?.ar || order?.relationName || customerNameAr;
     const orderForDisplay = labelLang === 'en' ? orderForNameEn : labelLang === 'ar' ? orderForNameAr : `${orderForNameEn} / ${orderForNameAr}`;
 
-    const relTypeValue = createdOrder?.relationType ? `${String(createdOrder.relationType).charAt(0).toUpperCase()}${String(createdOrder.relationType).slice(1)}` : '';
-    const fabricDisplay = createdOrder?.fabricId?.name ? `${createdOrder.fabricId.name}` : '-';
-    const rollsUsedDisplay = (createdOrder?.rollsUsed !== undefined && createdOrder?.rollsUsed !== null) ? String(createdOrder.rollsUsed) : '0';
-    const thawbTypeDisplay = createdOrder?.thawbType || formData.thawbType || '-';
+    const relTypeValue = order?.relationType ? `${String(order.relationType).charAt(0).toUpperCase()}${String(order.relationType).slice(1)}` : '';
+    const fabricDisplay = order?.fabricId?.name ? `${order.fabricId.name}` : '-';
+    const rollsUsedDisplay = (order?.rollsUsed !== undefined && order?.rollsUsed !== null) ? String(order.rollsUsed) : '0';
+    const thawbTypeDisplay = order?.thawbType || formData.thawbType || '-';
+    const dueDateDisplay = order?.dueDate ? new Date(order.dueDate).toLocaleDateString() : (formData.dueDate || '-');
     
     const printWindow = window.open('', '_blank', 'width=320,height=650');
     printWindow.document.write(`
@@ -658,7 +789,7 @@ const StitchingForm = () => {
           ${user?.businessNameAr ? `<div class="shop-name-ar">${user.businessNameAr}</div>` : ''}
           ${user?.businessAddress ? `<div class="shop-address">${user.businessAddress}</div>` : ''}
         </div>
-        <div class="receipt-no">#${createdOrder.receiptNumber || createdOrder._id?.slice(-6)}</div>
+        <div class="receipt-no">#${order.receiptNumber || order._id?.slice(-6)}</div>
         <div class="row"><span class="label">${getLabel('customer')}:</span><span class="value">${customerDisplay}</span></div>
         <div class="row"><span class="label">${getLabel('orderFor')}:</span><span class="value">${orderForDisplay}</span></div>
         ${relTypeValue ? `<div class="row"><span class="label">${getLabel('relationType')}:</span><span class="value">${relTypeValue}</span></div>` : ''}
@@ -666,11 +797,11 @@ const StitchingForm = () => {
         <div class="row"><span class="label">${getLabel('thawbType')}:</span><span class="value">${thawbTypeDisplay}</span></div>
         <div class="row"><span class="label">${getLabel('fabric')}:</span><span class="value">${fabricDisplay}</span></div>
         <div class="row"><span class="label">${getLabel('rollsUsed')}:</span><span class="value">${rollsUsedDisplay}</span></div>
-        <div class="row"><span class="label">${getLabel('quantity')}:</span><span class="value">${formData.quantity}</span></div>
-        <div class="row"><span class="label">${getLabel('price')}:</span><span class="value">${formData.price || 0} ${sarSvg}</span></div>
-        <div class="row"><span class="label">${getLabel('paid')}:</span><span class="value">${formData.paidAmount || 0} ${sarSvg}</span></div>
-        <div class="row"><span class="label">${getLabel('balance')}:</span><span class="value">${(formData.price || 0) - (formData.paidAmount || 0)} ${sarSvg}</span></div>
-        <div class="row"><span class="label">${getLabel('dueDate')}:</span><span class="value">${formData.dueDate || '-'}</span></div>
+        <div class="row"><span class="label">${getLabel('quantity')}:</span><span class="value">${order.quantity || 1}</span></div>
+        <div class="row"><span class="label">${getLabel('price')}:</span><span class="value">${order.price || 0} ${sarSvg}</span></div>
+        <div class="row"><span class="label">${getLabel('paid')}:</span><span class="value">${order.paidAmount || 0} ${sarSvg}</span></div>
+        <div class="row"><span class="label">${getLabel('balance')}:</span><span class="value">${(Number(order.price) || 0) - (Number(order.paidAmount) || 0)} ${sarSvg}</span></div>
+        <div class="row"><span class="label">${getLabel('dueDate')}:</span><span class="value">${dueDateDisplay}</span></div>
         <div class="status">${getLabel('status')}: ${getStatus()}</div>
         ${zatcaQrUrl && qrCodeUrl ? `
         <div class="qr-container">
@@ -694,6 +825,147 @@ const StitchingForm = () => {
       </body>
       </html>
     `);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
+
+  const handlePrintFamilySummary = async () => {
+    const orders = (createdOrders && createdOrders.length > 0) ? createdOrders : [];
+    if (orders.length === 0 || !selectedCustomer) return;
+
+    const logoSrc = user?.logo && user.logo !== 'null' && user.logo !== 'undefined' ? user.logo : '';
+    const labelLang = user?.labelLanguage || 'both';
+    const zatcaEnabled = user?.zatcaSettings?.enabled && user?.zatcaSettings?.showOnInvoice;
+
+    const totalQty = orders.reduce((s, o) => s + (Number(o?.quantity) || 0), 0);
+    const totalPrice = orders.reduce((s, o) => s + (Number(o?.price) || 0), 0);
+    const totalPaid = orders.reduce((s, o) => s + (Number(o?.paidAmount) || 0), 0);
+
+    const customerNameEn = selectedCustomer?.nameI18n?.en || selectedCustomer?.name || '-';
+    const customerNameAr = selectedCustomer?.nameI18n?.ar || selectedCustomer?.name || '-';
+    const customerDisplay = labelLang === 'en' ? customerNameEn : labelLang === 'ar' ? customerNameAr : `${customerNameEn} / ${customerNameAr}`;
+
+    const labels = {
+      customer: { en: 'Customer', ar: 'العميل' },
+      phone: { en: 'Phone', ar: 'الهاتف' },
+      quantity: { en: 'Quantity', ar: 'الكمية' },
+      price: { en: 'Price', ar: 'السعر' },
+      paid: { en: 'Paid', ar: 'المدفوع' },
+      balance: { en: 'Balance', ar: 'المتبقي' },
+      member: { en: 'Member', ar: 'الفرد' },
+      familyInvoice: { en: 'Family Invoice', ar: 'فاتورة العائلة' }
+    };
+
+    const getLabel = (key) => {
+      if (labelLang === 'en') return labels[key].en;
+      if (labelLang === 'ar') return labels[key].ar;
+      return `${labels[key].en} / ${labels[key].ar}`;
+    };
+
+    let zatcaQrUrl = '';
+    if (zatcaEnabled && user?.zatcaSettings?.vatNumber) {
+      try {
+        const vatRate = 0.15;
+        const vatAmount = (totalPrice * vatRate / (1 + vatRate)).toFixed(2);
+        const timestamp = new Date().toISOString();
+
+        const generateTLV = (fields) => {
+          let result = [];
+          fields.forEach(f => {
+            const value = String(f.value);
+            const valueBytes = new TextEncoder().encode(value);
+            result.push(f.tag, valueBytes.length, ...valueBytes);
+          });
+          return btoa(String.fromCharCode(...result));
+        };
+
+        const tlvData = generateTLV([
+          { tag: 1, value: user?.businessName || '' },
+          { tag: 2, value: user?.zatcaSettings?.vatNumber || '' },
+          { tag: 3, value: timestamp },
+          { tag: 4, value: Number(totalPrice || 0).toFixed(2) },
+          { tag: 5, value: vatAmount }
+        ]);
+        zatcaQrUrl = await QRCode.toDataURL(tlvData, { width: 110, margin: 1 });
+      } catch (e) {
+        zatcaQrUrl = '';
+      }
+    }
+
+    const sarSvg = `<svg viewBox="0 0 1124.14 1256.39" width="14" height="14" style="display:inline;vertical-align:middle;margin:0 2px;" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z" /><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z" /></svg>`;
+
+    const isRTL = labelLang === 'ar';
+
+    const rowsHtml = orders.map((o) => {
+      const name = o.orderFor || o.relationName || '-';
+      const q = Number(o.quantity) || 0;
+      const p = Number(o.price) || 0;
+      const paid = Number(o.paidAmount) || 0;
+      return `
+        <div class="item-row">
+          <div class="item-name">${name}</div>
+          <div class="item-meta">${getLabel('quantity')}: ${q} · ${getLabel('price')}: ${p} ${sarSvg} · ${getLabel('paid')}: ${paid} ${sarSvg}</div>
+        </div>
+      `;
+    }).join('');
+
+    const printWindow = window.open('', '_blank', 'width=340,height=720');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="${isRTL ? 'rtl' : 'ltr'}">
+      <head>
+        <title>Family Invoice</title>
+        <style>
+          @page { size: 80mm auto; margin: 2mm; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; width: 76mm; padding: 3mm; font-size: 11px; direction: ${isRTL ? 'rtl' : 'ltr'}; }
+          .header { text-align: center; margin-bottom: 8px; border-bottom: 2px dashed #333; padding-bottom: 10px; }
+          .logo { width: 60px; height: 60px; object-fit: contain; margin: 0 auto 8px; display: block; border-radius: 8px; }
+          .no-logo { width: 60px; height: 60px; background: #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280; font-size: 24px; margin: 0 auto 8px; }
+          .shop-name { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
+          .shop-name-ar { font-size: 13px; font-weight: bold; direction: rtl; color: #333; }
+          .receipt-title { font-size: 14px; font-weight: 800; text-align: center; margin: 8px 0; }
+          .row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #ccc; }
+          .label { color: #666; font-size: 10px; }
+          .value { font-weight: 700; }
+          .items { margin-top: 10px; }
+          .item-row { padding: 6px 0; border-bottom: 1px dotted #ddd; }
+          .item-name { font-weight: 800; font-size: 11px; }
+          .item-meta { margin-top: 2px; font-size: 9px; color: #444; line-height: 1.2; }
+          .qr { text-align: center; margin-top: 10px; padding-top: 10px; border-top: 2px dashed #333; }
+          .qr img { width: 90px; height: 90px; border: 2px solid #e5e7eb; border-radius: 10px; padding: 4px; background: #fff; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          ${logoSrc ? `<img src="${logoSrc}" class="logo" onerror="this.outerHTML='<div class=no-logo>${(user?.businessName || 'T').charAt(0)}</div>'" />` : `<div class="no-logo">${(user?.businessName || 'T').charAt(0)}</div>`}
+          <div class="shop-name">${user?.businessName || 'Tailor Shop'}</div>
+          ${user?.businessNameAr ? `<div class="shop-name-ar">${user.businessNameAr}</div>` : ''}
+        </div>
+
+        <div class="receipt-title">${getLabel('familyInvoice')}</div>
+
+        <div class="row"><span class="label">${getLabel('customer')}:</span><span class="value">${customerDisplay}</span></div>
+        <div class="row"><span class="label">${getLabel('phone')}:</span><span class="value">${selectedCustomer?.phone || '-'}</span></div>
+
+        <div class="items">${rowsHtml}</div>
+
+        <div class="row"><span class="label">${getLabel('quantity')}:</span><span class="value">${totalQty}</span></div>
+        <div class="row"><span class="label">${getLabel('price')}:</span><span class="value">${Number(totalPrice || 0).toFixed(2)} ${sarSvg}</span></div>
+        <div class="row"><span class="label">${getLabel('paid')}:</span><span class="value">${Number(totalPaid || 0).toFixed(2)} ${sarSvg}</span></div>
+        <div class="row"><span class="label">${getLabel('balance')}:</span><span class="value">${Number((totalPrice || 0) - (totalPaid || 0)).toFixed(2)} ${sarSvg}</span></div>
+
+        ${zatcaQrUrl ? `
+          <div class="qr">
+            <img src="${zatcaQrUrl}" alt="ZATCA QR" />
+          </div>
+        ` : ''}
+      </body>
+      </html>
+    `);
+
     printWindow.document.close();
     printWindow.onload = () => {
       printWindow.print();
@@ -749,37 +1021,110 @@ const StitchingForm = () => {
         return;
       }
 
-      const data = {
-        customerId: selectedCustomer._id,
-        customerName: selectedCustomer.name,
-        relationId: selectedRelation?._id || null,
-        relationName: selectedRelation?.name || null,
-        relationType: selectedRelation?.type || null,
-        orderFor: selectedRelation ? selectedRelation.name : selectedCustomer.name,
-        quantity: formData.quantity,
-        price: parseFloat(formData.price) || 0,
-        paidAmount: parseFloat(formData.paidAmount) || 0,
-        description: formData.description,
-        dueDate: formData.dueDate,
-        status: formData.status,
-        thawbType: formData.thawbType,
-        fabricColor: formData.fabricColor || null,
-        fabricId: formData.fabricId ? formData.fabricId : null,
-        rollsUsed: rollsUsedValue,
-        measurements: formData.measurements,
-        styleOptions: formData.styleOptions,
-        embroideryDesignId: formData.embroideryDesignId || null
-      };
-
       if (isEdit) {
+        const data = {
+          customerId: selectedCustomer._id,
+          customerName: selectedCustomer.name,
+          relationId: selectedRelation?._id || null,
+          relationName: selectedRelation?.name || null,
+          relationType: selectedRelation?.type || null,
+          orderFor: selectedRelation ? selectedRelation.name : selectedCustomer.name,
+          quantity: formData.quantity,
+          price: parseFloat(formData.price) || 0,
+          paidAmount: parseFloat(formData.paidAmount) || 0,
+          description: formData.description,
+          dueDate: formData.dueDate,
+          status: formData.status,
+          thawbType: formData.thawbType,
+          fabricColor: formData.fabricColor || null,
+          fabricId: formData.fabricId ? formData.fabricId : null,
+          rollsUsed: rollsUsedValue,
+          measurements: formData.measurements,
+          styleOptions: formData.styleOptions,
+          embroideryDesignId: formData.embroideryDesignId || null
+        };
         await api.put(`/stitchings/${id}`, data);
         toast.success('Updated');
         navigate('/user/stitchings');
       } else {
-        const response = await api.post('/stitchings', data);
-        const order = response.data?.stitching || response.data;
-        setCreatedOrder(order);
-        toast.success('Order created! You can print the label now.');
+        if (batchMode) {
+          const items = (orderItems || [])
+            .map((it) => ({
+              ...it,
+              quantity: Math.max(1, Number(it?.quantity) || 1)
+            }))
+            .filter((it) => !!it.orderFor);
+
+          if (items.length === 0) {
+            toast.error('Add at least 1 family member');
+            setLoading(false);
+            return;
+          }
+
+          const priceAlloc = computeAllocations(items, 'price', totalPriceOverride);
+          const paidAlloc = computeAllocations(items, 'paidAmount', totalPaidOverride);
+          const rollsAlloc = allocateRollsUsed(items, rollsUsedValue);
+
+          const created = [];
+          for (const it of items) {
+            const data = {
+              customerId: selectedCustomer._id,
+              customerName: selectedCustomer.name,
+              relationId: it.relationId || null,
+              relationName: it.relationName || null,
+              relationType: it.relationType || null,
+              orderFor: it.orderFor,
+              quantity: Math.max(1, Number(it.quantity) || 1),
+              price: Number(priceAlloc.get(it.id)) || 0,
+              paidAmount: Number(paidAlloc.get(it.id)) || 0,
+              description: formData.description,
+              dueDate: formData.dueDate,
+              status: formData.status,
+              thawbType: formData.thawbType,
+              fabricColor: formData.fabricColor || null,
+              fabricId: formData.fabricId ? formData.fabricId : null,
+              rollsUsed: Number(rollsAlloc.get(it.id)) || 0,
+              measurements: it.measurements || {},
+              styleOptions: formData.styleOptions,
+              embroideryDesignId: formData.embroideryDesignId || null
+            };
+
+            const response = await api.post('/stitchings', data);
+            const order = response.data?.stitching || response.data;
+            created.push(order);
+          }
+
+          setCreatedOrders(created);
+          setCreatedOrder(created[0] || null);
+          toast.success('Orders created! You can print labels now.');
+        } else {
+          const data = {
+            customerId: selectedCustomer._id,
+            customerName: selectedCustomer.name,
+            relationId: selectedRelation?._id || null,
+            relationName: selectedRelation?.name || null,
+            relationType: selectedRelation?.type || null,
+            orderFor: selectedRelation ? selectedRelation.name : selectedCustomer.name,
+            quantity: formData.quantity,
+            price: parseFloat(formData.price) || 0,
+            paidAmount: parseFloat(formData.paidAmount) || 0,
+            description: formData.description,
+            dueDate: formData.dueDate,
+            status: formData.status,
+            thawbType: formData.thawbType,
+            fabricColor: formData.fabricColor || null,
+            fabricId: formData.fabricId ? formData.fabricId : null,
+            rollsUsed: rollsUsedValue,
+            measurements: formData.measurements,
+            styleOptions: formData.styleOptions,
+            embroideryDesignId: formData.embroideryDesignId || null
+          };
+          const response = await api.post('/stitchings', data);
+          const order = response.data?.stitching || response.data;
+          setCreatedOrders([]);
+          setCreatedOrder(order);
+          toast.success('Order created! You can print the label now.');
+        }
       }
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed');
@@ -876,8 +1221,18 @@ const StitchingForm = () => {
         })
     : fallbackFabricColors;
 
+  const batchMode = !isEdit && (orderItems?.length || 0) > 0;
+  const batchQuantity = orderItems.reduce((sum, it) => sum + (Number(it?.quantity) || 0), 0);
+  const batchItemsPrice = orderItems.reduce((sum, it) => sum + (Number(it?.price) || 0), 0);
+  const batchItemsPaid = orderItems.reduce((sum, it) => sum + (Number(it?.paidAmount) || 0), 0);
+  const totalPriceOverride = String(formData.price || '').trim() === '' ? null : (Number(formData.price) || 0);
+  const totalPaidOverride = String(formData.paidAmount || '').trim() === '' ? null : (Number(formData.paidAmount) || 0);
+  const batchTotalPrice = totalPriceOverride === null ? batchItemsPrice : totalPriceOverride;
+  const batchTotalPaid = totalPaidOverride === null ? batchItemsPaid : totalPaidOverride;
+
   // If order created, show print option
   if (createdOrder) {
+    const orders = (createdOrders && createdOrders.length > 0) ? createdOrders : [createdOrder];
     return (
       <div className="max-w-md mx-auto space-y-6 animate-fadeIn">
         <Card className="p-8 text-center">
@@ -887,16 +1242,50 @@ const StitchingForm = () => {
             </svg>
           </div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-2">Order Created!</h2>
-          <p className="text-gray-500 dark:text-slate-400 mb-6">Receipt #{createdOrder.receiptNumber || createdOrder._id?.slice(-6)}</p>
+          <p className="text-gray-500 dark:text-slate-400 mb-6">
+            {orders.length > 1 ? `${orders.length} orders created` : `Receipt #${createdOrder.receiptNumber || createdOrder._id?.slice(-6)}`}
+          </p>
           
           <div className="space-y-3">
-            <Button onClick={handlePrintLabel} icon={Printer} className="w-full">
-              Print Label (80mm)
-            </Button>
+            {orders.length === 1 ? (
+              <Button onClick={() => handlePrintLabel(orders[0])} icon={Printer} className="w-full">
+                Print Label (80mm)
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <Button onClick={handlePrintFamilySummary} icon={Printer} className="w-full">
+                  Print Family Invoice
+                </Button>
+                {orders.map((o) => (
+                  <Button
+                    key={o._id}
+                    variant="outline"
+                    onClick={() => handlePrintLabel(o)}
+                    icon={Printer}
+                    className="w-full"
+                  >
+                    Print {o.orderFor || o.relationName || 'Order'} #{o.receiptNumber || o._id?.slice(-6)}
+                  </Button>
+                ))}
+              </div>
+            )}
             <Button variant="outline" onClick={() => navigate('/user/stitchings')} className="w-full">
               Back to Orders
             </Button>
-            <Button variant="secondary" onClick={() => { setCreatedOrder(null); setSelectedCustomer(null); setSelectedRelation(null); setSelectedEmbroideryDesign(null); setCustomerSearch(''); setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', thawbType: 'saudi', fabricColor: '', measurements: {}, styleOptions: {}, embroideryDesignId: null }); }} className="w-full">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setCreatedOrder(null);
+                setCreatedOrders([]);
+                setOrderItems([]);
+                setSelectedCustomer(null);
+                setSelectedRelation(null);
+                setSelectedEmbroideryDesign(null);
+                setCustomerSearch('');
+                setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', thawbType: 'saudi', fabricColor: '', measurements: {}, styleOptions: {}, embroideryDesignId: null });
+              }}
+              className="w-full"
+            >
               Create Another Order
             </Button>
           </div>
@@ -1020,55 +1409,64 @@ const StitchingForm = () => {
               </div>
             ) : null}
 
-            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
-              <div className="flex items-center justify-between mb-4">
+             <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
+              <button
+                type="button"
+                onClick={() => setStyleOptionsOpen((p) => !p)}
+                className="w-full flex items-center justify-between mb-4"
+              >
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('styleOptions.title')}</h3>
-              </div>
+                <ChevronDown
+                  className={`w-5 h-5 text-gray-500 dark:text-slate-400 transition-transform ${styleOptionsOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
 
-              <div className="space-y-5">
-                {styleCatalogLoading ? (
-                  <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
-                ) : (
-                  ((styleCatalog?.groups?.length ? styleCatalog.groups : [
-                    { key: 'collar', name: '', enabled: true, sortOrder: 0, options: [ { key: 'classic', name: '' }, { key: 'round', name: '' }, { key: 'mandarin', name: '' }, { key: 'open', name: '' } ] },
-                    { key: 'bain', name: '', enabled: true, sortOrder: 1, options: [ { key: 'hidden', name: '' }, { key: 'visible', name: '' }, { key: 'zip', name: '' }, { key: 'half', name: '' } ] },
-                    { key: 'cuff', name: '', enabled: true, sortOrder: 2, options: [ { key: 'single', name: '' }, { key: 'double', name: '' }, { key: 'round', name: '' }, { key: 'angled', name: '' } ] },
-                    { key: 'pocket', name: '', enabled: true, sortOrder: 3, options: [ { key: 'none', name: '' }, { key: 'chest', name: '' }, { key: 'side', name: '' }, { key: 'both', name: '' } ] },
-                    { key: 'buttons', name: '', enabled: true, sortOrder: 4, options: [ { key: 'classic', name: '' }, { key: 'hidden', name: '' }, { key: 'snap', name: '' }, { key: 'premium', name: '' } ] },
-                    { key: 'embroidery', name: '', enabled: true, sortOrder: 5, options: [ { key: 'none', name: '' }, { key: 'name', name: '' }, { key: 'logo', name: '' }, { key: 'premium', name: '' } ] }
-                  ]))
-                    .filter((g) => g && g.enabled !== false)
-                    .slice()
-                    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-                    .map((group) => {
-                      const groupTitle = group.nameI18n?.[langKey] || group.name || t(`styleOptions.${group.key}`, { defaultValue: group.key });
-                      const groupOptions = (group.options || [])
-                        .filter((o) => o && o.enabled !== false)
-                        .slice()
-                        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-                        .map((opt) => {
-                          const label = opt.nameI18n?.[langKey] || opt.name || t(`styleOptions.options.${group.key}.${opt.key}`, { defaultValue: opt.key });
-                          return { value: opt.key, label };
-                        });
+              {styleOptionsOpen ? (
+                <div className="space-y-5">
+                  {styleCatalogLoading ? (
+                    <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
+                  ) : (
+                    ((styleCatalog?.groups?.length ? styleCatalog.groups : [
+                      { key: 'collar', name: '', enabled: true, sortOrder: 0, options: [ { key: 'classic', name: '' }, { key: 'round', name: '' }, { key: 'mandarin', name: '' }, { key: 'open', name: '' } ] },
+                      { key: 'bain', name: '', enabled: true, sortOrder: 1, options: [ { key: 'hidden', name: '' }, { key: 'visible', name: '' }, { key: 'zip', name: '' }, { key: 'half', name: '' } ] },
+                      { key: 'cuff', name: '', enabled: true, sortOrder: 2, options: [ { key: 'single', name: '' }, { key: 'double', name: '' }, { key: 'round', name: '' }, { key: 'angled', name: '' } ] },
+                      { key: 'pocket', name: '', enabled: true, sortOrder: 3, options: [ { key: 'none', name: '' }, { key: 'chest', name: '' }, { key: 'side', name: '' }, { key: 'both', name: '' } ] },
+                      { key: 'buttons', name: '', enabled: true, sortOrder: 4, options: [ { key: 'classic', name: '' }, { key: 'hidden', name: '' }, { key: 'snap', name: '' }, { key: 'premium', name: '' } ] },
+                      { key: 'embroidery', name: '', enabled: true, sortOrder: 5, options: [ { key: 'none', name: '' }, { key: 'name', name: '' }, { key: 'logo', name: '' }, { key: 'premium', name: '' } ] }
+                    ]))
+                      .filter((g) => g && g.enabled !== false)
+                      .slice()
+                      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                      .map((group) => {
+                        const groupTitle = group.nameI18n?.[langKey] || group.name || t(`styleOptions.${group.key}`, { defaultValue: group.key });
+                        const groupOptions = (group.options || [])
+                          .filter((o) => o && o.enabled !== false)
+                          .slice()
+                          .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                          .map((opt) => {
+                            const label = opt.nameI18n?.[langKey] || opt.name || t(`styleOptions.options.${group.key}.${opt.key}`, { defaultValue: opt.key });
+                            return { value: opt.key, label };
+                          });
 
-                      const selectedValue = (formData.styleOptions || {})[group.key] || '';
-                      return (
-                        <div key={group.key}>
-                          <Select
-                            label={groupTitle}
-                            value={selectedValue}
-                            onChange={(e) => handleStyleOptionChange(group.key, e.target.value)}
-                            options={[
-                              { value: '', label: t('common.select', { defaultValue: 'Select' }) },
-                              ...groupOptions
-                            ]}
-                            className="rounded-2xl bg-white/70 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700"
-                          />
-                        </div>
-                      );
-                    })
-                )}
-              </div>
+                        const selectedValue = (formData.styleOptions || {})[group.key] || '';
+                        return (
+                          <div key={group.key}>
+                            <Select
+                              label={groupTitle}
+                              value={selectedValue}
+                              onChange={(e) => handleStyleOptionChange(group.key, e.target.value)}
+                              options={[
+                                { value: '', label: t('common.select', { defaultValue: 'Select' }) },
+                                ...groupOptions
+                              ]}
+                              className="rounded-2xl bg-white/70 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700"
+                            />
+                          </div>
+                        );
+                      })
+                  )}
+                </div>
+              ) : null}
             </div>
 
             {/* Thawb Type Selector */}
@@ -1094,58 +1492,8 @@ const StitchingForm = () => {
               />
             </div>
 
-            {/* Fabric Color Selector (Optional) */}
             <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <label className="block text-sm font-semibold text-gray-800 dark:text-slate-100">
-                  Fabric Color / لون القماش
-                </label>
-                <span className="text-xs text-gray-400 dark:text-slate-500">(Optional)</span>
-              </div>
-              {fabricColorsCatalogLoading && (
-                <div className="text-sm text-gray-500 dark:text-slate-400 mb-4">Loading…</div>
-              )}
-              <div className="flex flex-wrap gap-3">
-                {/* No color option */}
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, fabricColor: '' })}
-                  className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                    !formData.fabricColor
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                      : 'border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-gray-300'
-                  }`}
-                >
-                  Not specified
-                </button>
-                {fabricColors.map((color) => {
-                  const isSelected = formData.fabricColor === color.key;
-                  return (
-                    <button
-                      key={color.key}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, fabricColor: color.key })}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
-                        isSelected
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 ring-1 ring-primary-500'
-                          : 'border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
-                      }`}
-                    >
-                      <span
-                        className="w-5 h-5 rounded-full border border-gray-300 dark:border-slate-500"
-                        style={{ backgroundColor: color.hex }}
-                      />
-                      <span className={`text-sm font-medium ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-slate-200'}`}>
-                        {color.name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Fabric (Roll) Selector (Optional) */}
-            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-5">
+              {/* Fabric (Roll) Selector (Optional) */}
               <div className="flex items-center justify-between mb-4">
                 <label className="block text-sm font-semibold text-gray-800 dark:text-slate-100">
                   Fabric / القماش
@@ -1172,6 +1520,24 @@ const StitchingForm = () => {
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Rolls Used / رول مستخدم</label>
+
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {['0.25', '0.50', '0.75', '1'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setFormData((p) => ({ ...p, rollsUsed: preset }))}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors ${
+                          String(formData.rollsUsed || '') === preset
+                            ? 'bg-primary-600 border-primary-600 text-white'
+                            : 'bg-white/70 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 hover:bg-white'
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+
                   <input
                     type="number"
                     min="0"
@@ -1188,6 +1554,55 @@ const StitchingForm = () => {
                   <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">On create/update/delete, fabric stock will be adjusted automatically.</div>
                 </div>
               </div>
+
+              {/* Fabric Color Selector (Optional) */}
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <label className="block text-sm font-semibold text-gray-800 dark:text-slate-100">
+                    Fabric Color / لون القماش
+                  </label>
+                  <span className="text-xs text-gray-400 dark:text-slate-500">(Optional)</span>
+                </div>
+                {fabricColorsCatalogLoading && (
+                  <div className="text-sm text-gray-500 dark:text-slate-400 mb-4">Loading…</div>
+                )}
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, fabricColor: '' })}
+                    className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                      !formData.fabricColor
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                        : 'border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-gray-300'
+                    }`}
+                  >
+                    Not specified
+                  </button>
+                  {fabricColors.map((color) => {
+                    const isSelected = formData.fabricColor === color.key;
+                    return (
+                      <button
+                        key={color.key}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, fabricColor: color.key })}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
+                          isSelected
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 ring-1 ring-primary-500'
+                            : 'border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
+                        }`}
+                      >
+                        <span
+                          className="w-5 h-5 rounded-full border border-gray-300 dark:border-slate-500"
+                          style={{ backgroundColor: color.hex }}
+                        />
+                        <span className={`text-sm font-medium ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-slate-200'}`}>
+                          {color.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             {/* Price and Quantity */}
@@ -1196,11 +1611,15 @@ const StitchingForm = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">{t('stitchings.quantity')}</label>
                 <input
                   type="number"
-                  value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
+                  value={batchMode ? Math.max(1, batchQuantity || 1) : formData.quantity}
+                  onChange={(e) => {
+                    if (batchMode) return;
+                    setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 });
+                  }}
                   min="1"
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  required
+                  required={!batchMode}
+                  disabled={batchMode}
                 />
               </div>
               <div>
@@ -1354,107 +1773,221 @@ const StitchingForm = () => {
                     </div>
                     <div className="mt-1 text-sm text-amber-800/80 dark:text-amber-200/80">Choose who this order is for (default: customer).</div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => openAddFamily('son')}
-                    icon={UserPlus}
-                    disabled={isDemo}
-                  >
-                    Add Member
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {orderItems.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setFamilyControlsOpen((p) => !p)}
+                        className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-xs font-semibold text-amber-800 dark:text-amber-200 hover:bg-white inline-flex items-center gap-2"
+                      >
+                        <span>{familyControlsOpen ? 'Hide' : 'Show'} Controls</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${familyControlsOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => openAddFamily('son')}
+                      icon={UserPlus}
+                      disabled={isDemo}
+                    >
+                      Add Member
+                    </Button>
+                  </div>
                 </div>
 
-                <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/80 dark:bg-slate-900/25 p-4">
-                    <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Order for</div>
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                          {selectedRelation ? (
-                            <span className="text-amber-700 dark:text-amber-200 font-semibold">{(selectedRelation.name || '?').charAt(0)}</span>
-                          ) : (
-                            <User className="w-5 h-5 text-amber-700 dark:text-amber-200" />
-                          )}
+                {(familyControlsOpen || orderItems.length === 0) ? (
+                  <>
+                    <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/80 dark:bg-slate-900/25 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Order for</div>
+                          <button
+                            type="button"
+                            onClick={addCurrentToOrder}
+                            className="px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-100/70 dark:bg-amber-900/25 text-xs font-semibold text-amber-900 dark:text-amber-100 hover:bg-amber-100"
+                          >
+                            Add to Order
+                          </button>
                         </div>
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
-                            {selectedRelation ? selectedRelation.name : (selectedCustomer.nameI18n?.[langKey] || selectedCustomer.name)}
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                              {selectedRelation ? (
+                                <span className="text-amber-700 dark:text-amber-200 font-semibold">{(selectedRelation.name || '?').charAt(0)}</span>
+                              ) : (
+                                <User className="w-5 h-5 text-amber-700 dark:text-amber-200" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
+                                {selectedRelation ? selectedRelation.name : (selectedCustomer.nameI18n?.[langKey] || selectedCustomer.name)}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-slate-400 truncate">
+                                {selectedRelation ? (selectedRelation.type || '') : 'Self'}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-500 dark:text-slate-400 truncate">
-                            {selectedRelation ? (selectedRelation.type || '') : 'Self'}
-                          </div>
+                          {selectedRelation ? (
+                            <button
+                              type="button"
+                              onClick={clearRelation}
+                              className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline"
+                            >
+                              Use Self
+                            </button>
+                          ) : null}
                         </div>
                       </div>
-                      {selectedRelation ? (
+
+                      <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 p-4">
+                        <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Quick add</div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button type="button" onClick={() => openAddFamily('son')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Son</button>
+                          <button type="button" onClick={() => openAddFamily('brother')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Brother</button>
+                          <button type="button" onClick={() => openAddFamily('father')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Father</button>
+                          <button type="button" onClick={() => openAddFamily('other')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Other</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Select from family</div>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/user/customers/${selectedCustomer._id}`)}
+                          className="text-xs font-semibold text-amber-700 dark:text-amber-300 hover:underline"
+                        >
+                          View Family Tree
+                        </button>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
                         <button
                           type="button"
                           onClick={clearRelation}
-                          className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline"
+                          className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-colors ${!selectedRelation ? 'border-amber-400 bg-amber-100/60 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100' : 'border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-slate-800 dark:text-slate-100 hover:bg-white'}`}
                         >
-                          Use Self
+                          Self
                         </button>
-                      ) : null}
-                    </div>
-                  </div>
 
-                  <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 p-4">
-                    <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Quick add</div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button type="button" onClick={() => openAddFamily('son')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Son</button>
-                      <button type="button" onClick={() => openAddFamily('brother')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Brother</button>
-                      <button type="button" onClick={() => openAddFamily('father')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Father</button>
-                      <button type="button" onClick={() => openAddFamily('other')} className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:shadow-sm">Add Other</button>
-                    </div>
-                  </div>
-                </div>
+                        {(selectedCustomer.relations || []).map((r, idx) => {
+                          const relUi = normalizeRelationForUi(r);
+                          const active = selectedRelation && String(selectedRelation._id) === String(relUi._id);
+                          return (
+                            <button
+                              key={`${relUi._id || idx}`}
+                              type="button"
+                              onClick={() => handleRelationSelect(r)}
+                              className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-colors ${active ? 'border-amber-400 bg-amber-100/60 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100' : 'border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-slate-800 dark:text-slate-100 hover:bg-white'}`}
+                              title={relUi.phone || ''}
+                            >
+                              {relUi.name || '-'}{relUi.type ? ` · ${relUi.type}` : ''}
+                            </button>
+                          );
+                        })}
 
-                <div className="mt-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Select from family</div>
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/user/customers/${selectedCustomer._id}`)}
-                      className="text-xs font-semibold text-amber-700 dark:text-amber-300 hover:underline"
-                    >
-                      View Family Tree
-                    </button>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={clearRelation}
-                      className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-colors ${!selectedRelation ? 'border-amber-400 bg-amber-100/60 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100' : 'border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-slate-800 dark:text-slate-100 hover:bg-white'}`}
-                    >
-                      Self
-                    </button>
-
-                    {(selectedCustomer.relations || []).map((r, idx) => {
-                      const relUi = normalizeRelationForUi(r);
-                      const active = selectedRelation && String(selectedRelation._id) === String(relUi._id);
-                      return (
                         <button
-                          key={`${relUi._id || idx}`}
                           type="button"
-                          onClick={() => handleRelationSelect(r)}
-                          className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-colors ${active ? 'border-amber-400 bg-amber-100/60 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100' : 'border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-slate-800 dark:text-slate-100 hover:bg-white'}`}
-                          title={relUi.phone || ''}
+                          onClick={() => openAddFamily('son')}
+                          className="px-3 py-2 rounded-xl border border-dashed border-amber-300 dark:border-amber-800/60 bg-white/40 dark:bg-slate-900/10 text-xs font-semibold text-amber-800 dark:text-amber-200 hover:bg-white"
                         >
-                          {relUi.name || '-'}{relUi.type ? ` · ${relUi.type}` : ''}
+                          <span className="inline-flex items-center gap-2"><Plus className="w-4 h-4" />Add</span>
                         </button>
-                      );
-                    })}
-
-                    <button
-                      type="button"
-                      onClick={() => openAddFamily('son')}
-                      className="px-3 py-2 rounded-xl border border-dashed border-amber-300 dark:border-amber-800/60 bg-white/40 dark:bg-slate-900/10 text-xs font-semibold text-amber-800 dark:text-amber-200 hover:bg-white"
-                    >
-                      <span className="inline-flex items-center gap-2"><Plus className="w-4 h-4" />Add</span>
-                    </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="mt-5 rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 p-4">
+                    <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Controls hidden</div>
+                    <div className="mt-1 text-xs text-amber-900/70 dark:text-amber-100/70">Use “Show Controls” to add more members.</div>
                   </div>
-                </div>
+                )}
+
+                {orderItems.length > 0 ? (
+                  <div className="mt-6 space-y-3">
+                    {orderItems.map((it) => (
+                      <div key={it.id} className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/80 dark:bg-slate-900/25 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{it.orderFor || '-'}</div>
+                            <div className="text-xs text-gray-500 dark:text-slate-400 truncate">{it.relationType || 'Self'}</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeOrderItem(it.id)}
+                            className="p-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-rose-600 dark:text-rose-400 hover:bg-white"
+                            aria-label="Remove"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-amber-900/80 dark:text-amber-100/80 mb-1">Qty</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={it.quantity}
+                              onChange={(e) => updateOrderItem(it.id, { quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                              className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-amber-900/80 dark:text-amber-100/80 mb-1">Price</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={it.price}
+                              onChange={(e) => updateOrderItem(it.id, { price: e.target.value })}
+                              placeholder="0"
+                              className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-amber-900/80 dark:text-amber-100/80 mb-1">Paid</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={it.paidAmount}
+                              onChange={(e) => updateOrderItem(it.id, { paidAmount: e.target.value })}
+                              placeholder="0"
+                              className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-amber-50/60 dark:bg-amber-900/15 p-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <div className="text-xs text-amber-900/70 dark:text-amber-100/70">Total Qty</div>
+                          <div className="mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">{batchQuantity}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-amber-900/70 dark:text-amber-100/70">Total Price</div>
+                          <div className="mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">{batchTotalPrice}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-amber-900/70 dark:text-amber-100/70">Total Paid</div>
+                          <div className="mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">{batchTotalPaid}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-amber-900/70 dark:text-amber-100/70">Balance</div>
+                          <div className="mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">{Number(batchTotalPrice || 0) - Number(batchTotalPaid || 0)}</div>
+                        </div>
+                      </div>
+                      <div className="mt-3 text-xs text-amber-900/70 dark:text-amber-100/70">
+                        Leave member price/paid empty and fill the total price/paid fields above to auto-distribute by quantity.
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             )}
 
