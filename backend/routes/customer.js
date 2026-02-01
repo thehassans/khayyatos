@@ -106,6 +106,81 @@ const syncReverseRelations = async ({ userId, customer, oldRelations }) => {
   }
 };
 
+const collectSonIds = (relations) => {
+  const out = new Set();
+  (Array.isArray(relations) ? relations : []).forEach((r) => {
+    if (r?.relationType !== 'son') return;
+    const id = relationRefId(r);
+    if (!id) return;
+    out.add(String(id));
+  });
+  return Array.from(out);
+};
+
+const syncBrotherRelationsAmongSons = async ({ userId, beforeSonIds, afterSonIds }) => {
+  const before = new Set((beforeSonIds || []).map((x) => String(x)));
+  const after = new Set((afterSonIds || []).map((x) => String(x)));
+  const union = new Set([...before, ...after]);
+  if (!userId || union.size === 0) return;
+
+  const allIds = Array.from(union);
+  const lookup = await Customer.find({ userId, _id: { $in: allIds } }).select('name phone nameI18n relations');
+  const byId = new Map(lookup.map((c) => [String(c._id), c]));
+
+  for (const childId of allIds) {
+    const child = byId.get(String(childId));
+    if (!child) continue;
+
+    const shouldHave = after.has(String(childId))
+      ? Array.from(after).filter((x) => String(x) !== String(childId))
+      : [];
+    const shouldHaveSet = new Set(shouldHave.map(String));
+
+    const existing = Array.isArray(child.relations) ? child.relations : [];
+    const next = [];
+    const seenBrother = new Set();
+    let changed = false;
+
+    existing.forEach((rel) => {
+      const ridRaw = relationRefId(rel);
+      if (!ridRaw) {
+        next.push(rel);
+        return;
+      }
+      const rid = String(ridRaw);
+
+      if (rel?.relationType === 'brother' && union.has(rid)) {
+        seenBrother.add(rid);
+        if (!shouldHaveSet.has(rid)) {
+          changed = true;
+          return;
+        }
+      }
+
+      next.push(rel);
+    });
+
+    shouldHave.forEach((broId) => {
+      const idStr = String(broId);
+      if (seenBrother.has(idStr)) return;
+      const bro = byId.get(idStr);
+      if (!bro) return;
+      next.push({
+        customerId: bro._id,
+        customerName: bro.name || '',
+        customerPhone: bro.phone || '',
+        relationType: 'brother'
+      });
+      changed = true;
+    });
+
+    if (changed) {
+      child.relations = next;
+      await child.save();
+    }
+  }
+};
+
 const buildSaudiPhoneNeedles = (q) => {
   const raw = String(q || '').trim();
   const digits = raw.replace(/\D/g, '');
@@ -274,6 +349,11 @@ router.post('/', blockDemoWrites, async (req, res) => {
       await customer.save();
 
       await syncReverseRelations({ userId: req.user._id, customer, oldRelations });
+      await syncBrotherRelationsAmongSons({
+        userId: req.user._id,
+        beforeSonIds: collectSonIds(oldRelations),
+        afterSonIds: collectSonIds(customer.relations)
+      });
       return res.json({ message: 'Customer updated', customer, isExisting: true });
     }
     
@@ -294,6 +374,11 @@ router.post('/', blockDemoWrites, async (req, res) => {
     await customer.save();
 
     await syncReverseRelations({ userId: req.user._id, customer, oldRelations: [] });
+    await syncBrotherRelationsAmongSons({
+      userId: req.user._id,
+      beforeSonIds: [],
+      afterSonIds: collectSonIds(customer.relations)
+    });
     
     res.status(201).json({ message: 'Customer created successfully', customer });
   } catch (error) {
@@ -334,6 +419,11 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
     await customer.save();
 
     await syncReverseRelations({ userId: req.user._id, customer, oldRelations });
+    await syncBrotherRelationsAmongSons({
+      userId: req.user._id,
+      beforeSonIds: collectSonIds(oldRelations),
+      afterSonIds: collectSonIds(customer.relations)
+    });
     
     res.json({ message: 'Customer updated successfully', customer });
   } catch (error) {

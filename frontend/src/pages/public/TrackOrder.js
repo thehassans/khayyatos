@@ -217,7 +217,7 @@ const TrackOrder = () => {
                   <span className="font-medium text-emerald-600 flex items-center gap-1">{order.paidAmount || 0} <SARIcon className="w-4 h-4" /></span>
                 </div>
                 <div className="flex justify-between py-2">
-                  <span className="text-slate-600">Balance Due / المتبقي</span>
+                  <span className="text-slate-600">Pending / المتبقي</span>
                   <span className="font-medium text-[#7E6426] flex items-center gap-1">{(order.price || 0) - (order.paidAmount || 0)} <SARIcon className="w-4 h-4" /></span>
                 </div>
               </div>

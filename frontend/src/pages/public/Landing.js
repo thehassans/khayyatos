@@ -106,7 +106,7 @@ const Landing = () => {
     },
     {
       icon: Wallet,
-      title: 'Payments & Balances',
+      title: 'Payments & Pending',
       desc: 'Track paid vs pending amounts clearly to avoid mistakes at checkout.'
     },
     {
@@ -217,7 +217,7 @@ const Landing = () => {
       points: [
         'Track paid vs pending at order level.',
         'Clear totals for front desk decisions.',
-        'Avoid under/over-collection with a visible balance.'
+        'Avoid under/over-collection with a visible pending.'
       ]
     },
     {

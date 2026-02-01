@@ -648,6 +648,40 @@ const StitchingForm = () => {
     return map;
   };
 
+  const computePaidAllocationsByPrice = (items, totalPaid, priceAlloc) => {
+    const total = Math.max(0, Number(totalPaid) || 0);
+    const weights = items.map((it) => {
+      const p = Number(priceAlloc?.get(it.id)) || 0;
+      const q = Number(it?.quantity) || 0;
+      return { id: it.id, price: p, qty: q };
+    });
+
+    const sumPrice = weights.reduce((s, x) => s + (Number(x.price) || 0), 0);
+    const usePrice = sumPrice > 0;
+    const denom = usePrice ? sumPrice : weights.reduce((s, x) => s + (Number(x.qty) || 0), 0);
+    const map = new Map();
+
+    if (denom <= 0) {
+      items.forEach((it) => map.set(it.id, 0));
+      return map;
+    }
+
+    let distributed = 0;
+    weights.forEach((w, idx) => {
+      if (idx === weights.length - 1) {
+        map.set(w.id, Number((total - distributed).toFixed(2)));
+        return;
+      }
+      const weight = usePrice ? w.price : w.qty;
+      const share = total * ((Number(weight) || 0) / denom);
+      const rounded = Number(share.toFixed(2));
+      distributed += rounded;
+      map.set(w.id, rounded);
+    });
+
+    return map;
+  };
+
   const handlePrintLabel = async (orderToPrint) => {
     const order = orderToPrint || createdOrder || createdOrders?.[0];
     if (!order) return;
@@ -702,7 +736,7 @@ const StitchingForm = () => {
       quantity: { en: 'Quantity', ar: 'الكمية' },
       price: { en: 'Price', ar: 'السعر' },
       paid: { en: 'Paid', ar: 'المدفوع' },
-      balance: { en: 'Balance', ar: 'المتبقي' },
+      balance: { en: 'Pending', ar: 'المتبقي' },
       dueDate: { en: 'Due Date', ar: 'تاريخ التسليم' },
       status: { en: 'Status', ar: 'الحالة' },
       thawbType: { en: 'Thawb', ar: 'الثوب' },
@@ -853,7 +887,7 @@ const StitchingForm = () => {
       quantity: { en: 'Quantity', ar: 'الكمية' },
       price: { en: 'Price', ar: 'السعر' },
       paid: { en: 'Paid', ar: 'المدفوع' },
-      balance: { en: 'Balance', ar: 'المتبقي' },
+      balance: { en: 'Pending', ar: 'المتبقي' },
       member: { en: 'Member', ar: 'الفرد' },
       familyInvoice: { en: 'Family Invoice', ar: 'فاتورة العائلة' }
     };
@@ -1061,8 +1095,8 @@ const StitchingForm = () => {
             return;
           }
 
-          const priceAlloc = computeAllocations(items, 'price', totalPriceOverride);
-          const paidAlloc = computeAllocations(items, 'paidAmount', totalPaidOverride);
+          const priceAlloc = computeAllocations(items, 'price', null);
+          const paidAlloc = computePaidAllocationsByPrice(items, totalPaidOverride === null ? 0 : totalPaidOverride, priceAlloc);
           const rollsAlloc = allocateRollsUsed(items, rollsUsedValue);
 
           const created = [];
@@ -1224,11 +1258,9 @@ const StitchingForm = () => {
   const batchMode = !isEdit && (orderItems?.length || 0) > 0;
   const batchQuantity = orderItems.reduce((sum, it) => sum + (Number(it?.quantity) || 0), 0);
   const batchItemsPrice = orderItems.reduce((sum, it) => sum + (Number(it?.price) || 0), 0);
-  const batchItemsPaid = orderItems.reduce((sum, it) => sum + (Number(it?.paidAmount) || 0), 0);
-  const totalPriceOverride = String(formData.price || '').trim() === '' ? null : (Number(formData.price) || 0);
   const totalPaidOverride = String(formData.paidAmount || '').trim() === '' ? null : (Number(formData.paidAmount) || 0);
-  const batchTotalPrice = totalPriceOverride === null ? batchItemsPrice : totalPriceOverride;
-  const batchTotalPaid = totalPaidOverride === null ? batchItemsPaid : totalPaidOverride;
+  const batchTotalPrice = batchItemsPrice;
+  const batchTotalPaid = totalPaidOverride === null ? 0 : totalPaidOverride;
 
   // If order created, show print option
   if (createdOrder) {
@@ -1606,47 +1638,45 @@ const StitchingForm = () => {
             </div>
 
             {/* Price and Quantity */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">{t('stitchings.quantity')}</label>
-                <input
-                  type="number"
-                  value={batchMode ? Math.max(1, batchQuantity || 1) : formData.quantity}
-                  onChange={(e) => {
-                    if (batchMode) return;
-                    setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 });
-                  }}
-                  min="1"
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  required={!batchMode}
-                  disabled={batchMode}
-                />
+            {!batchMode ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">{t('stitchings.quantity')}</label>
+                  <input
+                    type="number"
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
+                    min="1"
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2 flex items-center gap-1">{t('stitchings.price')} <SARIcon className="w-4 h-4" /></label>
+                  <input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    min="0"
+                    step="0.01"
+                    placeholder="0"
+                    className="no-spinner w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2 flex items-center gap-1">{t('stitchings.paidAmount')} <SARIcon className="w-4 h-4" /></label>
+                  <input
+                    type="number"
+                    value={formData.paidAmount}
+                    onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
+                    min="0"
+                    step="0.01"
+                    placeholder="0"
+                    className="no-spinner w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2 flex items-center gap-1">{t('stitchings.price')} <SARIcon className="w-4 h-4" /></label>
-                <input
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  min="0"
-                  step="0.01"
-                  placeholder="0"
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2 flex items-center gap-1">{t('stitchings.paidAmount')} <SARIcon className="w-4 h-4" /></label>
-                <input
-                  type="number"
-                  value={formData.paidAmount}
-                  onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
-                  min="0"
-                  step="0.01"
-                  placeholder="0"
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-            </div>
+            ) : null}
 
             {/* Measurements - Premium Visual UI */}
             <div className="space-y-4">
@@ -1923,7 +1953,7 @@ const StitchingForm = () => {
                           </button>
                         </div>
 
-                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
                             <label className="block text-xs font-semibold text-amber-900/80 dark:text-amber-100/80 mb-1">Qty</label>
                             <input
@@ -1943,19 +1973,7 @@ const StitchingForm = () => {
                               value={it.price}
                               onChange={(e) => updateOrderItem(it.id, { price: e.target.value })}
                               placeholder="0"
-                              className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-amber-900/80 dark:text-amber-100/80 mb-1">Paid</label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={it.paidAmount}
-                              onChange={(e) => updateOrderItem(it.id, { paidAmount: e.target.value })}
-                              placeholder="0"
-                              className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                              className="no-spinner w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
                             />
                           </div>
                         </div>
@@ -1974,15 +1992,23 @@ const StitchingForm = () => {
                         </div>
                         <div>
                           <div className="text-xs text-amber-900/70 dark:text-amber-100/70">Total Paid</div>
-                          <div className="mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">{batchTotalPaid}</div>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={formData.paidAmount}
+                            onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
+                            placeholder="0"
+                            className="no-spinner mt-1 w-full px-3 py-2 bg-white/70 dark:bg-slate-900/20 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm font-semibold text-amber-900 dark:text-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                          />
                         </div>
                         <div>
-                          <div className="text-xs text-amber-900/70 dark:text-amber-100/70">Balance</div>
+                          <div className="text-xs text-amber-900/70 dark:text-amber-100/70">Pending</div>
                           <div className="mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">{Number(batchTotalPrice || 0) - Number(batchTotalPaid || 0)}</div>
                         </div>
                       </div>
                       <div className="mt-3 text-xs text-amber-900/70 dark:text-amber-100/70">
-                        Leave member price/paid empty and fill the total price/paid fields above to auto-distribute by quantity.
+                        Total paid is distributed across members by price.
                       </div>
                     </div>
                   </div>

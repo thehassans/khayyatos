@@ -464,7 +464,7 @@ const CustomerProfile = () => {
                       />
                     )}
 
-                    <div className="h-10 w-px bg-gradient-to-b from-[#D5B25B]/30 via-[#D5B25B]/20 to-transparent" />
+                    <div className="h-10 w-[2px] bg-gradient-to-b from-[#D5B25B]/70 via-[#D5B25B]/55 to-transparent dark:from-[#D5B25B]/60 dark:via-[#D5B25B]/45" />
 
                     <FamilyNode
                       nameParts={customerNameParts(customer, displayName)}
@@ -475,13 +475,13 @@ const CustomerProfile = () => {
                   </div>
 
                   <div className="relative mt-10 w-full">
-                    <div className="absolute left-1/2 -translate-x-1/2 top-0 h-9 w-px bg-gradient-to-b from-[#D5B25B]/30 via-[#D5B25B]/20 to-transparent" />
-                    <div className="absolute left-8 right-8 top-9 h-px bg-gradient-to-r from-transparent via-[#D5B25B]/30 to-transparent" />
+                    <div className="absolute left-1/2 -translate-x-1/2 top-0 h-9 w-[2px] bg-gradient-to-b from-[#D5B25B]/70 via-[#D5B25B]/55 to-transparent dark:from-[#D5B25B]/60 dark:via-[#D5B25B]/45" />
+                    <div className="absolute left-8 right-8 top-9 h-[2px] bg-gradient-to-r from-transparent via-[#D5B25B]/65 to-transparent dark:via-[#D5B25B]/55" />
 
                     <div className="pt-12 flex flex-nowrap justify-center gap-x-12 gap-y-8 px-8 w-max mx-auto">
                       {(familyTree.sons || []).map((rel) => (
                         <div key={relationKey(rel)} className="relative">
-                          <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-12 w-px bg-gradient-to-b from-transparent via-[#D5B25B]/25 to-[#D5B25B]/10" />
+                          <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-12 w-[2px] bg-gradient-to-b from-transparent via-[#D5B25B]/55 to-[#D5B25B]/35 dark:via-[#D5B25B]/50 dark:to-[#D5B25B]/30" />
                           <FamilyNode
                             nameParts={relationNameParts(rel)}
                             subtitle={relationLabel('son')}
@@ -492,7 +492,7 @@ const CustomerProfile = () => {
                       ))}
 
                       <div className="relative">
-                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-12 w-px bg-gradient-to-b from-transparent via-[#D5B25B]/25 to-[#D5B25B]/10" />
+                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-12 w-[2px] bg-gradient-to-b from-transparent via-[#D5B25B]/55 to-[#D5B25B]/35 dark:via-[#D5B25B]/50 dark:to-[#D5B25B]/30" />
                         <FamilyNode
                           nameParts={{ en: 'Add Member', ar: 'إضافة فرد' }}
                           subtitle="Add family member"

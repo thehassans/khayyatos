@@ -5,7 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
-import { Scissors, CheckCircle, Calendar, Ruler, User as UserIcon } from 'lucide-react';
+import { Scissors, CheckCircle, Calendar, Ruler, User as UserIcon, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const WorkerStitchings = () => {
@@ -48,11 +48,34 @@ const WorkerStitchings = () => {
     shoulderWidth: t('measurements.shoulderWidth'),
     chest: t('measurements.chest'),
     sleeveLength: t('measurements.sleeveLength'),
+    waist: t('measurements.waist', { defaultValue: 'Waist' }),
+    hips: t('measurements.hips', { defaultValue: 'Hips' }),
+    bicep: t('measurements.bicep', { defaultValue: 'Bicep' }),
+    forearm: t('measurements.forearm', { defaultValue: 'Forearm' }),
     neck: t('measurements.neck'),
     wrist: t('measurements.wrist'),
+    cuffWidth: t('measurements.cuffWidth', { defaultValue: 'Cuff Width' }),
     expansion: t('measurements.expansion'),
-    armhole: t('measurements.armhole')
+    armhole: t('measurements.armhole'),
+    bottom: t('measurements.bottom', { defaultValue: 'Bottom' })
   };
+
+  const measurementKeys = [
+    'length',
+    'chest',
+    'shoulderWidth',
+    'sleeveLength',
+    'waist',
+    'hips',
+    'neck',
+    'wrist',
+    'bicep',
+    'forearm',
+    'armhole',
+    'cuffWidth',
+    'expansion',
+    'bottom'
+  ];
 
   const formatDueDate = (date) => {
     try {
@@ -81,24 +104,89 @@ const WorkerStitchings = () => {
     return ordered.filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== '').slice(0, 4);
   };
 
+  const getMeasurementsMeta = (measurements) => {
+    const m = measurements || {};
+    const extras = Object.keys(m).filter((k) => !measurementKeys.includes(k));
+    const allKeys = measurementKeys.concat(extras);
+    const filled = allKeys.reduce((s, k) => {
+      const v = m?.[k];
+      return s + (v !== undefined && v !== null && String(v).trim() !== '' ? 1 : 0);
+    }, 0);
+    return {
+      filled,
+      total: allKeys.length,
+      missing: Math.max(0, allKeys.length - filled)
+    };
+  };
+
   const renderMeasurementsGrid = (measurements) => {
-    const entries = Object.entries(measurements || {}).filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '');
-    if (entries.length === 0) {
-      return (
-        <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-6 text-center text-sm text-gray-500">
-          {t('common.noData')}
-        </div>
-      );
-    }
+    const m = measurements || {};
+    const extras = Object.keys(m).filter((k) => !measurementKeys.includes(k));
+    const allKeys = measurementKeys.concat(extras);
+
+    const rows = allKeys.map((key) => {
+      const value = m?.[key];
+      const hasValue = value !== undefined && value !== null && String(value).trim() !== '';
+      return { key, value: hasValue ? value : '', hasValue };
+    });
+
+    const filledCount = rows.filter((r) => r.hasValue).length;
+    const totalCount = rows.length;
+    const missingCount = totalCount - filledCount;
 
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {entries.map(([key, value]) => (
-          <div key={key} className="rounded-2xl border border-gray-100 bg-white p-3 text-center shadow-sm">
-            <p className="text-[11px] font-medium text-gray-500 mb-1 truncate">{measurementLabels[key] || key}</p>
-            <p className="text-sm font-semibold text-gray-900">{value}</p>
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-gray-100 bg-gradient-to-br from-white to-gray-50 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-2xl bg-emerald-50 flex items-center justify-center">
+                  <Ruler className="w-4 h-4 text-emerald-700" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{t('customers.measurements')}</p>
+                  <p className="text-xs text-gray-500 truncate">{t('common.manage', { defaultValue: 'Review carefully before stitching' })}</p>
+                </div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs font-semibold text-gray-700">{filledCount}/{totalCount}</div>
+              <div className="text-[11px] text-gray-500">{t('common.completed', { defaultValue: 'Filled' })}</div>
+            </div>
           </div>
-        ))}
+
+          {missingCount > 0 ? (
+            <div className="mt-3 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2">
+              <AlertCircle className="w-4 h-4 text-amber-700 mt-0.5" />
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-amber-900">{t('common.warning', { defaultValue: 'Some measurements are missing' })}</div>
+                <div className="text-[11px] text-amber-800/80">{t('common.note', { defaultValue: 'Confirm missing values with the shop before starting work.' })}</div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-3 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2">
+              <CheckCircle className="w-4 h-4 text-emerald-700" />
+              <div className="text-xs font-semibold text-emerald-900">{t('common.ready', { defaultValue: 'All measurements are filled' })}</div>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {rows.map((r) => (
+            <div
+              key={r.key}
+              className={`rounded-2xl border p-3 text-center transition-colors ${
+                r.hasValue
+                  ? 'border-emerald-100 bg-white shadow-sm'
+                  : 'border-dashed border-gray-200 bg-gray-50/60'
+              }`}
+            >
+              <p className="text-[11px] font-semibold text-gray-600 mb-1 truncate">{measurementLabels[r.key] || r.key}</p>
+              <p className={`text-base font-extrabold ${r.hasValue ? 'text-gray-900' : 'text-gray-400'}`}>{r.hasValue ? r.value : '—'}</p>
+              <p className={`mt-1 text-[11px] ${r.hasValue ? 'text-emerald-700' : 'text-gray-400'}`}>{r.hasValue ? t('common.filled', { defaultValue: 'Filled' }) : t('common.missing', { defaultValue: 'Missing' })}</p>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
@@ -190,6 +278,28 @@ const WorkerStitchings = () => {
                     <div className="col-span-2 text-sm text-gray-500">{t('common.noData')}</div>
                   )}
                 </div>
+
+                {(() => {
+                  const meta = getMeasurementsMeta(stitch.measurements);
+                  return (
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="text-[11px] font-semibold text-gray-600">
+                        {t('common.filled', { defaultValue: 'Filled' })}: {meta.filled}/{meta.total}
+                      </div>
+                      {meta.missing > 0 ? (
+                        <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          {t('common.missing', { defaultValue: 'Missing' })}: {meta.missing}
+                        </div>
+                      ) : (
+                        <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          {t('common.ready', { defaultValue: 'Ready' })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {stitch.status !== 'completed' && (

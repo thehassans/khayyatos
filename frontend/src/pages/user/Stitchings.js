@@ -187,7 +187,7 @@ const Stitchings = () => {
       quantity: { en: 'Quantity', ar: 'الكمية' },
       price: { en: 'Price', ar: 'السعر' },
       paid: { en: 'Paid', ar: 'المدفوع' },
-      balance: { en: 'Balance', ar: 'المتبقي' },
+      balance: { en: 'Pending', ar: 'المتبقي' },
       dueDate: { en: 'Due Date', ar: 'تاريخ التسليم' },
       status: { en: 'Status', ar: 'الحالة' },
       scanToTrack: { en: 'Scan to track order', ar: 'امسح لتتبع الطلب' }
@@ -402,7 +402,7 @@ const Stitchings = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
-                        <span className="text-xs font-bold text-white tracking-wide">DELIVERED</span>
+                        <span className="text-xs font-bold text-white tracking-wide">PAID</span>
                       </div>
                     ) : (parseFloat(stitch.paidAmount) || 0) >= (parseFloat(stitch.price) || 0) ? (
                       <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/30">

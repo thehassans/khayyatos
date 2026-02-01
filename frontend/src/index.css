@@ -50,6 +50,17 @@ input:focus, select:focus, textarea:focus {
   ring-color: #0ea5e9;
 }
 
+ input.no-spinner::-webkit-outer-spin-button,
+ input.no-spinner::-webkit-inner-spin-button {
+   -webkit-appearance: none;
+   margin: 0;
+ }
+
+ input.no-spinner[type='number'] {
+   appearance: textfield;
+   -moz-appearance: textfield;
+ }
+
 /* Card hover effect */
 .card-hover {
   transition: all 0.2s ease-in-out;
