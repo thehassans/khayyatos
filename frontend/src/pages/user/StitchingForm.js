@@ -83,6 +83,8 @@ const StitchingForm = () => {
 
   const [orderItems, setOrderItems] = useState([]);
   const [familyControlsOpen, setFamilyControlsOpen] = useState(true);
+  const [expandedOrderItemId, setExpandedOrderItemId] = useState(null);
+  const autoExpandAfterRemoveRef = useRef(false);
 
   const [addFamilyOpen, setAddFamilyOpen] = useState(false);
   const [addFamilyType, setAddFamilyType] = useState('son');
@@ -344,6 +346,7 @@ const StitchingForm = () => {
     setDropdownOpen(false);
     setOrderItems([]);
     setFamilyControlsOpen(true);
+    setExpandedOrderItemId(null);
     await loadCustomerDetails(customer?._id);
   };
 
@@ -538,6 +541,10 @@ const StitchingForm = () => {
     if (!personName || !personKey) return;
 
     const measurementsSnap = { ...(formData.measurements || {}) };
+    const newId = `${personKey}-${Date.now()}`;
+
+    const existing = orderItems.find((x) => String(x.personKey) === String(personKey));
+    setExpandedOrderItemId(existing?.id || newId);
 
     setOrderItems((prev) => {
       const idx = prev.findIndex((x) => String(x.personKey) === String(personKey));
@@ -550,7 +557,7 @@ const StitchingForm = () => {
         return next;
       }
       return prev.concat({
-        id: `${personKey}-${Date.now()}`,
+        id: newId,
         personKey,
         relationId: isSelf ? null : (selectedRelation?._id || null),
         relationName: isSelf ? null : (selectedRelation?.name || null),
@@ -571,8 +578,29 @@ const StitchingForm = () => {
   };
 
   const removeOrderItem = (id) => {
+    if (String(expandedOrderItemId || '') === String(id)) {
+      autoExpandAfterRemoveRef.current = true;
+      setExpandedOrderItemId(null);
+    }
     setOrderItems((prev) => prev.filter((x) => x.id !== id));
   };
+
+  useEffect(() => {
+    if (orderItems.length === 0) {
+      if (expandedOrderItemId !== null) setExpandedOrderItemId(null);
+      autoExpandAfterRemoveRef.current = false;
+      return;
+    }
+    if (expandedOrderItemId === null) {
+      if (autoExpandAfterRemoveRef.current) {
+        autoExpandAfterRemoveRef.current = false;
+        setExpandedOrderItemId(orderItems[orderItems.length - 1]?.id || null);
+      }
+      return;
+    }
+    if (orderItems.some((x) => String(x.id) === String(expandedOrderItemId))) return;
+    setExpandedOrderItemId(orderItems[orderItems.length - 1]?.id || null);
+  }, [orderItems, expandedOrderItemId]);
 
   const computeAllocations = (items, field, overrideTotal) => {
     const explicit = new Map();
@@ -1831,13 +1859,7 @@ const StitchingForm = () => {
                       <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/80 dark:bg-slate-900/25 p-4">
                         <div className="flex items-center justify-between gap-3">
                           <div className="text-xs font-semibold text-amber-800 dark:text-amber-200">Order for</div>
-                          <button
-                            type="button"
-                            onClick={addCurrentToOrder}
-                            className="px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-100/70 dark:bg-amber-900/25 text-xs font-semibold text-amber-900 dark:text-amber-100 hover:bg-amber-100"
-                          >
-                            Add to Order
-                          </button>
+                          <div className="text-[11px] font-semibold text-amber-900/70 dark:text-amber-100/70">Use “Add Order” above</div>
                         </div>
                         <div className="mt-3 flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3 min-w-0">
@@ -1934,52 +1956,132 @@ const StitchingForm = () => {
                   </div>
                 )}
 
-                {orderItems.length > 0 ? (
-                  <div className="mt-6 space-y-3">
-                    {orderItems.map((it) => (
-                      <div key={it.id} className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/80 dark:bg-slate-900/25 p-4">
-                        <div className="flex items-start justify-between gap-3">
+                <div className="mt-6 space-y-3">
+                  <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-amber-900/80 dark:text-amber-100/80">Add Order</div>
+                        <div className="mt-1 flex items-center gap-2 min-w-0">
+                          <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                            {selectedRelation ? (
+                              <span className="text-amber-700 dark:text-amber-200 font-semibold">{(selectedRelation.name || '?').charAt(0)}</span>
+                            ) : (
+                              <User className="w-4 h-4 text-amber-700 dark:text-amber-200" />
+                            )}
+                          </div>
                           <div className="min-w-0">
-                            <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{it.orderFor || '-'}</div>
-                            <div className="text-xs text-gray-500 dark:text-slate-400 truncate">{it.relationType || 'Self'}</div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeOrderItem(it.id)}
-                            className="p-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-rose-600 dark:text-rose-400 hover:bg-white"
-                            aria-label="Remove"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-semibold text-amber-900/80 dark:text-amber-100/80 mb-1">Qty</label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={it.quantity}
-                              onChange={(e) => updateOrderItem(it.id, { quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-                              className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-amber-900/80 dark:text-amber-100/80 mb-1">Price</label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={it.price}
-                              onChange={(e) => updateOrderItem(it.id, { price: e.target.value })}
-                              placeholder="0"
-                              className="no-spinner w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
-                            />
+                            <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
+                              {selectedRelation ? selectedRelation.name : (selectedCustomer?.nameI18n?.[langKey] || selectedCustomer?.name || '-')}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-slate-400 truncate">
+                              {selectedRelation ? (selectedRelation.type || '') : 'Self'}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    ))}
 
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setFamilyControlsOpen(true)}
+                          className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-xs font-semibold text-amber-800 dark:text-amber-200 hover:bg-white"
+                        >
+                          Change
+                        </button>
+                        <button
+                          type="button"
+                          onClick={addCurrentToOrder}
+                          disabled={isDemo}
+                          className="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-100/70 dark:bg-amber-900/25 text-xs font-semibold text-amber-900 dark:text-amber-100 hover:bg-amber-100 disabled:opacity-60"
+                        >
+                          <span className="inline-flex items-center gap-2"><Plus className="w-4 h-4" />Add</span>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-[11px] text-amber-900/60 dark:text-amber-100/60">
+                      Tip: New orders open automatically. Previous orders collapse to keep the page clean.
+                    </div>
+                  </div>
+
+                  {orderItems.map((it, idx) => {
+                      const isExpanded = String(expandedOrderItemId || '') === String(it.id);
+                      const priceNum = Number(it.price);
+                      const priceText = Number.isFinite(priceNum) ? priceNum : (String(it.price || '').trim() === '' ? 0 : it.price);
+
+                      return (
+                        <div key={it.id} className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/80 dark:bg-slate-900/25 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedOrderItemId((curr) => (String(curr || '') === String(it.id) ? null : it.id))}
+                              className="flex-1 min-w-0 text-left"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-1 rounded-lg bg-amber-100/70 dark:bg-amber-900/25 text-[11px] font-bold text-amber-900 dark:text-amber-100">#{idx + 1}</span>
+                                <div className="min-w-0">
+                                  <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{it.orderFor || '-'}</div>
+                                  <div className="text-xs text-gray-500 dark:text-slate-400 truncate">{it.relationType || 'Self'}</div>
+                                </div>
+                              </div>
+                            </button>
+
+                            <div className="flex items-center gap-2">
+                              <div className="hidden sm:flex items-center gap-2">
+                                <div className="px-2.5 py-1 rounded-xl border border-amber-200/70 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-[11px] font-semibold text-amber-900 dark:text-amber-100">Qty: {it.quantity}</div>
+                                <div className="px-2.5 py-1 rounded-xl border border-amber-200/70 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-[11px] font-semibold text-amber-900 dark:text-amber-100">Price: {priceText}</div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => setExpandedOrderItemId((curr) => (String(curr || '') === String(it.id) ? null : it.id))}
+                                className="p-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-amber-700 dark:text-amber-200 hover:bg-white"
+                                aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                              >
+                                <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => removeOrderItem(it.id)}
+                                className="p-2 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white/60 dark:bg-slate-900/20 text-rose-600 dark:text-rose-400 hover:bg-white"
+                                aria-label="Remove"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {isExpanded ? (
+                            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-semibold text-amber-900/80 dark:text-amber-100/80 mb-1">Qty</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={it.quantity}
+                                  onChange={(e) => updateOrderItem(it.id, { quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                                  className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-amber-900/80 dark:text-amber-100/80 mb-1">Price</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={it.price}
+                                  onChange={(e) => updateOrderItem(it.id, { price: e.target.value })}
+                                  placeholder="0"
+                                  className="no-spinner w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                                />
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                  })}
+
+                  {orderItems.length > 0 ? (
                     <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-amber-50/60 dark:bg-amber-900/15 p-4">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -2011,8 +2113,8 @@ const StitchingForm = () => {
                         Total paid is distributed across members by price.
                       </div>
                     </div>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
             )}
 
