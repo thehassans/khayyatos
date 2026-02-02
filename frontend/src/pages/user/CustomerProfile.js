@@ -24,6 +24,7 @@ const CustomerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [customer, setCustomer] = useState(null);
   const [stitchings, setStitchings] = useState([]);
+  const [fatherCustomer, setFatherCustomer] = useState(null);
 
   const [orderHistoryOpen, setOrderHistoryOpen] = useState(false);
 
@@ -46,11 +47,26 @@ const CustomerProfile = () => {
     try {
       setLoading(true);
       const response = await api.get(`/customers/${id}`);
-      setCustomer(response.data?.customer || null);
+      const nextCustomer = response.data?.customer || null;
+      setCustomer(nextCustomer);
       setStitchings(Array.isArray(response.data?.stitchings) ? response.data.stitchings : []);
+
+      const fatherRel = (nextCustomer?.relations || []).find((r) => r?.relationType === 'father');
+      const fatherId = fatherRel?.customerId?._id || fatherRel?.customerId;
+      if (fatherId) {
+        try {
+          const fatherResp = await api.get(`/customers/${fatherId}`);
+          setFatherCustomer(fatherResp.data?.customer || null);
+        } catch (e) {
+          setFatherCustomer(null);
+        }
+      } else {
+        setFatherCustomer(null);
+      }
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to load customer');
       navigate('/user/customers');
+      setFatherCustomer(null);
     }
     setLoading(false);
   };
@@ -118,14 +134,32 @@ const CustomerProfile = () => {
       .sort((a, b) => (order[a?.relationType] ?? 99) - (order[b?.relationType] ?? 99));
   }, [customer?.relations]);
 
+  const derivedBrothers = useMemo(() => {
+    const fatherRel = (customer?.relations || []).find((r) => r?.relationType === 'father');
+    const fatherId = relationTargetId(fatherRel);
+    if (!fatherId || !fatherCustomer || String(fatherCustomer?._id) !== String(fatherId)) return [];
+
+    const fatherSons = (fatherCustomer?.relations || []).filter((r) => r?.relationType === 'son');
+    return fatherSons
+      .filter((r) => String(relationTargetId(r)) !== String(customer?._id))
+      .map((r) => ({ ...r, relationType: 'brother' }));
+  }, [customer?._id, customer?.relations, fatherCustomer]);
+
   const familyTree = useMemo(() => {
     const all = relationsSorted || [];
     const father = all.find((r) => r?.relationType === 'father') || null;
     const sons = all.filter((r) => r?.relationType === 'son');
     const siblings = all.filter((r) => r?.relationType === 'brother');
+    const merged = new Map();
+    [...siblings, ...(derivedBrothers || [])].forEach((r) => {
+      const rid = relationTargetId(r);
+      if (!rid) return;
+      merged.set(String(rid), r);
+    });
+    const mergedSiblings = Array.from(merged.values());
     const others = all.filter((r) => !['father', 'son', 'brother'].includes(r?.relationType));
-    return { father, sons, siblings, others };
-  }, [relationsSorted]);
+    return { father, sons, siblings: mergedSiblings, others };
+  }, [derivedBrothers, relationsSorted]);
 
   const sortedOrders = useMemo(() => {
     return (stitchings || [])
