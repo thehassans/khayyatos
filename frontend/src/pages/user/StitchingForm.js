@@ -589,6 +589,38 @@ const StitchingForm = () => {
     setOrderItems((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   };
 
+  const redistributeBatchPrices = (rawTotal) => {
+    const total = Math.max(0, Number(rawTotal) || 0);
+    setOrderItems((prev) => {
+      const items = Array.isArray(prev) ? prev : [];
+      if (items.length === 0) return prev;
+
+      const weights = items.map((it) => {
+        const p = Number(it?.price);
+        const q = Number(it?.quantity) || 0;
+        if (Number.isFinite(p) && p > 0) return p;
+        return Math.max(0, q);
+      });
+      const sumW = weights.reduce((s, w) => s + (Number(w) || 0), 0);
+      const toMoneyString = (n) => String(Number((Number(n) || 0).toFixed(2)));
+
+      let distributed = 0;
+      return items.map((it, idx) => {
+        if (sumW <= 0) {
+          return { ...it, price: '0' };
+        }
+        if (idx === items.length - 1) {
+          const rest = Number((total - distributed).toFixed(2));
+          return { ...it, price: toMoneyString(rest) };
+        }
+        const share = total * ((Number(weights[idx]) || 0) / sumW);
+        const rounded = Number(share.toFixed(2));
+        distributed += rounded;
+        return { ...it, price: toMoneyString(rounded) };
+      });
+    });
+  };
+
   const updateOrderItemMeasurement = (id, key, value) => {
     setOrderItems((prev) => prev.map((x) => {
       if (x.id !== id) return x;
@@ -2028,7 +2060,15 @@ const StitchingForm = () => {
                         </div>
                         <div>
                           <div className="text-xs text-amber-900/70 dark:text-amber-100/70">Total Price</div>
-                          <div className="mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">{batchTotalPrice}</div>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={batchTotalPrice}
+                            onChange={(e) => redistributeBatchPrices(e.target.value)}
+                            placeholder="0"
+                            className="no-spinner mt-1 w-full px-3 py-2 bg-white/70 dark:bg-slate-900/20 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm font-semibold text-amber-900 dark:text-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                          />
                         </div>
                         <div>
                           <div className="text-xs text-amber-900/70 dark:text-amber-100/70">Total Paid</div>

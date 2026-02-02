@@ -371,7 +371,7 @@ const CustomerProfile = () => {
                     <div className="absolute left-1/2 -translate-x-1/2 top-0 h-9 w-[2px] bg-gradient-to-b from-[#D5B25B]/70 via-[#D5B25B]/55 to-transparent dark:from-[#D5B25B]/60 dark:via-[#D5B25B]/45" />
                     <div className="absolute left-8 right-8 top-9 h-[2px] bg-gradient-to-r from-transparent via-[#D5B25B]/65 to-transparent dark:via-[#D5B25B]/55" />
 
-                    <div className="pt-12 flex flex-nowrap justify-center gap-x-12 gap-y-8 px-8 w-max mx-auto">
+                    <div className="pt-12 pb-10 flex flex-nowrap justify-center gap-x-12 gap-y-8 px-8 w-max mx-auto relative">
                       {(familyTree.sons || []).map((rel) => (
                         <div key={relationKey(rel)} className="relative">
                           <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-12 w-[2px] bg-gradient-to-b from-transparent via-[#D5B25B]/55 to-[#D5B25B]/35 dark:via-[#D5B25B]/50 dark:to-[#D5B25B]/30" />
@@ -383,6 +383,17 @@ const CustomerProfile = () => {
                           />
                         </div>
                       ))}
+
+                      {(familyTree.sons || []).length > 1 ? (
+                        <div className="pointer-events-none absolute left-8 right-8 bottom-3">
+                          <div className="relative h-6">
+                            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent dark:via-emerald-300/50" />
+                            <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full bg-white/90 dark:bg-slate-900/60 border border-emerald-200/70 dark:border-emerald-800/40 text-[10px] font-semibold text-emerald-800 dark:text-emerald-200">
+                              Brothers
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                     </div>
                   ) : null}
