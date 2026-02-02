@@ -42,6 +42,7 @@ const ensureInverseRelation = async ({ userId, sourceCustomer, targetCustomerId,
   const target = await Customer.findOne({ _id: targetCustomerId, userId });
   if (!target) return;
   const existing = Array.isArray(target.relations) ? target.relations : [];
+  const beforeSonIds = inverseType === 'son' ? collectSonIds(existing) : [];
 
   const next = existing.filter((r) => String(relationRefId(r)) !== sourceIdStr);
   next.push({
@@ -59,6 +60,13 @@ const ensureInverseRelation = async ({ userId, sourceCustomer, targetCustomerId,
   if (changed) {
     target.relations = next;
     await target.save();
+    if (inverseType === 'son') {
+      await syncBrotherRelationsAmongSons({
+        userId,
+        beforeSonIds,
+        afterSonIds: collectSonIds(next)
+      });
+    }
   }
 };
 
@@ -69,6 +77,7 @@ const removeInverseRelation = async ({ userId, sourceCustomerId, targetCustomerI
   if (!target) return;
 
   const existing = Array.isArray(target.relations) ? target.relations : [];
+  const beforeSonIds = inverseType === 'son' ? collectSonIds(existing) : [];
   const next = existing.filter((r) => {
     const rid = String(relationRefId(r));
     if (rid !== sourceIdStr) return true;
@@ -78,6 +87,13 @@ const removeInverseRelation = async ({ userId, sourceCustomerId, targetCustomerI
   if (next.length !== existing.length) {
     target.relations = next;
     await target.save();
+    if (inverseType === 'son') {
+      await syncBrotherRelationsAmongSons({
+        userId,
+        beforeSonIds,
+        afterSonIds: collectSonIds(next)
+      });
+    }
   }
 };
 

@@ -4,22 +4,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Modal } from '../../components/ui/Modal';
 import { StatusBadge } from '../../components/ui/Badge';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import SARIcon from '../../components/ui/SARIcon';
-import { ArrowLeft, Users, Phone, Plus, Edit, Receipt, Calendar, Search, UserPlus, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Users, Phone, Plus, Edit, Receipt, Calendar, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-const RELATION_TYPES = [
-  { value: 'father', label: 'Father / الأب' },
-  { value: 'son', label: 'Son / الابن' },
-  { value: 'brother', label: 'Brother / الأخ' },
-  { value: 'uncle', label: 'Uncle / العم' },
-  { value: 'cousin', label: 'Cousin / ابن العم' },
-  { value: 'friend', label: 'Friend / صديق' },
-  { value: 'other', label: 'Other / آخر' }
-];
 
 const CustomerProfile = () => {
   const { t, i18n } = useTranslation();
@@ -35,14 +24,6 @@ const CustomerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [customer, setCustomer] = useState(null);
   const [stitchings, setStitchings] = useState([]);
-
-  const [addFamilyOpen, setAddFamilyOpen] = useState(false);
-  const [addFamilyType, setAddFamilyType] = useState('son');
-  const [familyQuery, setFamilyQuery] = useState('');
-  const [familySearching, setFamilySearching] = useState(false);
-  const [familyResults, setFamilyResults] = useState([]);
-  const [familySelected, setFamilySelected] = useState(null);
-  const [familySaving, setFamilySaving] = useState(false);
 
   const [orderHistoryOpen, setOrderHistoryOpen] = useState(false);
 
@@ -122,20 +103,6 @@ const CustomerProfile = () => {
 
   const relationDisplayName = (rel) => relationNameParts(rel).full;
 
-  const relationDisplayPhone = (rel) => rel?.customerId?.phone || rel?.customerPhone || '';
-
-  const normalizeRelation = (rel) => {
-    const rid = relationTargetId(rel);
-    const fallbackName = rel?.customerId?.nameI18n?.[langKey] || rel?.customerId?.name || rel?.customerName || '';
-    const fallbackPhone = rel?.customerId?.phone || rel?.customerPhone || '';
-    return {
-      customerId: rid,
-      customerName: fallbackName,
-      customerPhone: fallbackPhone,
-      relationType: rel?.relationType
-    };
-  };
-
   const relationsSorted = useMemo(() => {
     const order = {
       father: 0,
@@ -167,35 +134,6 @@ const CustomerProfile = () => {
   }, [stitchings]);
 
   useEffect(() => {
-    if (!addFamilyOpen) return;
-
-    const q = String(familyQuery || '').trim();
-    setFamilySelected(null);
-
-    if (!q) {
-      setFamilyResults([]);
-      setFamilySearching(false);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      try {
-        setFamilySearching(true);
-        const resp = await api.get(`/customers/search?q=${encodeURIComponent(q)}`);
-        const list = Array.isArray(resp.data?.customers) ? resp.data.customers : [];
-        const existingIds = new Set((customer?.relations || []).map((r) => String(relationTargetId(r))));
-        const filtered = list.filter((c) => String(c?._id) !== String(customer?._id) && !existingIds.has(String(c?._id)));
-        setFamilyResults(filtered);
-      } catch (e) {
-        setFamilyResults([]);
-      }
-      setFamilySearching(false);
-    }, 250);
-
-    return () => clearTimeout(timer);
-  }, [addFamilyOpen, api, customer?._id, customer?.relations, familyQuery]);
-
-  useEffect(() => {
     const el = treeScrollRef.current;
     if (!el || treeDidCenterRef.current) return;
     const timer = setTimeout(() => {
@@ -206,44 +144,6 @@ const CustomerProfile = () => {
     return () => clearTimeout(timer);
   }, [customer?._id, customer?.relations?.length]);
 
-  const openAddFamily = (prefillType = 'son') => {
-    if (isDemo) {
-      setDemoBlockedOpen(true);
-      return;
-    }
-    setAddFamilyType(prefillType);
-    setFamilyQuery('');
-    setFamilyResults([]);
-    setFamilySelected(null);
-    setAddFamilyOpen(true);
-  };
-
-  const saveFamilyMember = async () => {
-    if (!familySelected?._id || !addFamilyType) {
-      toast.error('Select a customer');
-      return;
-    }
-    if (familySaving) return;
-
-    try {
-      setFamilySaving(true);
-      const next = (customer?.relations || []).map(normalizeRelation);
-      next.push({
-        customerId: familySelected._id,
-        customerName: familySelected.nameI18n?.[langKey] || familySelected.name || '',
-        customerPhone: familySelected.phone || '',
-        relationType: addFamilyType
-      });
-
-      await api.put(`/customers/${customer._id}`, { relations: next });
-      toast.success('Family member added');
-      setAddFamilyOpen(false);
-      await fetchCustomerProfile();
-    } catch (e) {
-      toast.error(e.response?.data?.error || 'Operation failed');
-    }
-    setFamilySaving(false);
-  };
 
   if (loading) {
     return (
@@ -447,24 +347,16 @@ const CustomerProfile = () => {
                 <div className="min-w-full w-max flex flex-col items-center py-6 px-10">
                   <div className="relative flex flex-col items-center">
                     {familyTree.father ? (
-                      <FamilyNode
-                        nameParts={relationNameParts(familyTree.father)}
-                        subtitle={relationLabel('father')}
-                        tone="blue"
-                        onClick={() => navigate(`/user/customers/${relationTargetId(familyTree.father)}`)}
-                      />
-                    ) : (
-                      <FamilyNode
-                        nameParts={{ en: 'Add Father', ar: 'إضافة الأب' }}
-                        subtitle={relationLabel('father')}
-                        dashed
-                        tone="blue"
-                        icon={<UserPlus className="w-5 h-5 text-slate-600 dark:text-slate-300" />}
-                        onClick={() => openAddFamily('father')}
-                      />
-                    )}
-
-                    <div className="h-10 w-[2px] bg-gradient-to-b from-[#D5B25B]/70 via-[#D5B25B]/55 to-transparent dark:from-[#D5B25B]/60 dark:via-[#D5B25B]/45" />
+                      <>
+                        <FamilyNode
+                          nameParts={relationNameParts(familyTree.father)}
+                          subtitle={relationLabel('father')}
+                          tone="blue"
+                          onClick={() => navigate(`/user/customers/${relationTargetId(familyTree.father)}`)}
+                        />
+                        <div className="h-10 w-[2px] bg-gradient-to-b from-[#D5B25B]/70 via-[#D5B25B]/55 to-transparent dark:from-[#D5B25B]/60 dark:via-[#D5B25B]/45" />
+                      </>
+                    ) : null}
 
                     <FamilyNode
                       nameParts={customerNameParts(customer, displayName)}
@@ -474,7 +366,8 @@ const CustomerProfile = () => {
                     />
                   </div>
 
-                  <div className="relative mt-10 w-full">
+                  {(familyTree.sons || []).length > 0 ? (
+                    <div className="relative mt-10 w-full">
                     <div className="absolute left-1/2 -translate-x-1/2 top-0 h-9 w-[2px] bg-gradient-to-b from-[#D5B25B]/70 via-[#D5B25B]/55 to-transparent dark:from-[#D5B25B]/60 dark:via-[#D5B25B]/45" />
                     <div className="absolute left-8 right-8 top-9 h-[2px] bg-gradient-to-r from-transparent via-[#D5B25B]/65 to-transparent dark:via-[#D5B25B]/55" />
 
@@ -490,20 +383,9 @@ const CustomerProfile = () => {
                           />
                         </div>
                       ))}
-
-                      <div className="relative">
-                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 h-12 w-[2px] bg-gradient-to-b from-transparent via-[#D5B25B]/55 to-[#D5B25B]/35 dark:via-[#D5B25B]/50 dark:to-[#D5B25B]/30" />
-                        <FamilyNode
-                          nameParts={{ en: 'Add Member', ar: 'إضافة فرد' }}
-                          subtitle="Add family member"
-                          dashed
-                          tone="gold"
-                          icon={<UserPlus className="w-5 h-5 text-[#7E6426]" />}
-                          onClick={() => openAddFamily('son')}
-                        />
-                      </div>
                     </div>
-                  </div>
+                    </div>
+                  ) : null}
 
                   <div className="mt-10 w-full">
                     {familyTree.siblings.length > 0 ? (
@@ -523,32 +405,9 @@ const CustomerProfile = () => {
                               <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 max-w-[180px] truncate">{relationDisplayName(rel)}</span>
                             </button>
                           ))}
-                          <button
-                            type="button"
-                            onClick={() => openAddFamily('brother')}
-                            className="inline-flex items-center gap-2 rounded-full border border-dashed border-slate-300 dark:border-slate-700 bg-white/40 dark:bg-slate-900/20 px-3 py-2 hover:shadow-md transition-all"
-                          >
-                            <span className="w-7 h-7 rounded-full ring-2 ring-[#D5B25B]/60 bg-[#D5B25B]/10 flex items-center justify-center">
-                              <Plus className="w-4 h-4 text-[#7E6426]" />
-                            </span>
-                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">Add</span>
-                          </button>
                         </div>
                       </>
-                    ) : (
-                      <div className="flex justify-center">
-                        <button
-                          type="button"
-                          onClick={() => openAddFamily('brother')}
-                          className="inline-flex items-center gap-2 rounded-full border border-dashed border-slate-300 dark:border-slate-700 bg-white/40 dark:bg-slate-900/20 px-3 py-2 hover:shadow-md transition-all"
-                        >
-                          <span className="w-7 h-7 rounded-full ring-2 ring-[#D5B25B]/60 bg-[#D5B25B]/10 flex items-center justify-center">
-                            <Plus className="w-4 h-4 text-[#7E6426]" />
-                          </span>
-                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">Add brother</span>
-                        </button>
-                      </div>
-                    )}
+                    ) : null}
 
                     {familyTree.others.length > 0 ? (
                       <>
@@ -570,32 +429,9 @@ const CustomerProfile = () => {
                               </span>
                             </button>
                           ))}
-                          <button
-                            type="button"
-                            onClick={() => openAddFamily('other')}
-                            className="inline-flex items-center gap-2 rounded-full border border-dashed border-slate-300 dark:border-slate-700 bg-white/40 dark:bg-slate-900/20 px-3 py-2 hover:shadow-md transition-all"
-                          >
-                            <span className="w-7 h-7 rounded-full ring-2 ring-[#D5B25B]/60 bg-[#D5B25B]/10 flex items-center justify-center">
-                              <Plus className="w-4 h-4 text-[#7E6426]" />
-                            </span>
-                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">Add</span>
-                          </button>
                         </div>
                       </>
-                    ) : (
-                      <div className="mt-7 flex justify-center">
-                        <button
-                          type="button"
-                          onClick={() => openAddFamily('other')}
-                          className="inline-flex items-center gap-2 rounded-full border border-dashed border-slate-300 dark:border-slate-700 bg-white/40 dark:bg-slate-900/20 px-3 py-2 hover:shadow-md transition-all"
-                        >
-                          <span className="w-7 h-7 rounded-full ring-2 ring-[#D5B25B]/60 bg-[#D5B25B]/10 flex items-center justify-center">
-                            <Plus className="w-4 h-4 text-[#7E6426]" />
-                          </span>
-                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">Add relation</span>
-                        </button>
-                      </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -603,92 +439,6 @@ const CustomerProfile = () => {
           </Card>
         </div>
       </div>
-
-      <Modal
-        isOpen={addFamilyOpen}
-        onClose={() => setAddFamilyOpen(false)}
-        title="Add Family Member"
-        size="lg"
-      >
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="sm:col-span-1">
-              <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Relation type</div>
-              <select
-                value={addFamilyType}
-                onChange={(e) => setAddFamilyType(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D5B25B]/40"
-              >
-                {RELATION_TYPES.map((rt) => (
-                  <option key={rt.value} value={rt.value}>{rt.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">Search customer</div>
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  value={familyQuery}
-                  onChange={(e) => setFamilyQuery(e.target.value)}
-                  placeholder="Search by name or phone"
-                  className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#D5B25B]/40"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
-            <div className="px-4 py-3 bg-white dark:bg-slate-900/40 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
-              <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">Results</div>
-              {familySearching ? <div className="text-xs text-slate-400">Searching…</div> : null}
-            </div>
-            <div className="max-h-64 overflow-y-auto bg-gray-50/40 dark:bg-slate-900/20">
-              {(familyQuery && !familySearching && familyResults.length === 0) ? (
-                <div className="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">No matches</div>
-              ) : null}
-              {familyResults.map((c) => {
-                const np = customerNameParts(c, c?.name || '—');
-                const active = String(familySelected?._id) === String(c?._id);
-                return (
-                  <button
-                    key={c._id}
-                    type="button"
-                    onClick={() => setFamilySelected(c)}
-                    className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 hover:bg-white dark:hover:bg-slate-900/40 transition-colors ${active ? 'bg-white dark:bg-slate-900/50' : ''}`}
-                  >
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{np.en || np.ar || '—'}</div>
-                      {np.ar ? <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate" dir="rtl">{np.ar}</div> : null}
-                      <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{c.phone || ''}</div>
-                    </div>
-                    <div className={`w-9 h-9 rounded-full ring-2 ${active ? 'ring-[#D5B25B]/80' : 'ring-slate-300/70 dark:ring-slate-700/60'} bg-gradient-to-br from-white to-gray-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center text-sm font-semibold text-slate-900 dark:text-slate-100`}>
-                      {(np.en || np.ar || '—').charAt(0)}
-                    </div>
-                  </button>
-                );
-              })}
-              {!familyQuery ? (
-                <div className="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">Type to search customers</div>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setAddFamilyOpen(false)}>
-              {t('common.cancel', { defaultValue: 'Cancel' })}
-            </Button>
-            <Button
-              onClick={saveFamilyMember}
-              loading={familySaving}
-              disabled={!familySelected || familySaving}
-              icon={UserPlus}
-            >
-              Add
-            </Button>
-          </div>
-        </div>
-      </Modal>
 
       <DemoBlockedModal
         isOpen={demoBlockedOpen}

@@ -589,6 +589,20 @@ const StitchingForm = () => {
     setOrderItems((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   };
 
+  const updateOrderItemMeasurement = (id, key, value) => {
+    setOrderItems((prev) => prev.map((x) => {
+      if (x.id !== id) return x;
+      const parsed = value ? parseFloat(value) : '';
+      return {
+        ...x,
+        measurements: {
+          ...(x.measurements || {}),
+          [key]: parsed
+        }
+      };
+    }));
+  };
+
   const removeOrderItem = (id) => {
     if (String(expandedOrderItemId || '') === String(id)) {
       autoExpandAfterRemoveRef.current = true;
@@ -1719,78 +1733,32 @@ const StitchingForm = () => {
             ) : null}
 
             {/* Measurements - Premium Visual UI */}
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
-                <button
-                  type="button"
-                  onClick={() => setCustomerMeasurementsOpen((p) => !p)}
-                  className="w-full flex items-center justify-between"
-                >
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('customers.measurements')} ({selectedCustomer?.nameI18n?.[langKey] || selectedCustomer?.name || ''})</h3>
-                  <ChevronDown className={`w-5 h-5 text-gray-400 dark:text-slate-400 transition-transform ${customerMeasurementsOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                <div className="mt-2 flex items-center gap-2">
-                  {selectedCustomer?.measurements && Object.keys(selectedCustomer.measurements).length > 0 ? (
-                    <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded-full">
-                      ✓ Auto-filled from customer
-                    </span>
-                  ) : null}
-                  {selectedRelation ? (
-                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-full">
-                      Read-only
-                    </span>
-                  ) : null}
-                </div>
-
-                {customerMeasurementsOpen ? (
-                  <>
-                    {measurementsCatalogLoading && (
-                      <div className="text-sm text-gray-500 dark:text-slate-400 mt-4">Loading…</div>
-                    )}
-                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {measurementFields.map((field) => (
-                        <MeasurementCard
-                          key={field.key}
-                          measurementKey={field.key}
-                          label={field.label}
-                          value={(selectedRelation ? (selectedCustomer?.measurements || {}) : (formData.measurements || {}))[field.key]}
-                          onChange={(value) => {
-                            if (selectedRelation) return;
-                            handleMeasurementChange(field.key, value);
-                          }}
-                          disabled={!!selectedRelation}
-                          imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
-                        />
-                      ))}
-                    </div>
-                  </>
-                ) : null}
-              </div>
-
-              {selectedRelation ? (
-                <div className="rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-gradient-to-br from-amber-50/60 to-white dark:from-amber-900/20 dark:to-slate-900/50 p-6">
+            {!batchMode ? (
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
                   <button
                     type="button"
-                    onClick={() => setOrderForMeasurementsOpen((p) => !p)}
+                    onClick={() => setCustomerMeasurementsOpen((p) => !p)}
                     className="w-full flex items-center justify-between"
                   >
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('customers.measurements')} ({selectedRelation?.name || ''})</h3>
-                    <ChevronDown className={`w-5 h-5 text-amber-500 transition-transform ${orderForMeasurementsOpen ? 'rotate-180' : ''}`} />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('customers.measurements')} ({selectedCustomer?.nameI18n?.[langKey] || selectedCustomer?.name || ''})</h3>
+                    <ChevronDown className={`w-5 h-5 text-gray-400 dark:text-slate-400 transition-transform ${customerMeasurementsOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   <div className="mt-2 flex items-center gap-2">
-                    {orderForDetailsLoading ? (
-                      <span className="text-xs text-gray-500 dark:text-slate-400">Loading…</span>
+                    {selectedCustomer?.measurements && Object.keys(selectedCustomer.measurements).length > 0 ? (
+                      <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded-full">
+                        ✓ Auto-filled from customer
+                      </span>
                     ) : null}
-                    {selectedRelation?.measurements && Object.keys(selectedRelation.measurements).length > 0 ? (
-                      <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-full">
-                        ✓ Auto-filled from {selectedRelation.name}
+                    {selectedRelation ? (
+                      <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-full">
+                        Read-only
                       </span>
                     ) : null}
                   </div>
 
-                  {orderForMeasurementsOpen ? (
+                  {customerMeasurementsOpen ? (
                     <>
                       {measurementsCatalogLoading && (
                         <div className="text-sm text-gray-500 dark:text-slate-400 mt-4">Loading…</div>
@@ -1801,8 +1769,12 @@ const StitchingForm = () => {
                             key={field.key}
                             measurementKey={field.key}
                             label={field.label}
-                            value={formData.measurements[field.key]}
-                            onChange={(value) => handleMeasurementChange(field.key, value)}
+                            value={(selectedRelation ? (selectedCustomer?.measurements || {}) : (formData.measurements || {}))[field.key]}
+                            onChange={(value) => {
+                              if (selectedRelation) return;
+                              handleMeasurementChange(field.key, value);
+                            }}
+                            disabled={!!selectedRelation}
                             imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
                           />
                         ))}
@@ -1810,8 +1782,52 @@ const StitchingForm = () => {
                     </>
                   ) : null}
                 </div>
-              ) : null}
-            </div>
+
+                {selectedRelation ? (
+                  <div className="rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-gradient-to-br from-amber-50/60 to-white dark:from-amber-900/20 dark:to-slate-900/50 p-6">
+                    <button
+                      type="button"
+                      onClick={() => setOrderForMeasurementsOpen((p) => !p)}
+                      className="w-full flex items-center justify-between"
+                    >
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('customers.measurements')} ({selectedRelation?.name || ''})</h3>
+                      <ChevronDown className={`w-5 h-5 text-amber-500 transition-transform ${orderForMeasurementsOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    <div className="mt-2 flex items-center gap-2">
+                      {orderForDetailsLoading ? (
+                        <span className="text-xs text-gray-500 dark:text-slate-400">Loading…</span>
+                      ) : null}
+                      {selectedRelation?.measurements && Object.keys(selectedRelation.measurements).length > 0 ? (
+                        <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-full">
+                          ✓ Auto-filled from {selectedRelation.name}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {orderForMeasurementsOpen ? (
+                      <>
+                        {measurementsCatalogLoading && (
+                          <div className="text-sm text-gray-500 dark:text-slate-400 mt-4">Loading…</div>
+                        )}
+                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                          {measurementFields.map((field) => (
+                            <MeasurementCard
+                              key={field.key}
+                              measurementKey={field.key}
+                              label={field.label}
+                              value={formData.measurements[field.key]}
+                              onChange={(value) => handleMeasurementChange(field.key, value)}
+                              imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             <Textarea
               label={t('stitchings.description')}
@@ -1953,28 +1969,49 @@ const StitchingForm = () => {
                           </div>
 
                           {isExpanded ? (
-                            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-xs font-semibold text-amber-900/80 dark:text-amber-100/80 mb-1">Qty</label>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={it.quantity}
-                                  onChange={(e) => updateOrderItem(it.id, { quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-                                  className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
-                                />
+                            <div className="mt-3 space-y-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-semibold text-amber-900/80 dark:text-amber-100/80 mb-1">Qty</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={it.quantity}
+                                    onChange={(e) => updateOrderItem(it.id, { quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                                    className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-amber-900/80 dark:text-amber-100/80 mb-1">Price</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={it.price}
+                                    onChange={(e) => updateOrderItem(it.id, { price: e.target.value })}
+                                    placeholder="0"
+                                    className="no-spinner w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+                                  />
+                                </div>
                               </div>
-                              <div>
-                                <label className="block text-xs font-semibold text-amber-900/80 dark:text-amber-100/80 mb-1">Price</label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  value={it.price}
-                                  onChange={(e) => updateOrderItem(it.id, { price: e.target.value })}
-                                  placeholder="0"
-                                  className="no-spinner w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
-                                />
+
+                              <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 p-4">
+                                <div className="text-xs font-semibold text-amber-900/80 dark:text-amber-100/80">Measurements</div>
+                                {measurementsCatalogLoading ? (
+                                  <div className="mt-2 text-xs text-amber-900/60 dark:text-amber-100/60">Loading…</div>
+                                ) : null}
+                                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                                  {measurementFields.map((field) => (
+                                    <MeasurementCard
+                                      key={`${it.id}-${field.key}`}
+                                      measurementKey={field.key}
+                                      label={field.label}
+                                      value={(it.measurements || {})[field.key]}
+                                      onChange={(value) => updateOrderItemMeasurement(it.id, field.key, value)}
+                                      imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
+                                    />
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           ) : null}
