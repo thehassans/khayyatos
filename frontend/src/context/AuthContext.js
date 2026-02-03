@@ -122,6 +122,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginAsWorker = async (workerId) => {
+    try {
+      const response = await api.post(`/worker/login-as/${workerId}`);
+      const { token: newToken, user: userData, role } = response.data;
+      localStorage.setItem('token', newToken);
+      setToken(newToken);
+      setUser(userData);
+      if (userData?.language) {
+        const lang = String(userData.language).split('-')[0];
+        if (lang) i18n.changeLanguage(lang);
+      }
+      return { success: true, user: userData, role };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || 'Failed' };
+    }
+  };
+
   const updateUser = (userData) => {
     setUser(prev => ({ ...prev, ...userData }));
     if (userData?.theme) {
@@ -142,6 +159,7 @@ export const AuthProvider = ({ children }) => {
       loginDemo,
       logout,
       loginAsUser,
+      loginAsWorker,
       updateUser,
       isAuthenticated: !!user,
       isAdmin: user?.role === 'admin',

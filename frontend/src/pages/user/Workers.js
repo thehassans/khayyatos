@@ -8,18 +8,19 @@ import { StatusBadge } from '../../components/ui/Badge';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, LogIn } from 'lucide-react';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
 
 const Workers = () => {
   const { t, i18n } = useTranslation();
-  const { api, user } = useAuth();
+  const { api, user, loginAsWorker } = useAuth();
   const navigate = useNavigate();
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState({ open: false, worker: null, loading: false });
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
+  const [loginWorkerId, setLoginWorkerId] = useState(null);
 
   const isDemo = !!user?.isDemoSession;
 
@@ -51,6 +52,23 @@ const Workers = () => {
 
   const closeDelete = () => {
     setDeleteModal({ open: false, worker: null, loading: false });
+  };
+
+  const handleLoginAsWorker = async (workerId) => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
+    if (!workerId) return;
+    setLoginWorkerId(workerId);
+    const result = await loginAsWorker(workerId);
+    setLoginWorkerId(null);
+    if (result?.success) {
+      toast.success(t('workers.loginAsWorkerSuccess', { defaultValue: 'Logged in as worker' }));
+      navigate('/worker/dashboard');
+      return;
+    }
+    toast.error(result?.error || t('common.error', { defaultValue: 'Error' }));
   };
 
   const confirmDelete = async () => {
@@ -130,6 +148,13 @@ const Workers = () => {
                   <Td><StatusBadge status={worker.isActive ? 'active' : 'inactive'} /></Td>
                   <Td>
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleLoginAsWorker(worker._id)}
+                        disabled={loginWorkerId === worker._id}
+                        className="p-2 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-primary-600 dark:text-primary-300 rounded-lg disabled:opacity-50"
+                      >
+                        <LogIn className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate(`/user/workers/${worker._id}/edit`))}
                         disabled={isDemo}

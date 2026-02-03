@@ -530,5 +530,81 @@
     "date": "তারিখ",
     "qrCodeGeneration": "QR কোড জেনারেশন",
     "integrationReporting": "ইন্টিগ্রেশন এবং রিপোর্টিং"
+  },
+  "onboardingWizard": {
+    "title": "প্রথমবার সেটআপ",
+    "liveTutorial": "লাইভ টিউটোরিয়াল",
+    "stepCount": "ধাপ {{current}} / {{total}}",
+    "language": {
+      "title": "আপনার ভাষা বেছে নিন",
+      "description": "আপনার পছন্দের ভাষা নির্বাচন করুন। পুরো টিউটোরিয়াল এই ভাষাতেই দেখাবে।\nপরে Settings থেকে পরিবর্তন করতে পারবেন।"
+    },
+    "buttons": {
+      "skipForNow": "এখনই বাদ দিন",
+      "startTutorial": "টিউটোরিয়াল শুরু করুন",
+      "finish": "সেটআপ শেষ করুন"
+    },
+    "steps": {
+      "dashboard": {
+        "title": "ড্যাশবোর্ড বোঝা",
+        "description": "এটি আপনার Dashboard। এখানে দোকানের দ্রুত সারাংশ পাবেন: সাম্প্রতিক কার্যক্রম, অর্ডারের স্ট্যাটাস এবং গুরুত্বপূর্ণ পেজের শর্টকাট।",
+        "action": "ড্যাশবোর্ড খুলুন"
+      },
+      "createWorker": {
+        "title": "ওয়ার্কার তৈরি করুন",
+        "description": "Workers হলো আপনার টেইলার। ওয়ার্কার তৈরি করে আপনি Stitchings তাদের কাছে assign করতে পারবেন এবং progress ট্র্যাক করতে পারবেন।\nটিপ: ওয়ার্কার তৈরির পরে Workers পেজ থেকে \"Login as worker\" করতে পারবেন।",
+        "action": "Create Worker খুলুন"
+      },
+      "workerAmounts": {
+        "title": "ওয়ার্কার অ্যামাউন্ট ও পেমেন্ট",
+        "description": "Worker Amounts থেকে প্রতিটি ওয়ার্কারের pending amount দেখতে পারবেন এবং পেমেন্ট রেকর্ড করতে পারবেন।",
+        "action": "Worker Amounts খুলুন"
+      },
+      "createCustomer": {
+        "title": "কাস্টমার + পরিবার তৈরি",
+        "description": "Example Customer নাম ও ফোন {{phone}} দিয়ে কাস্টমার তৈরি করুন (পরের ধাপে এই কাস্টমার ব্যবহার হবে)।\nFamily Relations থেকে Father / Son / Brother ইত্যাদি যুক্ত করতে পারবেন।",
+        "action": "Create Customer খুলুন"
+      },
+      "createOrder": {
+        "title": "অর্ডার (stitching) তৈরি",
+        "description": "Create Order পেজ খুলুন। ফোন {{phone}} দিয়ে example কাস্টমার খুঁজে select করুন।\nMeasurements দেখাবে, এরপর thawb type, style options, fabric, due date, price এবং paid amount সেট করুন।",
+        "action": "Create Order খুলুন"
+      },
+      "embroidery": {
+        "title": "Embroidery design যোগ করুন",
+        "description": "Embroidery design (নাম + ছবি) তৈরি করুন। পরে অর্ডার তৈরির সময় design নির্বাচন করতে পারবেন।",
+        "action": "Embroidery design তৈরি করুন"
+      },
+      "laundry": {
+        "title": "Laundry সেটআপ",
+        "description": "Laundry services যোগ করুন, price per piece সেট করুন, pieces assign করুন এবং payments ট্র্যাক করুন।",
+        "action": "Laundry item তৈরি করুন"
+      },
+      "fabrics": {
+        "title": "Fabrics ও stock যোগ করুন",
+        "description": "Fabric তৈরি করুন: Made In, Price per Roll এবং Rolls in Stock সেট করুন। এতে inventory ট্র্যাক হবে।",
+        "action": "Fabric তৈরি করুন"
+      },
+      "loyalty": {
+        "title": "Customer loyalty",
+        "description": "Top customers, মোট spending এবং loyalty points দেখুন। Repeat customers কে reward করতে সাহায্য করবে।",
+        "action": "Loyalty খুলুন"
+      },
+      "whatsapp": {
+        "title": "WhatsApp",
+        "description": "WhatsApp enable করে নতুন order, ready এবং delivered orders এর জন্য automatic messages পাঠান। API settings যোগ করুন এবং test message পাঠান।",
+        "action": "WhatsApp settings খুলুন"
+      },
+      "settingsCatalogs": {
+        "title": "Catalogs সেটআপ",
+        "description": "Orders কে consistent রাখতে catalogs configure করুন:\n- Style options\n- Measurements\n- Thawb types\n- Fabric colours",
+        "actions": {
+          "styleOptions": "Style options",
+          "measurements": "Measurements",
+          "thawbTypes": "Thawb types",
+          "fabricColors": "Fabric colours"
+        }
+      }
+    }
   }
 }

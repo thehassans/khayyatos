@@ -7,12 +7,12 @@ import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/Badge';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import SARIcon from '../../components/ui/SARIcon';
-import { ArrowLeft, Phone, Users, ClipboardList, Edit } from 'lucide-react';
+import { ArrowLeft, Phone, Users, ClipboardList, Edit, LogIn } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const WorkerProfile = () => {
   const { t, i18n } = useTranslation();
-  const { api, user } = useAuth();
+  const { api, user, loginAsWorker } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -24,6 +24,7 @@ const WorkerProfile = () => {
   const [stitchings, setStitchings] = useState([]);
   const [stats, setStats] = useState(null);
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -87,6 +88,19 @@ const WorkerProfile = () => {
 
   const displayName = worker?.nameI18n?.[langKey] || worker.name;
 
+  const handleLoginAsWorker = async () => {
+    if (!worker?._id) return;
+    setLoginLoading(true);
+    const result = await loginAsWorker(worker._id);
+    setLoginLoading(false);
+    if (result?.success) {
+      toast.success(t('workers.loginAsWorkerSuccess', { defaultValue: 'Logged in as worker' }));
+      navigate('/worker/dashboard');
+      return;
+    }
+    toast.error(result?.error || t('common.error', { defaultValue: 'Error' }));
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between gap-4">
@@ -111,6 +125,14 @@ const WorkerProfile = () => {
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          <Button
+            variant="outline"
+            onClick={handleLoginAsWorker}
+            icon={LogIn}
+            loading={loginLoading}
+          >
+            {t('workers.loginAsWorker', { defaultValue: 'Login as worker' })}
+          </Button>
           <Button
             variant="secondary"
             onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate(`/user/workers/${worker._id}/edit`))}

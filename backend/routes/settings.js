@@ -290,10 +290,42 @@ router.get('/', async (req, res) => {
         businessName: req.user.businessName,
         logo: req.user.logo,
         language: req.user.language,
+        onboardingCompleted: !!req.user.onboardingCompleted,
+        onboardingStep: Number(req.user.onboardingStep) || 0,
         theme: req.user.theme,
         receiptPrefix: req.user.receiptPrefix,
         receiptCounter: req.user.receiptCounter,
         whatsappEnabled: req.user.whatsappEnabled
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.put('/preferences', async (req, res) => {
+  try {
+    const { language, onboardingCompleted, onboardingStep, theme } = req.body || {};
+
+    if (language) req.user.language = language;
+    if (theme) req.user.theme = theme;
+
+    if (onboardingCompleted !== undefined) {
+      req.user.onboardingCompleted = !!onboardingCompleted;
+    }
+    if (onboardingStep !== undefined) {
+      const n = Number(onboardingStep);
+      req.user.onboardingStep = Number.isFinite(n) && n >= 0 ? n : 0;
+    }
+
+    await req.user.save();
+    res.json({
+      message: 'Preferences updated',
+      settings: {
+        language: req.user.language,
+        theme: req.user.theme,
+        onboardingCompleted: !!req.user.onboardingCompleted,
+        onboardingStep: Number(req.user.onboardingStep) || 0
       }
     });
   } catch (error) {

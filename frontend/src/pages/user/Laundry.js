@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -15,6 +16,7 @@ import toast from 'react-hot-toast';
 const Laundry = () => {
   const { t } = useTranslation();
   const { api, user } = useAuth();
+  const [searchParams] = useSearchParams();
 
   const isDemo = !!user?.isDemoSession;
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
@@ -25,6 +27,7 @@ const Laundry = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  const tutorialCreateOpenedRef = useRef(false);
 
   const [createForm, setCreateForm] = useState({ name: '', pricePerPiece: '' });
   const [editForm, setEditForm] = useState({ id: null, name: '', pricePerPiece: '' });
@@ -150,6 +153,15 @@ const Laundry = () => {
     setCreateForm({ name: '', pricePerPiece: '' });
     setCreateOpen(true);
   };
+
+  useEffect(() => {
+    const shouldOpen = (searchParams.get('create') || '') === '1';
+    if (!shouldOpen) return;
+    if (tutorialCreateOpenedRef.current) return;
+    if (createOpen) return;
+    tutorialCreateOpenedRef.current = true;
+    openCreate();
+  }, [createOpen, openCreate, searchParams]);
 
   const closeCreate = () => {
     setCreateOpen(false);

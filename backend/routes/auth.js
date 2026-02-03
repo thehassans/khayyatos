@@ -91,6 +91,8 @@ router.post('/login', async (req, res) => {
               logo: user.logo,
               language: user.language,
               theme: user.theme,
+              onboardingCompleted: !!user.onboardingCompleted,
+              onboardingStep: Number(user.onboardingStep) || 0,
               subscriptionType: user.subscriptionType,
               role: 'user'
             }
@@ -149,6 +151,8 @@ router.post('/demo', async (req, res) => {
         logo: user.logo,
         language: user.language,
         theme: user.theme,
+        onboardingCompleted: !!user.onboardingCompleted,
+        onboardingStep: Number(user.onboardingStep) || 0,
         subscriptionType: user.subscriptionType,
         role: 'user',
         isDemoSession: true
@@ -223,6 +227,8 @@ router.post('/user/login', async (req, res) => {
         logo: user.logo,
         language: user.language,
         theme: user.theme,
+        onboardingCompleted: !!user.onboardingCompleted,
+        onboardingStep: Number(user.onboardingStep) || 0,
         subscriptionType: user.subscriptionType,
         subscriptionEndDate: user.subscriptionEndDate,
         role: 'user'

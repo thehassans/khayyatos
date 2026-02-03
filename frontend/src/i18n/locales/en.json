@@ -530,5 +530,81 @@
     "sandbox": "Sandbox",
     "qrCodeGeneration": "QR Code Generation",
     "integrationReporting": "Integration & Reporting"
+  },
+  "onboardingWizard": {
+    "title": "First-time setup",
+    "liveTutorial": "Live tutorial",
+    "stepCount": "Step {{current}} of {{total}}",
+    "language": {
+      "title": "Choose your language",
+      "description": "Select the language you prefer. The whole tutorial will appear in this language.\nYou can change it later from Settings."
+    },
+    "buttons": {
+      "skipForNow": "Skip for now",
+      "startTutorial": "Start tutorial",
+      "finish": "Finish setup"
+    },
+    "steps": {
+      "dashboard": {
+        "title": "Dashboard overview",
+        "description": "This is your Dashboard. It gives you a quick summary of your shop: recent activity, order statuses, and shortcuts to the main pages.",
+        "action": "Open dashboard"
+      },
+      "createWorker": {
+        "title": "Create a worker",
+        "description": "Workers are your tailors. Create workers so you can assign stitchings to them and track their progress.\nTip: After creating a worker, you can use \"Login as worker\" from the Workers page.",
+        "action": "Open Create Worker"
+      },
+      "workerAmounts": {
+        "title": "Worker amounts & payments",
+        "description": "From Worker Amounts you can see each worker’s pending amount and record payments. This keeps all balances accurate.",
+        "action": "Open Worker Amounts"
+      },
+      "createCustomer": {
+        "title": "Create a customer + family",
+        "description": "Create a customer with name Example Customer and phone {{phone}} (we will use this customer in the next step).\nYou can also connect family members (Father / Son / Brother, etc.) using the Family Relations section.",
+        "action": "Open Create Customer"
+      },
+      "createOrder": {
+        "title": "Create an order (stitching)",
+        "description": "Open the Create Order page. Search for the example customer by phone {{phone}} and select them.\nYou will see their measurements, then you can choose thawb type, style options, fabric, due date, price, and paid amount.",
+        "action": "Open Create Order"
+      },
+      "embroidery": {
+        "title": "Add embroidery designs",
+        "description": "Create embroidery designs (name + image). Later, you can attach a design while creating an order.",
+        "action": "Create embroidery design"
+      },
+      "laundry": {
+        "title": "Setup laundry",
+        "description": "Add laundry services and set the price per piece. Assign pieces and track laundry payments.",
+        "action": "Create laundry item"
+      },
+      "fabrics": {
+        "title": "Add fabrics & stock",
+        "description": "Create fabrics with Made In, Price per Roll, and Rolls in Stock. This helps you track inventory.",
+        "action": "Create fabric"
+      },
+      "loyalty": {
+        "title": "Customer loyalty",
+        "description": "Track your top customers, all-time spending, and loyalty points. Use this to reward repeat customers.",
+        "action": "Open loyalty"
+      },
+      "whatsapp": {
+        "title": "WhatsApp",
+        "description": "Enable WhatsApp to send automatic messages for new orders, ready orders, and delivered orders. Add API settings and test a message.",
+        "action": "Open WhatsApp settings"
+      },
+      "settingsCatalogs": {
+        "title": "Setup catalogs",
+        "description": "Configure catalogs so every order is consistent:\n- Style options\n- Measurements\n- Thawb types\n- Fabric colours",
+        "actions": {
+          "styleOptions": "Style options",
+          "measurements": "Measurements",
+          "thawbTypes": "Thawb types",
+          "fabricColors": "Fabric colours"
+        }
+      }
+    }
   }
 }

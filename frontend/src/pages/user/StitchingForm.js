@@ -143,7 +143,7 @@ const StitchingForm = () => {
       return src;
     }
     return src;
-  }, [api]);
+  }, [api, searchParams]);
 
   const fetchAllCustomers = async () => {
     try {
@@ -167,9 +167,37 @@ const StitchingForm = () => {
       selectedRelationIdRef.current = null;
       setCustomerMeasurementsOpen(true);
       setOrderForMeasurementsOpen(false);
+
+      const shouldFillMeasurements = (searchParams.get('tutorial') || '') === '1' && (searchParams.get('fillMeasurements') || '') === '1';
+      const defaults = {
+        length: 10,
+        shoulderWidth: 10,
+        chest: 10,
+        waist: 10,
+        hips: 10,
+        sleeveLength: 10,
+        bicep: 10,
+        forearm: 10,
+        neck: 10,
+        wrist: 10,
+        cuffWidth: 10,
+        expansion: 10,
+        armhole: 10,
+        bottom: 10
+      };
+
+      let nextMeasurements = fetched.measurements || {};
+      if (shouldFillMeasurements) {
+        const merged = { ...defaults, ...(nextMeasurements || {}) };
+        Object.keys(defaults).forEach((k) => {
+          const v = merged[k];
+          if (v === null || v === undefined || v === '') merged[k] = 10;
+        });
+        nextMeasurements = merged;
+      }
       setFormData((prev) => ({
         ...prev,
-        measurements: fetched.measurements || {}
+        measurements: nextMeasurements
       }));
       return fetched;
     } catch (e) {
@@ -177,25 +205,65 @@ const StitchingForm = () => {
     } finally {
       setCustomerDetailsLoading(false);
     }
-  }, [api]);
+  }, [api, searchParams]);
 
   useEffect(() => {
     const preselectCustomer = async () => {
       if (isEdit) return;
       const customerId = searchParams.get('customerId');
-      if (!customerId) return;
-      if (selectedCustomer?._id === customerId) return;
 
-      const fromList = (allCustomers || []).find((c) => c?._id === customerId);
-      if (fromList) {
-        await loadCustomerDetails(fromList._id);
+      const normalizePhone = (v) => String(v || '').replace(/\D/g, '');
+      const phoneVariants = (digits) => {
+        const raw = normalizePhone(digits);
+        const set = new Set();
+        if (raw) set.add(raw);
+        if (raw.startsWith('0') && raw.length === 10) {
+          set.add(`966${raw.slice(1)}`);
+        }
+        if (raw.startsWith('966') && raw.length >= 12) {
+          set.add(`0${raw.slice(3)}`);
+        }
+        return Array.from(set);
+      };
+      const tutorial = (searchParams.get('tutorial') || '') === '1';
+      const customerPhone = tutorial ? normalizePhone(searchParams.get('customerPhone')) : '';
+      const customerPhoneOptions = tutorial ? phoneVariants(customerPhone) : [];
+
+      if (customerId) {
+        if (selectedCustomer?._id === customerId) return;
+
+        const fromList = (allCustomers || []).find((c) => c?._id === customerId);
+        if (fromList) {
+          await loadCustomerDetails(fromList._id);
+          return;
+        }
+
+        try {
+          await loadCustomerDetails(customerId);
+        } catch (e) {
+
+        }
         return;
       }
 
-      try {
-        await loadCustomerDetails(customerId);
-      } catch (e) {
+      if (customerPhone) {
+        const already = normalizePhone(selectedCustomer?.phone);
+        if (already && customerPhoneOptions.some((opt) => already === opt || already.endsWith(opt) || already.includes(opt))) return;
 
+        const match = (allCustomers || []).find((c) => {
+          const p = normalizePhone(c?.phone);
+          if (!p) return false;
+          return customerPhoneOptions.some((opt) => p === opt || p.endsWith(opt) || p.includes(opt));
+        });
+
+        if (match?._id) {
+          setCustomerSearch(searchParams.get('customerPhone') || '');
+          await loadCustomerDetails(match._id);
+          return;
+        }
+
+        setCustomerSearch(searchParams.get('customerPhone') || '');
+        setDropdownOpen(true);
       }
     };
 

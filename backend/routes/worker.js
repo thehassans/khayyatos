@@ -3,7 +3,7 @@ const router = express.Router();
 const Worker = require('../models/Worker');
 const Stitching = require('../models/Stitching');
 const Payment = require('../models/Payment');
-const { verifyToken, isUser, isWorker } = require('../middleware/auth');
+const { verifyToken, isUser, isWorker, generateToken } = require('../middleware/auth');
 const { blockDemoWrites } = require('../middleware/demoGuard');
 const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 
@@ -14,6 +14,35 @@ router.get('/', verifyToken, isUser, async (req, res) => {
       .sort({ createdAt: -1 })
       .select('-password');
     res.json({ workers });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/login-as/:id', verifyToken, isUser, async (req, res) => {
+  try {
+    const worker = await Worker.findOne({ _id: req.params.id, userId: req.user._id })
+      .populate('userId', 'businessName logo')
+      .select('-password');
+
+    if (!worker) {
+      return res.status(404).json({ error: 'Worker not found' });
+    }
+
+    const token = generateToken(worker._id, 'worker');
+    res.json({
+      token,
+      role: 'worker',
+      user: {
+        id: worker._id,
+        name: worker.name,
+        phone: worker.phone,
+        language: worker.language,
+        shopName: worker.userId?.businessName,
+        shopLogo: worker.userId?.logo,
+        role: 'worker'
+      }
+    });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -201,7 +230,9 @@ router.get('/panel/dashboard', verifyToken, isWorker, async (req, res) => {
     const recentStitchings = await Stitching.find({ workerId })
       .sort({ createdAt: -1 })
       .limit(5)
-      .populate('customerId', 'name phone nameI18n');
+      .populate('customerId', 'name phone nameI18n')
+      .populate('relationId', 'name phone nameI18n')
+      .populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
     
     res.json({
       stats: {
@@ -229,7 +260,9 @@ router.get('/panel/stitchings', verifyToken, isWorker, async (req, res) => {
     
     const stitchings = await Stitching.find(query)
       .sort({ createdAt: -1 })
-      .populate('customerId', 'name phone nameI18n');
+      .populate('customerId', 'name phone nameI18n')
+      .populate('relationId', 'name phone nameI18n')
+      .populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
     
     res.json({ stitchings });
   } catch (error) {

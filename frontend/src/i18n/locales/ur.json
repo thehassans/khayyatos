@@ -530,5 +530,81 @@
     "date": "تاریخ",
     "qrCodeGeneration": "QR کوڈ جنریشن",
     "integrationReporting": "انٹیگریشن اور رپورٹنگ"
+  },
+  "onboardingWizard": {
+    "title": "پہلی بار سیٹ اپ",
+    "liveTutorial": "لائیو ٹیوٹوریل",
+    "stepCount": "مرحلہ {{current}} از {{total}}",
+    "language": {
+      "title": "اپنی زبان منتخب کریں",
+      "description": "اپنی پسندیدہ زبان منتخب کریں۔ پورا ٹیوٹوریل اسی زبان میں نظر آئے گا۔\nآپ بعد میں Settings سے تبدیل کر سکتے ہیں۔"
+    },
+    "buttons": {
+      "skipForNow": "ابھی چھوڑ دیں",
+      "startTutorial": "ٹیوٹوریل شروع کریں",
+      "finish": "سیٹ اپ مکمل کریں"
+    },
+    "steps": {
+      "dashboard": {
+        "title": "ڈیش بورڈ کی وضاحت",
+        "description": "یہ آپ کا Dashboard ہے۔ یہاں آپ کو دکان کا فوری خلاصہ ملتا ہے: حالیہ سرگرمی، آرڈر کی حالتیں اور اہم صفحات کے شارٹ کٹس۔",
+        "action": "ڈیش بورڈ کھولیں"
+      },
+      "createWorker": {
+        "title": "ورکر بنائیں",
+        "description": "Workers آپ کے خیاط ہیں۔ ورکر بنا کر آپ Stitchings انہیں assign کر سکتے ہیں اور ان کی progress دیکھ سکتے ہیں۔\nٹِپ: ورکر بنانے کے بعد Workers صفحہ سے \"Login as worker\" کر سکتے ہیں۔",
+        "action": "Create Worker کھولیں"
+      },
+      "workerAmounts": {
+        "title": "ورکر رقم اور ادائیگی",
+        "description": "Worker Amounts سے آپ ہر ورکر کی pending رقم دیکھ سکتے ہیں اور ادائیگیاں ریکارڈ کر سکتے ہیں۔",
+        "action": "Worker Amounts کھولیں"
+      },
+      "createCustomer": {
+        "title": "کسٹمر + فیملی بنائیں",
+        "description": "Example Customer نام اور فون {{phone}} کے ساتھ کسٹمر بنائیں (اگلے مرحلے میں اسی کسٹمر کو استعمال کریں گے)۔\nFamily Relations میں Father / Son / Brother وغیرہ شامل کر سکتے ہیں۔",
+        "action": "Create Customer کھولیں"
+      },
+      "createOrder": {
+        "title": "آرڈر (Stitching) بنائیں",
+        "description": "Create Order صفحہ کھولیں۔ فون {{phone}} سے example کسٹمر تلاش کریں اور select کریں۔\nMeasurements دکھیں گے، پھر thawb type، style options، fabric، due date، price اور paid amount سیٹ کریں۔",
+        "action": "Create Order کھولیں"
+      },
+      "embroidery": {
+        "title": "Embroidery designs شامل کریں",
+        "description": "Embroidery design (نام + تصویر) بنائیں۔ بعد میں آرڈر بناتے وقت design منتخب کر سکتے ہیں۔",
+        "action": "Embroidery design بنائیں"
+      },
+      "laundry": {
+        "title": "Laundry سیٹ اپ",
+        "description": "Laundry services شامل کریں، price per piece سیٹ کریں، pieces assign کریں اور payments track کریں۔",
+        "action": "Laundry item بنائیں"
+      },
+      "fabrics": {
+        "title": "Fabrics اور stock شامل کریں",
+        "description": "Fabric بنائیں: Made In، Price per Roll اور Rolls in Stock سیٹ کریں۔ اس سے inventory track ہوگی۔",
+        "action": "Fabric بنائیں"
+      },
+      "loyalty": {
+        "title": "Customer loyalty",
+        "description": "Top customers، کل spending اور loyalty points دیکھیں۔ Repeat customers کو reward کرنے میں مدد ملتی ہے۔",
+        "action": "Loyalty کھولیں"
+      },
+      "whatsapp": {
+        "title": "WhatsApp",
+        "description": "WhatsApp enable کر کے نئے order، ready اور delivered orders کے لیے automatic messages بھیجیں۔ API settings شامل کریں اور test message بھیجیں۔",
+        "action": "WhatsApp settings کھولیں"
+      },
+      "settingsCatalogs": {
+        "title": "Catalogs سیٹ اپ",
+        "description": "Orders کو consistent بنانے کے لیے catalogs configure کریں:\n- Style options\n- Measurements\n- Thawb types\n- Fabric colours",
+        "actions": {
+          "styleOptions": "Style options",
+          "measurements": "Measurements",
+          "thawbTypes": "Thawb types",
+          "fabricColors": "Fabric colours"
+        }
+      }
+    }
   }
 }

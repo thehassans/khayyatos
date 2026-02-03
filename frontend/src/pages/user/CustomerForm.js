@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -25,6 +25,7 @@ const CustomerForm = () => {
   const { api, user } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const isEdit = !!id;
 
   const isDemo = !!user?.isDemoSession;
@@ -70,6 +71,41 @@ const CustomerForm = () => {
     fetchMeasurementsCatalog();
     if (isEdit) fetchCustomer();
   }, [id]);
+
+  useEffect(() => {
+    if (isEdit) return;
+    const isTutorial = (searchParams.get('tutorial') || '') === '1';
+    if (!isTutorial) return;
+
+    const nextName = String(searchParams.get('name') || 'Example Customer');
+    const nextPhone = String(searchParams.get('phone') || '0512456789');
+
+    setFormData((prev) => {
+      const shouldFill = !prev?.name && (!prev?.phone || prev?.phone === '+966');
+      if (!shouldFill) return prev;
+      return {
+        ...prev,
+        name: nextName,
+        phone: nextPhone,
+        measurements: {
+          length: 10,
+          shoulderWidth: 10,
+          chest: 10,
+          waist: 10,
+          hips: 10,
+          sleeveLength: 10,
+          bicep: 10,
+          forearm: 10,
+          neck: 10,
+          wrist: 10,
+          cuffWidth: 10,
+          expansion: 10,
+          armhole: 10,
+          bottom: 10
+        }
+      };
+    });
+  }, [isEdit, searchParams]);
 
   useEffect(() => {
     const text = typeof formData.name === 'string' ? formData.name.trim() : '';

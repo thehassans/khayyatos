@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -14,6 +14,7 @@ const EmbroideryDesigns = () => {
   const { t, i18n } = useTranslation();
   const { api, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const isDemo = !!user?.isDemoSession;
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
@@ -29,6 +30,7 @@ const EmbroideryDesigns = () => {
 
   const [previewIndex, setPreviewIndex] = useState(-1);
   const swipeStartXRef = useRef(null);
+  const tutorialCreateOpenedRef = useRef(false);
 
   const [uploading, setUploading] = useState(false);
   const [newDesign, setNewDesign] = useState({ name: '', note: '', image: null, preview: null });
@@ -82,6 +84,15 @@ const EmbroideryDesigns = () => {
     setNewDesign({ name: '', note: '', image: null, preview: null });
     setUploadModalOpen(true);
   };
+
+  useEffect(() => {
+    const shouldOpen = (searchParams.get('create') || '') === '1';
+    if (!shouldOpen) return;
+    if (tutorialCreateOpenedRef.current) return;
+    if (uploadModalOpen) return;
+    tutorialCreateOpenedRef.current = true;
+    openUploadModal();
+  }, [openUploadModal, searchParams, uploadModalOpen]);
 
   const closeUploadModal = () => {
     setUploadModalOpen(false);

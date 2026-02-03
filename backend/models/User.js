@@ -142,6 +142,14 @@ const userSchema = new mongoose.Schema({
     enum: ['en', 'ar', 'hi', 'ur', 'bn'],
     default: 'en'
   },
+  onboardingCompleted: {
+    type: Boolean,
+    default: false
+  },
+  onboardingStep: {
+    type: Number,
+    default: 0
+  },
   theme: {
     type: String,
     enum: ['light', 'dark'],

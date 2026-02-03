@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 import { 
   Settings as SettingsIcon, Upload, Globe, Sun, Moon, 
   Shield, Download, Bell, Database, ChevronRight, 
@@ -12,6 +13,7 @@ import toast from 'react-hot-toast';
 const Settings = () => {
   const { t, i18n } = useTranslation();
   const { api, user, updateUser } = useAuth();
+  const location = useLocation();
   const [activeSection, setActiveSection] = useState('general');
   const [loading, setLoading] = useState(false);
   const langKey = (i18n?.language || 'en').split('-')[0];
@@ -88,6 +90,18 @@ const Settings = () => {
   ];
 
   useEffect(() => { fetchSettings(); }, []);
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      const section = params.get('section');
+      if (section) {
+        setActiveSection(section);
+      }
+    } catch (e) {
+
+    }
+  }, [location.search]);
 
   const sanitizeKey = (value) => {
     if (!value) return '';

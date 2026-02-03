@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import OnboardingWizard from '../components/OnboardingWizard';
 import { 
   LayoutDashboard, 
   Users, 
@@ -32,9 +33,35 @@ const UserLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(user?.sidebarCollapsed || false);
   const [langOpen, setLangOpen] = useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
   
   const currentLang = (i18n?.language || 'en').split('-')[0];
   const isRTL = ['ar', 'ur'].includes(currentLang);
+
+  useEffect(() => {
+    if (!user) {
+      setOnboardingOpen(false);
+      return;
+    }
+    if (user?.role !== 'user') {
+      setOnboardingOpen(false);
+      return;
+    }
+    if (user?.isDemoSession) {
+      setOnboardingOpen(false);
+      return;
+    }
+
+    const completed = !!user?.onboardingCompleted;
+    if (completed) {
+      setOnboardingOpen(false);
+      return;
+    }
+    if (!onboardingDismissed) {
+      setOnboardingOpen(true);
+    }
+  }, [user, user?.role, user?.isDemoSession, user?.onboardingCompleted, onboardingDismissed]);
 
   // Theme customization
   const primaryColor = user?.primaryColor || 'sky';
@@ -179,6 +206,13 @@ const UserLayout = () => {
 
   return (
     <div className={`min-h-screen bg-gray-50 dark:bg-slate-950 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      <OnboardingWizard
+        isOpen={onboardingOpen}
+        onClose={() => {
+          setOnboardingOpen(false);
+          setOnboardingDismissed(true);
+        }}
+      />
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
