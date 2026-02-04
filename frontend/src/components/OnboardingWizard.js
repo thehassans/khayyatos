@@ -692,8 +692,8 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
       >
         <div className="space-y-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">{current.title}</h2>
-            <p className="mt-2 text-sm text-gray-600 dark:text-slate-300 whitespace-pre-line">{current.description}</p>
+            <h2 className="text-xl font-bold text-slate-900">{current.title}</h2>
+            <p className="mt-2 text-sm text-slate-600 whitespace-pre-line">{current.description}</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
@@ -710,12 +710,12 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
                 onClick={() => setLanguage(l.code)}
                 className={`p-4 rounded-2xl border text-left transition-colors ${
                   language === l.code
-                    ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
-                    : 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/40'
+                    ? 'border-slate-900 bg-slate-50'
+                    : 'border-slate-200 hover:bg-slate-50'
                 }`}
               >
-                <div className="text-sm font-semibold text-gray-900 dark:text-slate-100">{l.label}</div>
-                <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">{l.code.toUpperCase()}</div>
+                <div className="text-sm font-semibold text-slate-900">{l.label}</div>
+                <div className="text-xs text-slate-500 mt-1">{l.code.toUpperCase()}</div>
               </button>
             ))}
           </div>
@@ -737,9 +737,9 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
     <>
       {spotlight ? (
         <div className="fixed inset-0 z-[110] pointer-events-none">
-          <div className="absolute inset-0 bg-black/30 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-black/10 transition-opacity duration-300" />
           <div
-            className="absolute rounded-2xl border-2 border-primary-400 shadow-[0_0_0_10px_rgba(59,130,246,0.22)] animate-pulse transition-all duration-300 ease-out"
+            className="absolute rounded-2xl border border-slate-900/25 shadow-[0_0_0_10px_rgba(15,23,42,0.06)] transition-all duration-300 ease-out"
             style={{ top: spotlight.top, left: spotlight.left, width: spotlight.width, height: spotlight.height }}
           />
           <div
@@ -750,8 +750,8 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
             }}
           >
             <div className="relative">
-              <div className="absolute inline-flex h-3 w-3 rounded-full bg-primary-400 opacity-75 animate-ping" />
-              <div className="relative inline-flex h-3 w-3 rounded-full bg-primary-500 shadow" />
+              <div className="absolute inline-flex h-3 w-3 rounded-full bg-slate-900/40 opacity-60 animate-ping" />
+              <div className="relative inline-flex h-3 w-3 rounded-full bg-slate-900 shadow" />
             </div>
           </div>
         </div>
@@ -769,20 +769,20 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
               orient="auto"
               markerUnits="strokeWidth"
             >
-              <path d="M 0 0 L 0 12 L 12 6 z" fill="rgba(2,6,23,0.92)" />
+              <path d="M 0 0 L 0 12 L 12 6 z" fill="rgba(15,23,42,0.88)" />
             </marker>
           </defs>
           <path
             ref={coachmarkArrowRef}
             d={coachmarkArrowPath}
             fill="none"
-            stroke="rgba(2,6,23,0.92)"
+            stroke="rgba(15,23,42,0.88)"
             strokeWidth="4"
             strokeLinecap="round"
             strokeLinejoin="round"
             markerEnd="url(#coachmark-arrowhead)"
             style={{
-              filter: 'drop-shadow(0 18px 28px rgba(0,0,0,0.45))',
+              filter: 'drop-shadow(0 18px 26px rgba(15,23,42,0.18))',
               strokeDasharray: arrowStroke.len ? `${arrowStroke.len}` : undefined,
               strokeDashoffset: arrowStroke.len ? `${arrowStroke.offset}` : undefined,
               transition: arrowStroke.animate
@@ -804,12 +804,12 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         }}
       >
         <div className="relative transition-all duration-300 ease-out">
-          <div className="rounded-[28px] p-[1px] bg-gradient-to-br from-white/15 via-white/5 to-white/10 shadow-2xl shadow-black/50">
-            <div className="rounded-[28px] border border-white/10 bg-slate-950/90 backdrop-blur-2xl">
+          <div className="rounded-[28px] p-[1px] bg-slate-900/10 shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
+            <div className="rounded-[28px] border border-slate-200 bg-white/95 backdrop-blur-2xl">
               <div className="px-5 pt-5">
-                <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div className="h-1.5 rounded-full bg-black/10 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-fuchsia-400"
+                    className="h-full rounded-full bg-slate-900"
                     style={{ width: `${Math.max(5, Math.min(100, (Math.max(1, step) / Math.max(1, totalSteps - 1)) * 100))}%` }}
                   />
                 </div>
@@ -817,23 +817,23 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
 
               <div className="flex items-start justify-between gap-3 px-5 py-4">
                 <div className="min-w-0">
-                  <div className="text-[11px] font-semibold tracking-wide text-white/60">
+                  <div className="text-[11px] font-semibold tracking-wide text-slate-500">
                     {t('onboardingWizard.stepCount', { current: Math.min(step, totalSteps - 1), total: totalSteps - 1 })}
                   </div>
-                  <div className="text-sm font-bold text-white truncate">{current.title}</div>
+                  <div className="text-sm font-bold text-slate-900 truncate">{current.title}</div>
                 </div>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-2 rounded-xl hover:bg-white/10"
+                  className="p-2 rounded-xl hover:bg-slate-100"
                   aria-label={t('common.close')}
                 >
-                  <X className="w-4 h-4 text-white/70" />
+                  <X className="w-4 h-4 text-slate-500" />
                 </button>
               </div>
 
               <div className="px-5 pb-5 space-y-4">
-                <div className="text-sm text-white/80 leading-relaxed whitespace-pre-line">
+                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
                   {current.description}
                 </div>
 
