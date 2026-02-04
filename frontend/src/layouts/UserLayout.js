@@ -42,6 +42,25 @@ const UserLayout = () => {
   const isRTL = ['ar', 'ur'].includes(currentLang);
 
   useEffect(() => {
+    const run = () => {
+      import('../pages/user/Customers');
+      import('../pages/user/Stitchings');
+      import('../pages/user/Workers');
+      import('../pages/user/CustomerForm');
+      import('../pages/user/StitchingForm');
+      import('../pages/user/WorkerForm');
+    };
+
+    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(run, { timeout: 1800 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+
+    const t = setTimeout(run, 800);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
     if (!user) {
       setOnboardingOpen(false);
       return;

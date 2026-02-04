@@ -43,6 +43,8 @@ router.use(verifyToken, isUser);
 router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 20, status, search, workerId } = req.query;
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.max(1, Math.min(200, Number(limit) || 20));
     const query = { userId: req.user._id };
     
     if (status) query.status = status;
@@ -51,21 +53,23 @@ router.get('/', async (req, res) => {
       query.receiptNumber = { $regex: search, $options: 'i' };
     }
     
-    const stitchings = await Stitching.find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .populate('customerId', 'name phone nameI18n')
-      .populate('relationId', 'name phone nameI18n')
-      .populate('workerId', 'name phone nameI18n')
-      .populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
-    
-    const total = await Stitching.countDocuments(query);
+    const [stitchings, total] = await Promise.all([
+      Stitching.find(query)
+        .sort({ createdAt: -1 })
+        .limit(limitNum)
+        .skip((pageNum - 1) * limitNum)
+        .populate('customerId', 'name phone nameI18n')
+        .populate('relationId', 'name phone nameI18n')
+        .populate('workerId', 'name phone nameI18n')
+        .populate('fabricId', 'name madeIn pricePerRoll rollsInStock')
+        .lean(),
+      Stitching.countDocuments(query)
+    ]);
     
     res.json({
       stitchings,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
+      totalPages: Math.ceil(total / limitNum),
+      currentPage: pageNum,
       total
     });
   } catch (error) {

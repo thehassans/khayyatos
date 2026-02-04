@@ -13,51 +13,66 @@ router.use(verifyToken, isUser);
 // Dashboard stats
 router.get('/dashboard', async (req, res) => {
   try {
-    const userId = new mongoose.Types.ObjectId(req.user._id);
-    
-    const workersCount = await Worker.countDocuments({ userId: req.user._id });
-    const customersCount = await Customer.countDocuments({ userId: req.user._id });
-    
-    const stitchingStats = await Stitching.aggregate([
-      { $match: { userId } },
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 },
-          revenue: { $sum: '$price' }
-        }
-      }
-    ]);
-    
-    const totalRevenue = await Stitching.aggregate([
-      { $match: { userId } },
-      { $group: { _id: null, total: { $sum: '$price' }, paid: { $sum: '$paidAmount' } } }
-    ]);
-    
-    const recentStitchings = await Stitching.find({ userId: req.user._id })
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate('customerId', 'name phone nameI18n')
-      .populate('workerId', 'name phone nameI18n');
+    const userIdStr = req.user._id;
+    const userId = new mongoose.Types.ObjectId(userIdStr);
 
-    const upcomingDueStitchings = await Stitching.find({
-      userId: req.user._id,
-      dueDate: { $ne: null },
-      status: { $nin: ['delivered', 'done'] }
-    })
-      .sort({ dueDate: 1 })
-      .limit(8)
-      .populate('customerId', 'name phone nameI18n')
-      .populate('workerId', 'name phone nameI18n');
-    
-    const pendingStitchings = await Stitching.countDocuments({ userId: req.user._id, status: { $in: ['pending', 'assigned'] } });
-    const inProgressStitchings = await Stitching.countDocuments({ userId: req.user._id, status: 'in_progress' });
-    const completedStitchings = await Stitching.countDocuments({ userId: req.user._id, status: { $in: ['completed', 'delivered'] } });
-    
-    const workerPayments = await Payment.aggregate([
-      { $match: { userId } },
-      { $group: { _id: null, total: { $sum: '$amount' } } }
+    const [
+      workersCount,
+      customersCount,
+      stitchingStats,
+      totalRevenue,
+      recentStitchings,
+      upcomingDueStitchings,
+      pendingStitchings,
+      inProgressStitchings,
+      completedStitchings,
+      workerPayments
+    ] = await Promise.all([
+      Worker.countDocuments({ userId: userIdStr }),
+      Customer.countDocuments({ userId: userIdStr }),
+      Stitching.aggregate([
+        { $match: { userId } },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 },
+            revenue: { $sum: '$price' }
+          }
+        }
+      ]),
+      Stitching.aggregate([
+        { $match: { userId } },
+        { $group: { _id: null, total: { $sum: '$price' }, paid: { $sum: '$paidAmount' } } }
+      ]),
+      Stitching.find({ userId: userIdStr })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate('customerId', 'name phone nameI18n')
+        .populate('workerId', 'name phone nameI18n')
+        .lean(),
+      Stitching.find({
+        userId: userIdStr,
+        dueDate: { $ne: null },
+        status: { $nin: ['delivered', 'done'] }
+      })
+        .sort({ dueDate: 1 })
+        .limit(8)
+        .populate('customerId', 'name phone nameI18n')
+        .populate('workerId', 'name phone nameI18n')
+        .lean(),
+      Stitching.countDocuments({ userId: userIdStr, status: { $in: ['pending', 'assigned'] } }),
+      Stitching.countDocuments({ userId: userIdStr, status: 'in_progress' }),
+      Stitching.countDocuments({ userId: userIdStr, status: { $in: ['completed', 'delivered'] } }),
+      Payment.aggregate([
+        { $match: { userId } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ])
     ]);
+
+    const endDate = req.user.subscriptionEndDate ? new Date(req.user.subscriptionEndDate) : null;
+    const daysRemaining = endDate && Number.isFinite(endDate.getTime())
+      ? Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24))
+      : 0;
     
     res.json({
       stats: {
@@ -77,7 +92,7 @@ router.get('/dashboard', async (req, res) => {
       subscription: {
         type: req.user.subscriptionType,
         endDate: req.user.subscriptionEndDate,
-        daysRemaining: Math.ceil((new Date(req.user.subscriptionEndDate) - new Date()) / (1000 * 60 * 60 * 24))
+        daysRemaining
       }
     });
   } catch (error) {

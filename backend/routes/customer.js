@@ -224,6 +224,8 @@ router.use(verifyToken, isUser);
 router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 20, search } = req.query;
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.max(1, Math.min(200, Number(limit) || 20));
     const query = { userId: req.user._id };
     
     if (search) {
@@ -236,17 +238,19 @@ router.get('/', async (req, res) => {
       ];
     }
     
-    const customers = await Customer.find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-    
-    const total = await Customer.countDocuments(query);
+    const [customers, total] = await Promise.all([
+      Customer.find(query)
+        .sort({ createdAt: -1 })
+        .limit(limitNum)
+        .skip((pageNum - 1) * limitNum)
+        .lean(),
+      Customer.countDocuments(query)
+    ]);
     
     res.json({
       customers,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
+      totalPages: Math.ceil(total / limitNum),
+      currentPage: pageNum,
       total
     });
   } catch (error) {

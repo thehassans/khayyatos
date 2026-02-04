@@ -212,27 +212,28 @@ router.delete('/:id([0-9a-fA-F]{24})', verifyToken, isUser, blockDemoWrites, asy
 router.get('/panel/dashboard', verifyToken, isWorker, async (req, res) => {
   try {
     const workerId = req.worker._id;
-    
-    const assignedStitchings = await Stitching.countDocuments({ 
-      workerId, 
-      status: { $in: ['assigned', 'in_progress'] } 
-    });
-    
-    const completedStitchings = await Stitching.countDocuments({ 
-      workerId, 
-      status: 'completed' 
-    });
-    
+
+    const [assignedStitchings, completedStitchings, recentStitchings] = await Promise.all([
+      Stitching.countDocuments({
+        workerId,
+        status: { $in: ['assigned', 'in_progress'] }
+      }),
+      Stitching.countDocuments({
+        workerId,
+        status: 'completed'
+      }),
+      Stitching.find({ workerId })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate('customerId', 'name phone nameI18n')
+        .populate('relationId', 'name phone nameI18n')
+        .populate('fabricId', 'name madeIn pricePerRoll rollsInStock')
+        .lean()
+    ]);
+
     const pendingAmount = req.worker.pendingAmount;
     const totalEarnings = req.worker.totalEarnings;
     const totalPaid = req.worker.totalPaid;
-    
-    const recentStitchings = await Stitching.find({ workerId })
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate('customerId', 'name phone nameI18n')
-      .populate('relationId', 'name phone nameI18n')
-      .populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
     
     res.json({
       stats: {
@@ -262,7 +263,8 @@ router.get('/panel/stitchings', verifyToken, isWorker, async (req, res) => {
       .sort({ createdAt: -1 })
       .populate('customerId', 'name phone nameI18n')
       .populate('relationId', 'name phone nameI18n')
-      .populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
+      .populate('fabricId', 'name madeIn pricePerRoll rollsInStock')
+      .lean();
     
     res.json({ stitchings });
   } catch (error) {

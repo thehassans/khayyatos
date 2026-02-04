@@ -19,6 +19,22 @@ const WorkerLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
 
+  React.useEffect(() => {
+    const run = () => {
+      import('../pages/worker/Stitchings');
+      import('../pages/worker/Amounts');
+      import('../pages/worker/Settings');
+    };
+
+    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(run, { timeout: 1800 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+
+    const t = setTimeout(run, 800);
+    return () => clearTimeout(t);
+  }, []);
+
   const currentLang = (i18n?.language || 'en').split('-')[0];
 
   const shopName = user?.shopName || user?.userId?.businessName || t('common.appName');

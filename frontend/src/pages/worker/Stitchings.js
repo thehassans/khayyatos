@@ -77,6 +77,49 @@ const WorkerStitchings = () => {
     'bottom'
   ];
 
+  const styleOptionLabels = {
+    collar: t('styleOptions.collar', { defaultValue: 'Collar' }),
+    bain: t('styleOptions.bain', { defaultValue: 'Bain' }),
+    cuff: t('styleOptions.cuff', { defaultValue: 'Cuff' }),
+    pocket: t('styleOptions.pocket', { defaultValue: 'Pocket' }),
+    buttons: t('styleOptions.buttons', { defaultValue: 'Buttons' }),
+    embroidery: t('styleOptions.embroidery', { defaultValue: 'Embroidery' })
+  };
+
+  const thawbTypeLabels = {
+    saudi: t('thawbTypes.saudi', { defaultValue: 'Saudi' }),
+    qatari: t('thawbTypes.qatari', { defaultValue: 'Qatari' }),
+    emirati: t('thawbTypes.emirati', { defaultValue: 'Emirati' }),
+    kuwaiti: t('thawbTypes.kuwaiti', { defaultValue: 'Kuwaiti' }),
+    omani: t('thawbTypes.omani', { defaultValue: 'Omani' }),
+    bahraini: t('thawbTypes.bahraini', { defaultValue: 'Bahraini' }),
+    noum: t('thawbTypes.noum', { defaultValue: 'Noum' })
+  };
+
+  const renderStyleOptionsGrid = (styleOptions) => {
+    const s = styleOptions || {};
+    const keys = Object.keys(styleOptionLabels);
+    return (
+      <div className="rounded-2xl border border-gray-100 bg-white">
+        <div className="p-4">
+          <div className="text-sm font-semibold text-gray-900">{t('styleOptions.title', { defaultValue: 'Style Options' })}</div>
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+            {keys.map((k) => {
+              const v = s?.[k];
+              const hasValue = v !== undefined && v !== null && String(v).trim() !== '';
+              return (
+                <div key={k} className="py-2 flex items-center justify-between gap-3">
+                  <div className="text-xs font-semibold text-gray-600 truncate">{styleOptionLabels[k] || k}</div>
+                  <div className={`text-sm font-semibold ${hasValue ? 'text-gray-900' : 'text-gray-400'}`}>{hasValue ? v : '—'}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const formatDueDate = (date) => {
     try {
       if (!date) return null;
@@ -320,6 +363,66 @@ const WorkerStitchings = () => {
       >
         {detailModal.stitching && (
           <div className="space-y-6">
+            <div className="rounded-2xl border border-gray-100 bg-white p-4">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <div className="text-xs text-gray-500">{t('stitchings.receiptNumber', { defaultValue: 'Receipt Number' })}</div>
+                  <div className="mt-1 text-lg font-bold text-gray-900">{detailModal.stitching.receiptNumber || '-'}</div>
+                  <div className="mt-2 text-xs text-gray-500">{t('stitchings.customer', { defaultValue: 'Customer' })}</div>
+                  <div className="mt-1 font-semibold text-gray-900">
+                    {detailModal.stitching.customerId?.nameI18n?.[langKey] || detailModal.stitching.customerId?.name || '-'}
+                  </div>
+                  {detailModal.stitching.customerId?.phone ? (
+                    <div className="mt-1 text-sm text-gray-500">{detailModal.stitching.customerId.phone}</div>
+                  ) : null}
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div>
+                    <div className="text-xs text-gray-500">{t('common.status', { defaultValue: 'Status' })}</div>
+                    <div className="mt-1 inline-block"><StatusBadge status={detailModal.stitching.status} /></div>
+                    <div className="mt-3 text-xs text-gray-500">{t('stitchings.dueDate', { defaultValue: 'Due Date' })}</div>
+                    <div className="mt-1 font-semibold text-gray-900">{formatDueDate(detailModal.stitching.dueDate) || '—'}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+                  <div className="text-[11px] font-medium text-gray-500">{t('stitchings.quantity', { defaultValue: 'Quantity' })}</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-900">{detailModal.stitching.quantity || 1}</div>
+                </div>
+                <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+                  <div className="text-[11px] font-medium text-gray-500">{t('stitchings.thawbType', { defaultValue: 'Thawb Type' })}</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-900">
+                    {thawbTypeLabels[detailModal.stitching.thawbType] || detailModal.stitching.thawbType || '—'}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+                  <div className="text-[11px] font-medium text-gray-500">{t('stitchings.fabric', { defaultValue: 'Fabric' })}</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-900">
+                    {detailModal.stitching.fabricId?.name || detailModal.stitching.fabricColor || '—'}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+                  <div className="text-[11px] font-medium text-gray-500">{t('stitchings.rollsUsed', { defaultValue: 'Rolls Used' })}</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-900">{Number(detailModal.stitching.rollsUsed) || 0}</div>
+                </div>
+              </div>
+
+              {(detailModal.stitching.orderFor || detailModal.stitching.relationId || detailModal.stitching.relationName) ? (
+                <div className="mt-4 rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+                  <div className="text-[11px] font-medium text-gray-500">{t('stitchings.orderFor', { defaultValue: 'Order For' })}</div>
+                  <div className="mt-1 text-sm font-semibold text-gray-900">
+                    {detailModal.stitching.orderFor || detailModal.stitching.relationName || (detailModal.stitching.relationId?.nameI18n?.[langKey] || detailModal.stitching.relationId?.name) || '—'}
+                  </div>
+                  {detailModal.stitching.relationType ? (
+                    <div className="mt-1 text-xs text-gray-500">{detailModal.stitching.relationType}</div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
             {/* Customer Info */}
             <div className="bg-gray-50 rounded-2xl p-4">
               <h4 className="font-medium text-gray-900 mb-2">{t('stitchings.customer')}</h4>
@@ -332,6 +435,21 @@ const WorkerStitchings = () => {
               <h4 className="font-medium text-gray-900 mb-3">{t('customers.measurements')}</h4>
               {renderMeasurementsGrid(detailModal.stitching.measurements)}
             </div>
+
+            {/* Style Options */}
+            <div>
+              {renderStyleOptionsGrid(detailModal.stitching.styleOptions)}
+            </div>
+
+            {/* Embroidery */}
+            {(detailModal.stitching.embroideryDesign?.name || detailModal.stitching.styleOptions?.embroidery) ? (
+              <div className="rounded-2xl border border-gray-100 bg-white p-4">
+                <div className="text-sm font-semibold text-gray-900">{t('stitchings.embroidery', { defaultValue: 'Embroidery' })}</div>
+                <div className="mt-2 text-sm text-gray-600">
+                  {detailModal.stitching.embroideryDesign?.name || detailModal.stitching.styleOptions?.embroidery || '—'}
+                </div>
+              </div>
+            ) : null}
 
             {/* Description */}
             {detailModal.stitching.description && (

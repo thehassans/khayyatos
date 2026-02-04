@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import i18n from '../i18n';
 
@@ -11,30 +11,51 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
-  const api = axios.create({
-    baseURL: API_URL,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+    localStorage.setItem('theme', 'light');
+  }, []);
 
-  api.interceptors.request.use((config) => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      config.headers.Authorization = `Bearer ${storedToken}`;
-    }
-    return config;
-  });
+  const logoutRef = useRef(logout);
+  useEffect(() => {
+    logoutRef.current = logout;
+  }, [logout]);
 
-  api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      if (error.response?.status === 401) {
-        logout();
+  const api = useMemo(() => {
+    return axios.create({
+      baseURL: API_URL,
+      headers: {
+        'Content-Type': 'application/json'
       }
-      return Promise.reject(error);
-    }
-  );
+    });
+  }, []);
+
+  useEffect(() => {
+    const requestInterceptorId = api.interceptors.request.use((config) => {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
+        config.headers.Authorization = `Bearer ${storedToken}`;
+      }
+      return config;
+    });
+
+    const responseInterceptorId = api.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          logoutRef.current?.();
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      api.interceptors.request.eject(requestInterceptorId);
+      api.interceptors.response.eject(responseInterceptorId);
+    };
+  }, [api]);
 
   useEffect(() => {
     const verifyToken = async () => {
@@ -59,7 +80,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     };
     verifyToken();
-  }, [token]);
+  }, [api, token]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -100,13 +121,6 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { success: false, error: error.response?.data?.error || 'Demo login failed' };
     }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
-    localStorage.setItem('theme', 'light');
   };
 
   const loginAsUser = async (userId) => {
