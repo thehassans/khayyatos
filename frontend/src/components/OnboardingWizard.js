@@ -59,8 +59,8 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         actions: [
           { label: t('onboardingWizard.steps.createWorker.action'), to: '/user/workers/new' }
         ],
-        target: '[data-tutorial="worker-form-name"]',
-        autoTo: '/user/workers/new?tutorial=1'
+        target: '[data-tutorial="workers-create-button"]',
+        autoTo: '/user/workers?tutorial=1'
       },
       {
         key: 'workerAmounts',
@@ -89,38 +89,38 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         actions: [
           { label: t('onboardingWizard.steps.createOrder.action'), to: `/user/stitchings/new?tutorial=1&customerPhone=${encodeURIComponent(EXAMPLE_CUSTOMER_PHONE)}&fillMeasurements=1` }
         ],
-        target: '[data-tutorial="invoice-preview-modal"]',
-        autoTo: '/user/stitchings'
+        target: '[data-tutorial="stitchings-create-button"]',
+        autoTo: '/user/stitchings?tutorial=1'
       },
       {
         key: 'embroidery',
         title: t('onboardingWizard.steps.embroidery.title'),
         description: t('onboardingWizard.steps.embroidery.description'),
         actions: [
-          { label: t('onboardingWizard.steps.embroidery.action'), to: '/user/embroidery-designs?tutorial=1&create=1' }
+          { label: t('onboardingWizard.steps.embroidery.action'), to: '/user/embroidery-designs?tutorial=1' }
         ],
-        target: '[data-tutorial="embroidery-upload-modal"]',
-        autoTo: '/user/embroidery-designs?tutorial=1&create=1'
+        target: '[data-tutorial="embroidery-upload-button"]',
+        autoTo: '/user/embroidery-designs?tutorial=1'
       },
       {
         key: 'laundry',
         title: t('onboardingWizard.steps.laundry.title'),
         description: t('onboardingWizard.steps.laundry.description'),
         actions: [
-          { label: t('onboardingWizard.steps.laundry.action'), to: '/user/laundry?tutorial=1&create=1' }
+          { label: t('onboardingWizard.steps.laundry.action'), to: '/user/laundry?tutorial=1' }
         ],
-        target: '[data-tutorial="laundry-create-modal"]',
-        autoTo: '/user/laundry?tutorial=1&create=1'
+        target: '[data-tutorial="laundry-create-button"]',
+        autoTo: '/user/laundry?tutorial=1'
       },
       {
         key: 'fabrics',
         title: t('onboardingWizard.steps.fabrics.title'),
         description: t('onboardingWizard.steps.fabrics.description'),
         actions: [
-          { label: t('onboardingWizard.steps.fabrics.action'), to: '/user/fabrics?tutorial=1&create=1' }
+          { label: t('onboardingWizard.steps.fabrics.action'), to: '/user/fabrics?tutorial=1' }
         ],
-        target: '[data-tutorial="fabrics-create-modal"]',
-        autoTo: '/user/fabrics?tutorial=1&create=1'
+        target: '[data-tutorial="fabrics-create-button"]',
+        autoTo: '/user/fabrics?tutorial=1'
       },
       {
         key: 'loyalty',
@@ -171,6 +171,13 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
   const [exampleOrderId, setExampleOrderId] = useState(null);
   const [spotlight, setSpotlight] = useState(null);
   const spotlightDidScrollRef = useRef(false);
+  const [coachmark, setCoachmark] = useState(null);
+  const coachmarkRef = useRef(null);
+  const [coachmarkRect, setCoachmarkRect] = useState(null);
+  const coachmarkArrowRef = useRef(null);
+  const arrowAnimRafRef = useRef(0);
+  const arrowAnimatedStepRef = useRef(null);
+  const [arrowStroke, setArrowStroke] = useState({ len: 0, offset: 0, animate: false });
 
   const langKey = (i18n?.language || 'en').split('-')[0];
   const isRtl = langKey === 'ar' || langKey === 'ur';
@@ -217,6 +224,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
     }
 
     setSpotlight(null);
+    spotlightDidScrollRef.current = false;
 
     let alive = true;
     let tries = 0;
@@ -265,6 +273,156 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
       window.removeEventListener('scroll', onResize, true);
     };
   }, [isOpen, step, steps]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setCoachmark(null);
+      setCoachmarkRect(null);
+      return;
+    }
+    if (!spotlight || typeof window === 'undefined') {
+      setCoachmark(null);
+      setCoachmarkRect(null);
+      return;
+    }
+
+    const vw = window.innerWidth || 0;
+    const vh = window.innerHeight || 0;
+    const margin = 14;
+    const boxW = Math.min(380, Math.max(260, vw - margin * 2));
+
+    const rightSpace = vw - (spotlight.left + spotlight.width);
+    const leftSpace = spotlight.left;
+    const topSpace = spotlight.top;
+    const bottomSpace = vh - (spotlight.top + spotlight.height);
+
+    let placement = 'bottom';
+
+    const wantRight = !isRtl;
+    if (wantRight && rightSpace >= boxW + margin) placement = 'right';
+    else if (!wantRight && leftSpace >= boxW + margin) placement = 'left';
+    else if (bottomSpace >= 220) placement = 'bottom';
+    else if (topSpace >= 220) placement = 'top';
+    else placement = rightSpace >= leftSpace ? 'right' : 'left';
+
+    const centerY = spotlight.top + spotlight.height / 2;
+    const centerX = spotlight.left + spotlight.width / 2;
+
+    let top = margin;
+    let left = margin;
+
+    if (placement === 'right') {
+      left = Math.min(vw - boxW - margin, spotlight.left + spotlight.width + margin);
+      top = Math.min(vh - margin - 60, Math.max(margin, centerY - 120));
+    } else if (placement === 'left') {
+      left = Math.max(margin, spotlight.left - boxW - margin);
+      top = Math.min(vh - margin - 60, Math.max(margin, centerY - 120));
+    } else if (placement === 'top') {
+      left = Math.min(vw - boxW - margin, Math.max(margin, centerX - boxW / 2));
+      top = Math.max(margin, spotlight.top - margin - 220);
+    } else {
+      left = Math.min(vw - boxW - margin, Math.max(margin, centerX - boxW / 2));
+      top = Math.min(vh - margin - 220, spotlight.top + spotlight.height + margin);
+    }
+
+    setCoachmark({ top, left, placement, width: boxW });
+  }, [isOpen, isRtl, spotlight, step]);
+
+  const coachmarkArrowPath = useMemo(() => {
+    if (!coachmarkRect || !spotlight || !coachmark?.placement) return null;
+
+    const endX = spotlight.left + spotlight.width / 2;
+    const endY = spotlight.top + spotlight.height / 2;
+
+    let startX = coachmarkRect.left + coachmarkRect.width / 2;
+    let startY = coachmarkRect.top + coachmarkRect.height / 2;
+
+    if (coachmark.placement === 'left') {
+      startX = coachmarkRect.left + coachmarkRect.width;
+      startY = coachmarkRect.top + coachmarkRect.height / 2;
+    } else if (coachmark.placement === 'right') {
+      startX = coachmarkRect.left;
+      startY = coachmarkRect.top + coachmarkRect.height / 2;
+    } else if (coachmark.placement === 'top') {
+      startX = coachmarkRect.left + coachmarkRect.width / 2;
+      startY = coachmarkRect.top + coachmarkRect.height;
+    } else {
+      startX = coachmarkRect.left + coachmarkRect.width / 2;
+      startY = coachmarkRect.top;
+    }
+
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2;
+
+    const curve = 110;
+    let controlX = midX;
+    let controlY = midY;
+
+    if (coachmark.placement === 'left' || coachmark.placement === 'right') {
+      controlY = midY - curve;
+    } else {
+      controlX = midX + (isRtl ? -curve : curve);
+    }
+
+    return `M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}`;
+  }, [coachmark?.placement, coachmarkRect, isRtl, spotlight]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!coachmarkRef.current) return;
+
+    let raf = 0;
+    const measure = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const el = coachmarkRef.current;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        setCoachmarkRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+      });
+    };
+
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('scroll', measure, true);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', measure, true);
+    };
+  }, [isOpen, coachmark, step]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!coachmarkArrowRef.current) return;
+    if (!coachmarkArrowPath) return;
+
+    let len = 0;
+    try {
+      len = coachmarkArrowRef.current.getTotalLength();
+    } catch (e) {
+      len = 0;
+    }
+
+    const shouldAnimate = arrowAnimatedStepRef.current !== step;
+    if (shouldAnimate) {
+      arrowAnimatedStepRef.current = step;
+      setArrowStroke({ len, offset: len, animate: false });
+      cancelAnimationFrame(arrowAnimRafRef.current);
+      arrowAnimRafRef.current = requestAnimationFrame(() => {
+        arrowAnimRafRef.current = requestAnimationFrame(() => {
+          setArrowStroke({ len, offset: 0, animate: true });
+        });
+      });
+    } else {
+      setArrowStroke((s) => ({ ...s, len, offset: 0, animate: true }));
+    }
+
+    return () => {
+      cancelAnimationFrame(arrowAnimRafRef.current);
+    };
+  }, [coachmarkArrowPath, isOpen, step]);
 
   const waitForElement = useCallback((selector, timeoutMs = 12000) => {
     if (!selector || typeof window === 'undefined') return Promise.resolve(null);
@@ -362,15 +520,46 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
 
   const ensureExampleCustomer = useCallback(async () => {
     if (exampleCustomerId) return exampleCustomerId;
-    const res = await api.post('/customers', {
-      name: EXAMPLE_CUSTOMER_NAME,
-      phone: EXAMPLE_CUSTOMER_PHONE,
-      measurements: measurementTen()
-    });
-    const customer = res?.data?.customer || res?.data;
-    const id = customer?._id;
-    if (id) setExampleCustomerId(id);
-    return id;
+
+    const normalizePhone = (p) => String(p || '').replace(/\D/g, '').replace(/^0+/, '');
+    const want = normalizePhone(EXAMPLE_CUSTOMER_PHONE);
+
+    try {
+      const search = await api.get(`/customers?search=${encodeURIComponent(EXAMPLE_CUSTOMER_PHONE)}`);
+      const list = Array.isArray(search.data) ? search.data : search.data?.customers || [];
+      const found = list.find((c) => normalizePhone(c?.phone) === want);
+      if (found?._id) {
+        setExampleCustomerId(found._id);
+        return found._id;
+      }
+    } catch (e) {
+
+    }
+
+    try {
+      const res = await api.post('/customers', {
+        name: EXAMPLE_CUSTOMER_NAME,
+        phone: EXAMPLE_CUSTOMER_PHONE,
+        measurements: measurementTen()
+      });
+      const customer = res?.data?.customer || res?.data;
+      const id = customer?._id;
+      if (id) setExampleCustomerId(id);
+      return id;
+    } catch (e) {
+      try {
+        const search = await api.get(`/customers?search=${encodeURIComponent(EXAMPLE_CUSTOMER_PHONE)}`);
+        const list = Array.isArray(search.data) ? search.data : search.data?.customers || [];
+        const found = list.find((c) => normalizePhone(c?.phone) === want);
+        if (found?._id) {
+          setExampleCustomerId(found._id);
+          return found._id;
+        }
+      } catch (e2) {
+
+      }
+      throw e;
+    }
   }, [api, exampleCustomerId]);
 
   const ensureExampleOrder = useCallback(async (customerId) => {
@@ -428,21 +617,13 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
       autoBusyRef.current = true;
       try {
         if (currentStep.key === 'createCustomer') {
-          const cid = await ensureExampleCustomer();
-          if (alive && cid) {
-            navigate('/user/customers?tutorial=1');
-          } else if (alive) {
-            navigate('/user/customers?tutorial=1');
-          }
+          if (alive) navigate('/user/customers?tutorial=1');
+          void ensureExampleCustomer().catch(() => {});
         } else if (currentStep.key === 'createOrder') {
-          const cid = await ensureExampleCustomer();
-          if (!cid) throw new Error('Customer not created');
-          const oid = await ensureExampleOrder(cid);
-          if (alive && oid) {
-            navigate(`/user/stitchings?tutorial=1&invoice=1&orderId=${encodeURIComponent(oid)}`);
-          } else if (alive) {
-            navigate('/user/stitchings?tutorial=1');
-          }
+          if (alive) navigate('/user/stitchings?tutorial=1');
+          void ensureExampleCustomer()
+            .then((cid) => (cid ? ensureExampleOrder(cid) : null))
+            .catch(() => {});
         } else if (typeof currentStep.autoTo === 'string' && currentStep.autoTo) {
           navigate(currentStep.autoTo);
         }
@@ -556,9 +737,9 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
     <>
       {spotlight ? (
         <div className="fixed inset-0 z-[110] pointer-events-none">
-          <div className="absolute inset-0 bg-black/30" />
+          <div className="absolute inset-0 bg-black/30 transition-opacity duration-300" />
           <div
-            className="absolute rounded-2xl border-2 border-primary-400 shadow-[0_0_0_10px_rgba(59,130,246,0.22)] animate-pulse"
+            className="absolute rounded-2xl border-2 border-primary-400 shadow-[0_0_0_10px_rgba(59,130,246,0.22)] animate-pulse transition-all duration-300 ease-out"
             style={{ top: spotlight.top, left: spotlight.left, width: spotlight.width, height: spotlight.height }}
           />
           <div
@@ -576,80 +757,124 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         </div>
       ) : null}
 
+      {spotlight && coachmarkArrowPath ? (
+        <svg className="fixed inset-0 z-[115] pointer-events-none" width="100%" height="100%">
+          <defs>
+            <marker
+              id="coachmark-arrowhead"
+              markerWidth="12"
+              markerHeight="12"
+              refX="10"
+              refY="6"
+              orient="auto"
+              markerUnits="strokeWidth"
+            >
+              <path d="M 0 0 L 0 12 L 12 6 z" fill="rgba(2,6,23,0.92)" />
+            </marker>
+          </defs>
+          <path
+            ref={coachmarkArrowRef}
+            d={coachmarkArrowPath}
+            fill="none"
+            stroke="rgba(2,6,23,0.92)"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            markerEnd="url(#coachmark-arrowhead)"
+            style={{
+              filter: 'drop-shadow(0 18px 28px rgba(0,0,0,0.45))',
+              strokeDasharray: arrowStroke.len ? `${arrowStroke.len}` : undefined,
+              strokeDashoffset: arrowStroke.len ? `${arrowStroke.offset}` : undefined,
+              transition: arrowStroke.animate
+                ? 'stroke-dashoffset 900ms cubic-bezier(0.2, 0.9, 0.2, 1)'
+                : 'none'
+            }}
+          />
+        </svg>
+      ) : null}
+
       <div
-        className={`fixed bottom-4 z-[120] ${isRtl ? 'left-4' : 'right-4'} w-[92vw] max-w-[420px]`}
+        className="fixed z-[120] pointer-events-auto transition-all duration-300 ease-out"
+        ref={coachmarkRef}
         dir={isRtl ? 'rtl' : 'ltr'}
+        style={{
+          top: coachmark?.top ?? 16,
+          left: coachmark?.left ?? 16,
+          width: coachmark?.width ?? 360
+        }}
       >
-        <div className="rounded-3xl p-[1px] bg-gradient-to-br from-primary-500/60 via-fuchsia-500/20 to-emerald-500/30 shadow-2xl">
-          <div className="rounded-3xl border border-white/50 dark:border-slate-700/70 bg-white/80 dark:bg-slate-950/70 backdrop-blur-xl">
-            <div className="px-4 pt-4">
-              <div className="h-2 rounded-full bg-gray-200/60 dark:bg-slate-800/70 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-primary-500 via-sky-400 to-emerald-400"
-                  style={{ width: `${Math.max(5, Math.min(100, (Math.max(1, step) / Math.max(1, totalSteps - 1)) * 100))}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-start justify-between gap-3 px-4 py-3 border-b border-gray-100/70 dark:border-slate-800/70">
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-gray-500 dark:text-slate-400">
-                  {t('onboardingWizard.stepCount', { current: Math.min(step, totalSteps - 1), total: totalSteps - 1 })}
+        <div className="relative transition-all duration-300 ease-out">
+          <div className="rounded-[28px] p-[1px] bg-gradient-to-br from-white/15 via-white/5 to-white/10 shadow-2xl shadow-black/50">
+            <div className="rounded-[28px] border border-white/10 bg-slate-950/90 backdrop-blur-2xl">
+              <div className="px-5 pt-5">
+                <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-fuchsia-400"
+                    style={{ width: `${Math.max(5, Math.min(100, (Math.max(1, step) / Math.max(1, totalSteps - 1)) * 100))}%` }}
+                  />
                 </div>
-                <div className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate">{t('onboardingWizard.liveTutorial')}</div>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800/50"
-                aria-label={t('common.close')}
-              >
-                <X className="w-4 h-4 text-gray-500 dark:text-slate-400" />
-              </button>
-            </div>
-
-            <div className="px-4 py-3 space-y-3">
-              <div>
-                <div className="text-base font-bold text-gray-900 dark:text-slate-100">{current.title}</div>
-                <div className="mt-2 text-sm text-gray-600 dark:text-slate-300 whitespace-pre-line">{current.description}</div>
-
               </div>
 
-              {Array.isArray(current.actions) && current.actions.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {current.actions.map((a, idx) => (
-                    <Button
-                      key={`${current.key}-${idx}`}
-                      variant={idx === 0 ? 'outline' : 'secondary'}
-                      size="sm"
-                      onClick={() => navigate(a.to)}
-                      disabled={saving}
-                    >
-                      {a.label}
-                    </Button>
-                  ))}
+              <div className="flex items-start justify-between gap-3 px-5 py-4">
+                <div className="min-w-0">
+                  <div className="text-[11px] font-semibold tracking-wide text-white/60">
+                    {t('onboardingWizard.stepCount', { current: Math.min(step, totalSteps - 1), total: totalSteps - 1 })}
+                  </div>
+                  <div className="text-sm font-bold text-white truncate">{current.title}</div>
                 </div>
-              ) : null}
-
-              <div className="flex items-center justify-between gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => goToStep(step - 1)}
-                  disabled={saving || step <= 1}
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-2 rounded-xl hover:bg-white/10"
+                  aria-label={t('common.close')}
                 >
-                  {t('common.back')}
-                </Button>
+                  <X className="w-4 h-4 text-white/70" />
+                </button>
+              </div>
 
-                {step < totalSteps - 1 ? (
-                  <Button size="sm" onClick={() => goToStep(step + 1)} disabled={saving} loading={saving}>
-                    {t('common.next')}
+              <div className="px-5 pb-5 space-y-4">
+                <div className="text-sm text-white/80 leading-relaxed whitespace-pre-line">
+                  {current.description}
+                </div>
+
+                {Array.isArray(current.actions) && current.actions.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {current.actions.map((a, idx) => (
+                      <Button
+                        key={`${current.key}-${idx}`}
+                        variant={idx === 0 ? 'outline' : 'secondary'}
+                        size="sm"
+                        onClick={() => navigate(a.to)}
+                        disabled={saving}
+                        className="rounded-2xl"
+                      >
+                        {a.label}
+                      </Button>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div className="flex items-center justify-between gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => goToStep(step - 1)}
+                    disabled={saving || step <= 1}
+                    className="rounded-2xl"
+                  >
+                    {t('common.back')}
                   </Button>
-                ) : (
-                  <Button size="sm" onClick={handleFinish} disabled={saving} loading={saving}>
-                    {t('onboardingWizard.buttons.finish')}
-                  </Button>
-                )}
+
+                  {step < totalSteps - 1 ? (
+                    <Button size="sm" onClick={() => goToStep(step + 1)} disabled={saving} loading={saving} className="rounded-2xl">
+                      {t('common.next')}
+                    </Button>
+                  ) : (
+                    <Button size="sm" onClick={handleFinish} disabled={saving} loading={saving} className="rounded-2xl">
+                      {t('onboardingWizard.buttons.finish')}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

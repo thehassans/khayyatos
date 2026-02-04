@@ -325,7 +325,7 @@ const Laundry = () => {
             <div className="text-sm text-gray-500 dark:text-slate-400">{t('laundry.subtitle', { defaultValue: 'Manage laundry pricing and assigned pieces.' })}</div>
           </div>
         </div>
-        <Button onClick={openCreate} icon={Plus} className="rounded-2xl px-5 py-3">
+        <Button data-tutorial="laundry-create-button" onClick={openCreate} icon={Plus} className="rounded-2xl px-5 py-3">
           {t('laundry.addLaundry', { defaultValue: 'Add Laundry' })}
         </Button>
       </div>

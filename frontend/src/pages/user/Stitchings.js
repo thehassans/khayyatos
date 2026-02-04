@@ -316,7 +316,7 @@ const Stitchings = () => {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('stitchings.title')}</h1>
-        <Button variant="success" onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/user/stitchings/new'))} icon={Plus}>
+        <Button data-tutorial="stitchings-create-button" variant="success" onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/user/stitchings/new'))} icon={Plus}>
           {t('stitchings.createOrder')}
         </Button>
       </div>

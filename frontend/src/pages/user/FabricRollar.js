@@ -252,7 +252,7 @@ const FabricRollar = () => {
             <div className="text-sm text-gray-500 dark:text-slate-400">{t('fabrics.subtitle', { defaultValue: 'Create fabrics, manage price per roll, made in, and stock.' })}</div>
           </div>
         </div>
-        <Button onClick={openCreate} icon={Plus} className="rounded-2xl px-5 py-3">
+        <Button data-tutorial="fabrics-create-button" onClick={openCreate} icon={Plus} className="rounded-2xl px-5 py-3">
           {t('fabrics.addFabric', { defaultValue: 'Add Fabric' })}
         </Button>
       </div>

@@ -310,7 +310,7 @@ const EmbroideryDesigns = () => {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('embroideryDesigns.title', { defaultValue: 'Embroidery Designs' })}</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400">{t('embroideryDesigns.subtitle', { defaultValue: 'Upload your library and create orders faster.' })}</p>
         </div>
-        <Button onClick={openUploadModal} icon={Plus}>
+        <Button data-tutorial="embroidery-upload-button" onClick={openUploadModal} icon={Plus}>
           {t('embroideryDesigns.uploadNew', { defaultValue: 'Upload New Design' })}
         </Button>
       </div>
