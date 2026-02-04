@@ -140,6 +140,7 @@ const WorkerForm = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Input
+                  data-tutorial="worker-form-name"
                   label={t('workers.name')}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}

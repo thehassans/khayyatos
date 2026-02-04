@@ -410,7 +410,7 @@ const EmbroideryDesigns = () => {
         title={t('embroideryDesigns.uploadNew', { defaultValue: 'Upload New Design' })}
         size="lg"
       >
-        <div className="space-y-4">
+        <div data-tutorial="embroidery-upload-modal" className="space-y-4">
           <Input
             label={t('embroideryDesigns.designName', { defaultValue: 'Design Name' })}
             value={newDesign.name}

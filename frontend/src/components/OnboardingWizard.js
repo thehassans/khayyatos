@@ -49,7 +49,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         actions: [
           { label: t('onboardingWizard.steps.dashboard.action'), to: '/user/dashboard' }
         ],
-        target: '[data-tutorial="nav-dashboard"]',
+        target: '[data-tutorial="page-dashboard"]',
         autoTo: '/user/dashboard'
       },
       {
@@ -59,8 +59,8 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         actions: [
           { label: t('onboardingWizard.steps.createWorker.action'), to: '/user/workers/new' }
         ],
-        target: '[data-tutorial="nav-workers"]',
-        autoTo: '/user/workers/new'
+        target: '[data-tutorial="worker-form-name"]',
+        autoTo: '/user/workers/new?tutorial=1'
       },
       {
         key: 'workerAmounts',
@@ -69,7 +69,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         actions: [
           { label: t('onboardingWizard.steps.workerAmounts.action'), to: '/user/worker-amounts' }
         ],
-        target: '[data-tutorial="nav-workerAmounts"]',
+        target: '[data-tutorial="page-worker-amounts"]',
         autoTo: '/user/worker-amounts'
       },
       {
@@ -79,8 +79,8 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         actions: [
           { label: t('onboardingWizard.steps.createCustomer.action'), to: `/user/customers/new?tutorial=1&name=${encodeURIComponent(EXAMPLE_CUSTOMER_NAME)}&phone=${encodeURIComponent(EXAMPLE_CUSTOMER_PHONE)}` }
         ],
-        target: '[data-tutorial="nav-customers"]',
-        autoTo: '/user/customers'
+        target: '[data-tutorial="customers-create-button"]',
+        autoTo: '/user/customers?tutorial=1'
       },
       {
         key: 'createOrder',
@@ -99,7 +99,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         actions: [
           { label: t('onboardingWizard.steps.embroidery.action'), to: '/user/embroidery-designs?tutorial=1&create=1' }
         ],
-        target: '[data-tutorial="nav-embroideryDesigns"]',
+        target: '[data-tutorial="embroidery-upload-modal"]',
         autoTo: '/user/embroidery-designs?tutorial=1&create=1'
       },
       {
@@ -109,7 +109,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         actions: [
           { label: t('onboardingWizard.steps.laundry.action'), to: '/user/laundry?tutorial=1&create=1' }
         ],
-        target: '[data-tutorial="nav-laundry"]',
+        target: '[data-tutorial="laundry-create-modal"]',
         autoTo: '/user/laundry?tutorial=1&create=1'
       },
       {
@@ -119,7 +119,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         actions: [
           { label: t('onboardingWizard.steps.fabrics.action'), to: '/user/fabrics?tutorial=1&create=1' }
         ],
-        target: '[data-tutorial="nav-fabrics"]',
+        target: '[data-tutorial="fabrics-create-modal"]',
         autoTo: '/user/fabrics?tutorial=1&create=1'
       },
       {
@@ -129,7 +129,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         actions: [
           { label: t('onboardingWizard.steps.loyalty.action'), to: '/user/loyalty' }
         ],
-        target: '[data-tutorial="nav-loyalty"]',
+        target: '[data-tutorial="page-loyalty"]',
         autoTo: '/user/loyalty'
       },
       {
@@ -139,7 +139,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         actions: [
           { label: t('onboardingWizard.steps.whatsapp.action'), to: '/user/whatsapp' }
         ],
-        target: '[data-tutorial="nav-whatsapp"]',
+        target: '[data-tutorial="page-whatsapp"]',
         autoTo: '/user/whatsapp'
       },
       {
@@ -152,7 +152,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
           { label: t('onboardingWizard.steps.settingsCatalogs.actions.thawbTypes'), to: '/user/settings?section=thawbTypes' },
           { label: t('onboardingWizard.steps.settingsCatalogs.actions.fabricColors'), to: '/user/settings?section=fabricColors' }
         ],
-        target: '[data-tutorial="nav-settings"]',
+        target: '[data-tutorial="page-settings"]',
         autoTo: '/user/settings?section=styleOptions'
       }
     ];
@@ -161,13 +161,16 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [language, setLanguage] = useState('');
+  const [autoTick, setAutoTick] = useState(0);
   const bootstrappedRef = useRef(false);
   const autoTimeoutRef = useRef(null);
+  const retryTimeoutRef = useRef(null);
   const autoBusyRef = useRef(false);
   const executedRef = useRef(new Set());
   const [exampleCustomerId, setExampleCustomerId] = useState(null);
   const [exampleOrderId, setExampleOrderId] = useState(null);
   const [spotlight, setSpotlight] = useState(null);
+  const spotlightDidScrollRef = useRef(false);
 
   const langKey = (i18n?.language || 'en').split('-')[0];
   const isRtl = langKey === 'ar' || langKey === 'ur';
@@ -180,7 +183,12 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         clearTimeout(autoTimeoutRef.current);
         autoTimeoutRef.current = null;
       }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
       setSpotlight(null);
+      spotlightDidScrollRef.current = false;
       return;
     }
     if (bootstrappedRef.current) return;
@@ -208,6 +216,8 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
       return;
     }
 
+    setSpotlight(null);
+
     let alive = true;
     let tries = 0;
 
@@ -223,6 +233,16 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         }
         return;
       }
+
+      if (!spotlightDidScrollRef.current) {
+        spotlightDidScrollRef.current = true;
+        try {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        } catch (e) {
+
+        }
+      }
+
       const rect = el.getBoundingClientRect();
       const pad = 6;
       setSpotlight({
@@ -245,6 +265,40 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
       window.removeEventListener('scroll', onResize, true);
     };
   }, [isOpen, step, steps]);
+
+  const waitForElement = useCallback((selector, timeoutMs = 12000) => {
+    if (!selector || typeof window === 'undefined') return Promise.resolve(null);
+    return new Promise((resolve) => {
+      const found = document.querySelector(selector);
+      if (found) return resolve(found);
+
+      let done = false;
+      const finish = (el) => {
+        if (done) return;
+        done = true;
+        try {
+          observer.disconnect();
+        } catch (e) {
+
+        }
+        clearTimeout(timer);
+        resolve(el || null);
+      };
+
+      const observer = new MutationObserver(() => {
+        const el = document.querySelector(selector);
+        if (el) finish(el);
+      });
+
+      try {
+        observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+      } catch (e) {
+
+      }
+
+      const timer = setTimeout(() => finish(null), timeoutMs);
+    });
+  }, []);
 
   const savePreferences = useCallback(async (payload) => {
     try {
@@ -271,6 +325,10 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
       clearTimeout(autoTimeoutRef.current);
       autoTimeoutRef.current = null;
     }
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
     const safe = Math.max(0, Math.min(nextStep, steps.length - 1));
     setStep(safe);
     await savePreferences({ onboardingStep: safe });
@@ -280,6 +338,10 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
     if (autoTimeoutRef.current) {
       clearTimeout(autoTimeoutRef.current);
       autoTimeoutRef.current = null;
+    }
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
     }
     const ok = await savePreferences({ onboardingCompleted: true, onboardingStep: steps.length - 1 });
     if (!ok) return;
@@ -368,7 +430,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         if (currentStep.key === 'createCustomer') {
           const cid = await ensureExampleCustomer();
           if (alive && cid) {
-            navigate(`/user/customers/${cid}?tutorial=1`);
+            navigate('/user/customers?tutorial=1');
           } else if (alive) {
             navigate('/user/customers?tutorial=1');
           }
@@ -386,11 +448,30 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         }
       } catch (e) {
         toast.error(e?.response?.data?.error || e?.message || t('common.error'));
+        executedRef.current.delete(execKey);
+        autoBusyRef.current = false;
+        return;
       }
 
       autoBusyRef.current = false;
 
       if (!alive) return;
+
+      const readyEl = await waitForElement(currentStep?.target, 12000);
+      if (!alive) return;
+      if (currentStep?.target && !readyEl) {
+        executedRef.current.delete(execKey);
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+          retryTimeoutRef.current = null;
+        }
+        retryTimeoutRef.current = setTimeout(() => {
+          if (!alive) return;
+          setAutoTick((x) => x + 1);
+        }, 900);
+        return;
+      }
+
       if (autoTimeoutRef.current) {
         clearTimeout(autoTimeoutRef.current);
         autoTimeoutRef.current = null;
@@ -413,7 +494,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
     return () => {
       alive = false;
     };
-  }, [api, ensureExampleCustomer, ensureExampleOrder, goToStep, handleFinish, isOpen, navigate, openSource, step, steps, t, user?.isDemoSession]);
+  }, [api, autoTick, ensureExampleCustomer, ensureExampleOrder, goToStep, handleFinish, isOpen, navigate, openSource, step, steps, t, user?.isDemoSession, waitForElement]);
 
   const current = steps[step] || steps[0];
   const totalSteps = steps.length;
@@ -474,78 +555,102 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
   return (
     <>
       {spotlight ? (
-        <div className="fixed inset-0 z-[80] pointer-events-none">
+        <div className="fixed inset-0 z-[110] pointer-events-none">
           <div className="absolute inset-0 bg-black/30" />
           <div
-            className="absolute rounded-xl border-2 border-primary-500 shadow-[0_0_0_6px_rgba(59,130,246,0.25)]"
+            className="absolute rounded-2xl border-2 border-primary-400 shadow-[0_0_0_10px_rgba(59,130,246,0.22)] animate-pulse"
             style={{ top: spotlight.top, left: spotlight.left, width: spotlight.width, height: spotlight.height }}
           />
+          <div
+            className="absolute"
+            style={{
+              top: Math.max(0, spotlight.top - 14),
+              left: Math.max(0, spotlight.left + spotlight.width / 2 - 6)
+            }}
+          >
+            <div className="relative">
+              <div className="absolute inline-flex h-3 w-3 rounded-full bg-primary-400 opacity-75 animate-ping" />
+              <div className="relative inline-flex h-3 w-3 rounded-full bg-primary-500 shadow" />
+            </div>
+          </div>
         </div>
       ) : null}
 
       <div
-        className={`fixed bottom-4 z-[90] ${isRtl ? 'left-4' : 'right-4'} w-[92vw] max-w-[420px]`}
+        className={`fixed bottom-4 z-[120] ${isRtl ? 'left-4' : 'right-4'} w-[92vw] max-w-[420px]`}
         dir={isRtl ? 'rtl' : 'ltr'}
       >
-        <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-2xl">
-          <div className="flex items-start justify-between gap-3 px-4 py-3 border-b border-gray-100 dark:border-slate-800">
-            <div className="min-w-0">
-              <div className="text-xs font-semibold text-gray-500 dark:text-slate-400">
-                {t('onboardingWizard.stepCount', { current: Math.min(step, totalSteps - 1), total: totalSteps - 1 })}
+        <div className="rounded-3xl p-[1px] bg-gradient-to-br from-primary-500/60 via-fuchsia-500/20 to-emerald-500/30 shadow-2xl">
+          <div className="rounded-3xl border border-white/50 dark:border-slate-700/70 bg-white/80 dark:bg-slate-950/70 backdrop-blur-xl">
+            <div className="px-4 pt-4">
+              <div className="h-2 rounded-full bg-gray-200/60 dark:bg-slate-800/70 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-primary-500 via-sky-400 to-emerald-400"
+                  style={{ width: `${Math.max(5, Math.min(100, (Math.max(1, step) / Math.max(1, totalSteps - 1)) * 100))}%` }}
+                />
               </div>
-              <div className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate">{t('onboardingWizard.liveTutorial')}</div>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800/50"
-              aria-label={t('common.close')}
-            >
-              <X className="w-4 h-4 text-gray-500 dark:text-slate-400" />
-            </button>
-          </div>
-
-          <div className="px-4 py-3 space-y-3">
-            <div>
-              <div className="text-base font-bold text-gray-900 dark:text-slate-100">{current.title}</div>
-              <div className="mt-2 text-sm text-gray-600 dark:text-slate-300 whitespace-pre-line">{current.description}</div>
             </div>
 
-            {Array.isArray(current.actions) && current.actions.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {current.actions.map((a, idx) => (
-                  <Button
-                    key={`${current.key}-${idx}`}
-                    variant={idx === 0 ? 'outline' : 'secondary'}
-                    size="sm"
-                    onClick={() => navigate(a.to)}
-                    disabled={saving}
-                  >
-                    {a.label}
-                  </Button>
-                ))}
+            <div className="flex items-start justify-between gap-3 px-4 py-3 border-b border-gray-100/70 dark:border-slate-800/70">
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-gray-500 dark:text-slate-400">
+                  {t('onboardingWizard.stepCount', { current: Math.min(step, totalSteps - 1), total: totalSteps - 1 })}
+                </div>
+                <div className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate">{t('onboardingWizard.liveTutorial')}</div>
               </div>
-            ) : null}
-
-            <div className="flex items-center justify-between gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => goToStep(step - 1)}
-                disabled={saving || step <= 1}
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800/50"
+                aria-label={t('common.close')}
               >
-                {t('common.back')}
-              </Button>
+                <X className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+              </button>
+            </div>
 
-              {step < totalSteps - 1 ? (
-                <Button size="sm" onClick={() => goToStep(step + 1)} disabled={saving} loading={saving}>
-                  {t('common.next')}
+            <div className="px-4 py-3 space-y-3">
+              <div>
+                <div className="text-base font-bold text-gray-900 dark:text-slate-100">{current.title}</div>
+                <div className="mt-2 text-sm text-gray-600 dark:text-slate-300 whitespace-pre-line">{current.description}</div>
+
+              </div>
+
+              {Array.isArray(current.actions) && current.actions.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {current.actions.map((a, idx) => (
+                    <Button
+                      key={`${current.key}-${idx}`}
+                      variant={idx === 0 ? 'outline' : 'secondary'}
+                      size="sm"
+                      onClick={() => navigate(a.to)}
+                      disabled={saving}
+                    >
+                      {a.label}
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="flex items-center justify-between gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => goToStep(step - 1)}
+                  disabled={saving || step <= 1}
+                >
+                  {t('common.back')}
                 </Button>
-              ) : (
-                <Button size="sm" onClick={handleFinish} disabled={saving} loading={saving}>
-                  {t('onboardingWizard.buttons.finish')}
-                </Button>
-              )}
+
+                {step < totalSteps - 1 ? (
+                  <Button size="sm" onClick={() => goToStep(step + 1)} disabled={saving} loading={saving}>
+                    {t('common.next')}
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={handleFinish} disabled={saving} loading={saving}>
+                    {t('onboardingWizard.buttons.finish')}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>

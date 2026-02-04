@@ -440,7 +440,7 @@ const Laundry = () => {
         title={t('laundry.addLaundry', { defaultValue: 'Add Laundry' })}
         size="lg"
       >
-        <div className="space-y-4">
+        <div data-tutorial="laundry-create-modal" className="space-y-4">
           <Input
             label={t('laundry.name', { defaultValue: 'Name' })}
             value={createForm.name}

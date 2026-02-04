@@ -36,7 +36,7 @@ const Loyalty = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div data-tutorial="page-loyalty" className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-3">
         <Heart className="w-8 h-8 text-rose-500" />
         <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('loyalty.title')}</h1>

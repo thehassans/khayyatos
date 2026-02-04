@@ -349,7 +349,7 @@ const FabricRollar = () => {
       </Card>
 
       <Modal isOpen={createOpen} onClose={closeCreate} title={t('fabrics.addModalTitle', { defaultValue: 'Add Fabric' })} size="lg">
-        <div className="space-y-4">
+        <div data-tutorial="fabrics-create-modal" className="space-y-4">
           <Input label={t('fabrics.name', { defaultValue: 'Name' })} value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} />
           <Input label={t('fabrics.madeIn', { defaultValue: 'Made In' })} value={createForm.madeIn} onChange={(e) => setCreateForm((p) => ({ ...p, madeIn: e.target.value }))} />
           <Input label={t('fabrics.pricePerRoll', { defaultValue: 'Price / Roll' })} type="number" min="0" step="0.01" value={createForm.pricePerRoll} onChange={(e) => setCreateForm((p) => ({ ...p, pricePerRoll: e.target.value }))} />

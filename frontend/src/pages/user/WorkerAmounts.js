@@ -69,7 +69,7 @@ const WorkerAmounts = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div data-tutorial="page-worker-amounts" className="space-y-6 animate-fadeIn">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('nav.workerAmounts')}</h1>
 
       {/* Worker Summary */}

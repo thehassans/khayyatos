@@ -81,7 +81,7 @@ const Customers = () => {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('customers.title')}</h1>
-        <Button onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/user/customers/new'))} icon={Plus}>
+        <Button data-tutorial="customers-create-button" onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/user/customers/new'))} icon={Plus}>
           {t('customers.createCustomer')}
         </Button>
       </div>

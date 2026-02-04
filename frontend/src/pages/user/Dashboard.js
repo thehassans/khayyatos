@@ -160,7 +160,7 @@ const UserDashboard = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div data-tutorial="page-dashboard" className="space-y-6 animate-fadeIn">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div ref={searchWrapRef} className="relative w-full lg:max-w-xl">
           <form

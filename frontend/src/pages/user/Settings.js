@@ -715,7 +715,7 @@ const Settings = () => {
   );
 
   return (
-    <div className="max-w-4xl mx-auto animate-fadeIn">
+    <div data-tutorial="page-settings" className="max-w-4xl mx-auto animate-fadeIn">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('settings.title', { defaultValue: 'Settings' })}</h1>
