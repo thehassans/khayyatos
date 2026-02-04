@@ -27,6 +27,8 @@ const Stitchings = () => {
   const [assignModal, setAssignModal] = useState({ open: false, stitching: null });
   const [deleteModal, setDeleteModal] = useState({ open: false, stitching: null, loading: false });
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
+  const [invoiceModal, setInvoiceModal] = useState({ open: false, stitching: null, loading: false });
+  const tutorialInvoiceOpenedRef = React.useRef(false);
 
   const isDemo = !!user?.isDemoSession;
   const langKey = (i18n?.language || 'en').split('-')[0];
@@ -35,6 +37,30 @@ const Stitchings = () => {
     const q = searchParams.get('search') || '';
     setSearch((prev) => (prev === q ? prev : q));
   }, [searchParams]);
+
+  useEffect(() => {
+    const isTutorial = (searchParams.get('tutorial') || '') === '1';
+    const shouldOpen = (searchParams.get('invoice') || '') === '1';
+    const orderId = String(searchParams.get('orderId') || '').trim();
+    if (!isTutorial) return;
+    if (!shouldOpen) return;
+    if (!orderId) return;
+    if (tutorialInvoiceOpenedRef.current) return;
+    tutorialInvoiceOpenedRef.current = true;
+
+    const openInvoice = async () => {
+      setInvoiceModal({ open: true, stitching: null, loading: true });
+      try {
+        const resp = await api.get(`/stitchings/${orderId}`);
+        const s = resp.data?.stitching || resp.data;
+        setInvoiceModal({ open: true, stitching: s || null, loading: false });
+      } catch (e) {
+        setInvoiceModal({ open: false, stitching: null, loading: false });
+      }
+    };
+
+    openInvoice();
+  }, [api, searchParams]);
 
   useEffect(() => {
     fetchData();
@@ -321,6 +347,95 @@ const Stitchings = () => {
           </select>
         </div>
       </Card>
+
+      <Modal
+        isOpen={invoiceModal.open}
+        onClose={() => setInvoiceModal({ open: false, stitching: null, loading: false })}
+        title={t('stitchings.invoice', { defaultValue: 'Invoice' })}
+        size="lg"
+      >
+        <div data-tutorial="invoice-preview-modal" className="space-y-4">
+          {invoiceModal.loading ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            </div>
+          ) : invoiceModal.stitching ? (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/40 p-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400">{t('stitchings.receiptNumber')}</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-slate-100">#{invoiceModal.stitching.receiptNumber || invoiceModal.stitching._id?.slice(-6)}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400">{t('common.status')}</div>
+                    <div className="mt-1 inline-block">
+                      <StatusBadge status={invoiceModal.stitching.status} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+                  <div className="text-xs text-gray-500 dark:text-slate-400">{t('stitchings.customer')}</div>
+                  <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100">
+                    {invoiceModal.stitching.customerId?.nameI18n?.[langKey] || invoiceModal.stitching.customerId?.name || '-'}
+                  </div>
+                  <div className="mt-1 text-sm text-gray-600 dark:text-slate-300">
+                    {invoiceModal.stitching.customerId?.phone || '-'}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+                  <div className="text-xs text-gray-500 dark:text-slate-400">{t('stitchings.dueDate')}</div>
+                  <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100">
+                    {invoiceModal.stitching.dueDate ? new Date(invoiceModal.stitching.dueDate).toLocaleDateString() : '-'}
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">{t('stitchings.quantity')}</div>
+                  <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100">
+                    {invoiceModal.stitching.quantity || 1}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400">{t('stitchings.price')}</div>
+                    <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-1">
+                      {invoiceModal.stitching.price || 0} <SARIcon className="w-3 h-3" />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400">{t('stitchings.paid', { defaultValue: 'Paid' })}</div>
+                    <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-1">
+                      {invoiceModal.stitching.paidAmount || 0} <SARIcon className="w-3 h-3" />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400">{t('stitchings.pending', { defaultValue: 'Pending' })}</div>
+                    <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-1">
+                      {Math.max(0, (Number(invoiceModal.stitching.price) || 0) - (Number(invoiceModal.stitching.paidAmount) || 0))} <SARIcon className="w-3 h-3" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                <Button variant="outline" onClick={() => setInvoiceModal({ open: false, stitching: null, loading: false })}>
+                  {t('common.close', { defaultValue: 'Close' })}
+                </Button>
+                <Button onClick={() => handlePrintLabel(invoiceModal.stitching)} icon={Printer}>
+                  {t('stitchings.printLabel', { defaultValue: 'Print label' })}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-gray-500 dark:text-slate-400">{t('common.noData')}</div>
+          )}
+        </div>
+      </Modal>
 
       <Card>
         {loading ? (

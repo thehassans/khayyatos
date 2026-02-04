@@ -19,6 +19,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   Globe,
+  HelpCircle,
   Check,
   FileText,
   Image,
@@ -35,6 +36,7 @@ const UserLayout = () => {
   const [langOpen, setLangOpen] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [onboardingSource, setOnboardingSource] = useState('auto');
   
   const currentLang = (i18n?.language || 'en').split('-')[0];
   const isRTL = ['ar', 'ur'].includes(currentLang);
@@ -54,14 +56,24 @@ const UserLayout = () => {
     }
 
     const completed = !!user?.onboardingCompleted;
-    if (completed) {
+    if (completed && onboardingSource !== 'manual') {
       setOnboardingOpen(false);
       return;
     }
-    if (!onboardingDismissed) {
+    const userKey = user?.id || user?._id || 'unknown';
+    const autoOpenKey = `khayyat_tutorial_auto_opened_v1:${userKey}`;
+    const alreadyAutoOpened = typeof window !== 'undefined' && window?.localStorage
+      ? window.localStorage.getItem(autoOpenKey) === '1'
+      : true;
+
+    if (!alreadyAutoOpened && !onboardingDismissed) {
+      if (typeof window !== 'undefined' && window?.localStorage) {
+        window.localStorage.setItem(autoOpenKey, '1');
+      }
+      setOnboardingSource('auto');
       setOnboardingOpen(true);
     }
-  }, [user, user?.role, user?.isDemoSession, user?.onboardingCompleted, onboardingDismissed]);
+  }, [user, user?.role, user?.isDemoSession, user?.onboardingCompleted, onboardingDismissed, onboardingSource]);
 
   // Theme customization
   const primaryColor = user?.primaryColor || 'sky';
@@ -208,6 +220,7 @@ const UserLayout = () => {
     <div className={`min-h-screen bg-gray-50 dark:bg-slate-950 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <OnboardingWizard
         isOpen={onboardingOpen}
+        openSource={onboardingSource}
         onClose={() => {
           setOnboardingOpen(false);
           setOnboardingDismissed(true);
@@ -273,6 +286,7 @@ const UserLayout = () => {
               onClick={() => setSidebarOpen(false)}
               title={sidebarCollapsed ? item.label : undefined}
               className={({ isActive }) => getNavItemClasses(isActive)}
+              data-tutorial={`nav-${item.key}`}
             >
               <item.icon className={`flex-shrink-0 ${navStyle === 'compact' ? 'w-4 h-4' : 'w-5 h-5'}`} />
               {!sidebarCollapsed && <span>{item.label}</span>}
@@ -315,6 +329,27 @@ const UserLayout = () => {
             </button>
 
             <div className="flex items-center gap-4 ml-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setOnboardingSource('manual');
+                  setOnboardingDismissed(true);
+                  setOnboardingOpen(true);
+                }}
+                data-tutorial="header-tutorial"
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all border shadow-sm hover:shadow ${
+                  headerStyle === 'colored' || headerStyle === 'gradient'
+                    ? 'bg-white/15 hover:bg-white/25 border-white/20 text-white'
+                    : 'bg-white/70 hover:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 border-gray-200/70 dark:border-slate-700/70'
+                }`}
+                title={t('onboardingWizard.liveTutorial', { defaultValue: 'Live tutorial' })}
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  {t('onboardingWizard.liveTutorial', { defaultValue: 'Live tutorial' })}
+                </span>
+              </button>
+
               {/* Premium Language Switcher */}
               <div className="relative">
                 <button
