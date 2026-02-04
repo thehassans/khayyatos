@@ -1,12 +1,15 @@
 import React from 'react';
 
-export const Card = ({ children, className = '', hover = false }) => {
+export const Card = ({ children, className = '', hover = false, ...props }) => {
   return (
-    <div className={`
+    <div
+      {...props}
+      className={`
       bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 shadow-soft
       ${hover ? 'card-hover cursor-pointer' : ''}
       ${className}
-    `}>
+    `}
+    >
       {children}
     </div>
   );
