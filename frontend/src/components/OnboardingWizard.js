@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -174,11 +174,13 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
   const spotlightDidScrollRef = useRef(false);
   const [coachmark, setCoachmark] = useState(null);
   const coachmarkRef = useRef(null);
-  const [coachmarkRect, setCoachmarkRect] = useState(null);
+  const [coachmarkSize, setCoachmarkSize] = useState({ width: 360, height: 0 });
   const coachmarkArrowRef = useRef(null);
   const arrowAnimRafRef = useRef(0);
+  const arrowVisibleRafRef = useRef(0);
   const arrowAnimatedStepRef = useRef(null);
   const [arrowStroke, setArrowStroke] = useState({ len: 0, offset: 0, animate: false });
+  const [arrowVisible, setArrowVisible] = useState(false);
 
   const langKey = (i18n?.language || 'en').split('-')[0];
   const isRtl = langKey === 'ar' || langKey === 'ur';
@@ -278,12 +280,12 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
   useEffect(() => {
     if (!isOpen) {
       setCoachmark(null);
-      setCoachmarkRect(null);
+      setCoachmarkSize({ width: 360, height: 0 });
       return;
     }
     if (!spotlight || typeof window === 'undefined') {
       setCoachmark(null);
-      setCoachmarkRect(null);
+      setCoachmarkSize({ width: 360, height: 0 });
       return;
     }
 
@@ -291,71 +293,194 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
     const vh = window.innerHeight || 0;
     const margin = 14;
     const boxW = Math.min(380, Math.max(260, vw - margin * 2));
+    const measuredH = Number(coachmarkSize?.height) || 0;
+    const boxH = Math.min(Math.max(180, measuredH || 240), Math.max(180, vh - margin * 2));
 
-    const rightSpace = vw - (spotlight.left + spotlight.width);
-    const leftSpace = spotlight.left;
-    const topSpace = spotlight.top;
-    const bottomSpace = vh - (spotlight.top + spotlight.height);
-
-    let placement = 'bottom';
-
-    const wantRight = !isRtl;
-    if (wantRight && rightSpace >= boxW + margin) placement = 'right';
-    else if (!wantRight && leftSpace >= boxW + margin) placement = 'left';
-    else if (bottomSpace >= 220) placement = 'bottom';
-    else if (topSpace >= 220) placement = 'top';
-    else placement = rightSpace >= leftSpace ? 'right' : 'left';
+    const viewArea = vw * vh;
+    const spotlightArea = (spotlight.width || 0) * (spotlight.height || 0);
+    const isLargeTarget = viewArea > 0 && spotlightArea / viewArea > 0.55;
 
     const centerY = spotlight.top + spotlight.height / 2;
     const centerX = spotlight.left + spotlight.width / 2;
 
-    let top = margin;
-    let left = margin;
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-    if (placement === 'right') {
-      left = Math.min(vw - boxW - margin, spotlight.left + spotlight.width + margin);
-      top = Math.min(vh - margin - 60, Math.max(margin, centerY - 120));
-    } else if (placement === 'left') {
-      left = Math.max(margin, spotlight.left - boxW - margin);
-      top = Math.min(vh - margin - 60, Math.max(margin, centerY - 120));
-    } else if (placement === 'top') {
-      left = Math.min(vw - boxW - margin, Math.max(margin, centerX - boxW / 2));
-      top = Math.max(margin, spotlight.top - margin - 220);
-    } else {
-      left = Math.min(vw - boxW - margin, Math.max(margin, centerX - boxW / 2));
-      top = Math.min(vh - margin - 220, spotlight.top + spotlight.height + margin);
-    }
+    const placements = isLargeTarget
+      ? ['top', 'left', 'right', 'bottom']
+      : (isRtl ? ['left', 'right', 'bottom', 'top'] : ['right', 'left', 'bottom', 'top']);
 
-    setCoachmark({ top, left, placement, width: boxW });
-  }, [isOpen, isRtl, spotlight, step]);
+    const candidates = placements.map((p, idx) => {
+      let top = margin;
+      let left = margin;
 
-  const coachmarkArrowPath = useMemo(() => {
-    if (!coachmarkRect || !spotlight || !coachmark?.placement) return null;
+      if (p === 'right') {
+        left = spotlight.left + spotlight.width + margin;
+        top = centerY - boxH / 2;
+      } else if (p === 'left') {
+        left = spotlight.left - boxW - margin;
+        top = centerY - boxH / 2;
+      } else if (p === 'top') {
+        left = centerX - boxW / 2;
+        top = spotlight.top - boxH - margin;
+      } else {
+        left = centerX - boxW / 2;
+        top = spotlight.top + spotlight.height + margin;
+      }
 
-    const endX = spotlight.left + spotlight.width / 2;
-    const endY = spotlight.top + spotlight.height / 2;
+      const rawLeft = left;
+      const rawTop = top;
 
-    let startX = coachmarkRect.left + coachmarkRect.width / 2;
-    let startY = coachmarkRect.top + coachmarkRect.height / 2;
+      left = clamp(left, margin, vw - margin - boxW);
+      top = clamp(top, margin, vh - margin - boxH);
+      const clampDelta = Math.abs(rawLeft - left) + Math.abs(rawTop - top);
 
-    if (coachmark.placement === 'left') {
-      startX = coachmarkRect.left + coachmarkRect.width;
-      startY = coachmarkRect.top + coachmarkRect.height / 2;
-    } else if (coachmark.placement === 'right') {
-      startX = coachmarkRect.left;
-      startY = coachmarkRect.top + coachmarkRect.height / 2;
-    } else if (coachmark.placement === 'top') {
-      startX = coachmarkRect.left + coachmarkRect.width / 2;
-      startY = coachmarkRect.top + coachmarkRect.height;
-    } else {
-      startX = coachmarkRect.left + coachmarkRect.width / 2;
-      startY = coachmarkRect.top;
-    }
+      let startX = left + boxW / 2;
+      let startY = top + boxH / 2;
+      let endX = centerX;
+      let endY = centerY;
+      if (p === 'left') {
+        startX = left + boxW;
+        startY = top + boxH / 2;
+        endX = spotlight.left;
+        endY = centerY;
+      } else if (p === 'right') {
+        startX = left;
+        startY = top + boxH / 2;
+        endX = spotlight.left + spotlight.width;
+        endY = centerY;
+      } else if (p === 'top') {
+        startX = left + boxW / 2;
+        startY = top + boxH;
+        endX = centerX;
+        endY = spotlight.top;
+      } else {
+        startX = left + boxW / 2;
+        startY = top;
+        endX = centerX;
+        endY = spotlight.top + spotlight.height;
+      }
 
-    return `M ${startX} ${startY} L ${endX} ${endY}`;
-  }, [coachmark?.placement, coachmarkRect, isRtl, spotlight]);
+      const dx = startX - endX;
+      const dy = startY - endY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      const ix = Math.max(left, spotlight.left);
+      const iy = Math.max(top, spotlight.top);
+      const ax = Math.min(left + boxW, spotlight.left + spotlight.width);
+      const ay = Math.min(top + boxH, spotlight.top + spotlight.height);
+      const overlap = Math.max(0, ax - ix) * Math.max(0, ay - iy);
+
+      const overlapPenalty = (!isLargeTarget && overlap > 1) ? 10000 : 0;
+      const largeTargetPenalty = isLargeTarget
+        ? (p === 'bottom' ? 180 : 0) + ((p === 'left' || p === 'right') ? 40 : 0)
+        : 0;
+
+      const score = dist + clampDelta * 2 + overlapPenalty + largeTargetPenalty + idx * 0.001;
+      return { placement: p, top, left, dist, overlap, clampDelta, score };
+    });
+
+    candidates.sort((a, b) => {
+      return a.score - b.score;
+    });
+
+    const best = candidates[0];
+    setCoachmark({ top: best.top, left: best.left, placement: best.placement, width: boxW });
+  }, [isOpen, isRtl, spotlight, step, coachmarkSize?.height]);
 
   useEffect(() => {
+    if (!isOpen) {
+      setArrowVisible(false);
+      return;
+    }
+
+    if (!spotlight || !coachmark) {
+      setArrowVisible(false);
+      return;
+    }
+
+    const ch = Number(coachmarkSize?.height) || 0;
+    if (ch < 40) {
+      setArrowVisible(false);
+      return;
+    }
+
+    setArrowVisible(false);
+    let alive = true;
+    const raf1 = requestAnimationFrame(() => {
+      const raf2 = requestAnimationFrame(() => {
+        if (!alive) return;
+
+        const el = coachmarkRef.current;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        const wantW = Number(coachmarkSize?.width) || 0;
+        const wantH = Number(coachmarkSize?.height) || 0;
+        if (wantW > 0 && wantH > 0) {
+          if (Math.abs(r.width - wantW) > 2 || Math.abs(r.height - wantH) > 2) return;
+        }
+
+        setArrowVisible(true);
+      });
+      arrowVisibleRafRef.current = raf2;
+    });
+
+    return () => {
+      alive = false;
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(arrowVisibleRafRef.current);
+    };
+  }, [isOpen, step, location?.pathname, location?.search, coachmark, coachmarkSize?.height, coachmarkSize?.width, spotlight]);
+
+  const coachmarkArrowPath = useMemo(() => {
+    if (!spotlight || !coachmark?.placement) return null;
+
+    const coachW = Number(coachmark?.width) || Number(coachmarkSize?.width) || 360;
+    const coachH = Number(coachmarkSize?.height) || 240;
+
+    const centerX = spotlight.left + spotlight.width / 2;
+    const centerY = spotlight.top + spotlight.height / 2;
+
+    let endX = centerX;
+    let endY = centerY;
+    if (coachmark.placement === 'left') {
+      endX = spotlight.left;
+      endY = centerY;
+    } else if (coachmark.placement === 'right') {
+      endX = spotlight.left + spotlight.width;
+      endY = centerY;
+    } else if (coachmark.placement === 'top') {
+      endX = centerX;
+      endY = spotlight.top;
+    } else {
+      endX = centerX;
+      endY = spotlight.top + spotlight.height;
+    }
+
+    let startX = (coachmark.left || 0) + coachW / 2;
+    let startY = (coachmark.top || 0) + coachH / 2;
+    if (coachmark.placement === 'left') {
+      startX = (coachmark.left || 0) + coachW;
+      startY = (coachmark.top || 0) + coachH / 2;
+    } else if (coachmark.placement === 'right') {
+      startX = (coachmark.left || 0);
+      startY = (coachmark.top || 0) + coachH / 2;
+    } else if (coachmark.placement === 'top') {
+      startX = (coachmark.left || 0) + coachW / 2;
+      startY = (coachmark.top || 0) + coachH;
+    } else {
+      startX = (coachmark.left || 0) + coachW / 2;
+      startY = (coachmark.top || 0);
+    }
+
+    const dx = startX - endX;
+    const dy = startY - endY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 420) return null;
+
+    return `M ${startX} ${startY} L ${endX} ${endY}`;
+  }, [coachmark?.left, coachmark?.placement, coachmark?.top, coachmark?.width, coachmarkSize?.height, coachmarkSize?.width, spotlight]);
+
+  useLayoutEffect(() => {
     if (!isOpen) return;
     if (!coachmarkRef.current) return;
 
@@ -366,7 +491,12 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         const el = coachmarkRef.current;
         if (!el) return;
         const r = el.getBoundingClientRect();
-        setCoachmarkRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+        setCoachmarkSize((prev) => {
+          const pw = Number(prev?.width) || 0;
+          const ph = Number(prev?.height) || 0;
+          if (Math.abs(pw - r.width) < 0.5 && Math.abs(ph - r.height) < 0.5) return prev;
+          return { width: r.width, height: r.height };
+        });
       });
     };
 
@@ -383,6 +513,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
 
   useEffect(() => {
     if (!isOpen) return;
+    if (!arrowVisible) return;
     if (!coachmarkArrowRef.current) return;
     if (!coachmarkArrowPath) return;
 
@@ -410,7 +541,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
     return () => {
       cancelAnimationFrame(arrowAnimRafRef.current);
     };
-  }, [coachmarkArrowPath, isOpen, step]);
+  }, [arrowVisible, coachmarkArrowPath, isOpen, step]);
 
   const waitForElement = useCallback((selector, timeoutMs = 12000) => {
     if (!selector || typeof window === 'undefined') return Promise.resolve(null);
@@ -476,9 +607,17 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
       retryTimeoutRef.current = null;
     }
     const safe = Math.max(0, Math.min(nextStep, steps.length - 1));
+
+    const nextKey = steps?.[safe]?.key;
+    if (nextKey) {
+      for (const k of Array.from(executedRef.current)) {
+        if (k.endsWith(`:${nextKey}:${safe}`)) executedRef.current.delete(k);
+      }
+    }
+
     setStep(safe);
     await savePreferences({ onboardingStep: safe });
-  }, [savePreferences, steps.length]);
+  }, [openSource, savePreferences, steps]);
 
   const handleFinish = useCallback(async () => {
     if (autoTimeoutRef.current) {
@@ -593,6 +732,8 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
     const currentStep = steps?.[step];
     if (!currentStep?.key) return;
 
+    if (user?.isDemoSession) return;
+
     const execKey = `${openSource}:${currentStep.key}:${step}`;
     if (executedRef.current.has(execKey)) return;
     executedRef.current.add(execKey);
@@ -600,8 +741,6 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
     let alive = true;
 
     const run = async () => {
-      if (user?.isDemoSession) return;
-
       autoBusyRef.current = true;
       try {
         if (currentStep.key === 'createCustomer') {
@@ -744,27 +883,27 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         </div>
       ) : null}
 
-      {spotlight && coachmarkArrowPath ? (
+      {spotlight && coachmarkArrowPath && arrowVisible ? (
         <svg className="fixed inset-0 z-[115] pointer-events-none" width="100%" height="100%">
           <defs>
             <marker
               id="coachmark-arrowhead"
-              markerWidth="8"
-              markerHeight="8"
-              refX="7"
-              refY="4"
+              markerWidth="5"
+              markerHeight="5"
+              refX="4"
+              refY="2.5"
               orient="auto"
               markerUnits="strokeWidth"
             >
-              <path d="M 0 0 L 0 8 L 8 4 z" fill="rgba(15,23,42,0.42)" />
+              <path d="M 0 0 L 0 5 L 5 2.5 z" fill="rgba(15,23,42,0.24)" />
             </marker>
           </defs>
           <path
             ref={coachmarkArrowRef}
             d={coachmarkArrowPath}
             fill="none"
-            stroke="rgba(15,23,42,0.42)"
-            strokeWidth="1.5"
+            stroke="rgba(15,23,42,0.24)"
+            strokeWidth="1"
             strokeLinecap="round"
             strokeLinejoin="round"
             markerEnd="url(#coachmark-arrowhead)"
@@ -772,7 +911,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
               strokeDasharray: arrowStroke.len ? `${arrowStroke.len}` : undefined,
               strokeDashoffset: arrowStroke.len ? `${arrowStroke.offset}` : undefined,
               transition: arrowStroke.animate
-                ? 'stroke-dashoffset 420ms cubic-bezier(0.2, 0.9, 0.2, 1)'
+                ? 'stroke-dashoffset 360ms cubic-bezier(0.2, 0.9, 0.2, 1)'
                 : 'none'
             }}
           />
@@ -780,13 +919,15 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
       ) : null}
 
       <div
-        className="fixed z-[120] pointer-events-auto transition-all duration-300 ease-out"
+        className="fixed z-[120] pointer-events-auto transition-opacity duration-150 ease-out"
         ref={coachmarkRef}
         dir={isRtl ? 'rtl' : 'ltr'}
         style={{
           top: coachmark?.top ?? 16,
           left: coachmark?.left ?? 16,
-          width: coachmark?.width ?? 360
+          width: coachmark?.width ?? 360,
+          maxHeight: 'calc(100vh - 28px)',
+          overflow: 'auto'
         }}
       >
         <div className="relative transition-all duration-300 ease-out">
