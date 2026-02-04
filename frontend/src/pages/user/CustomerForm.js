@@ -340,6 +340,7 @@ const CustomerForm = () => {
                   label={t('customers.name')}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  data-tutorial="customer-form-name"
                   required
                 />
                 {nameI18nPreview?.[langKey] ? (
@@ -354,6 +355,7 @@ const CustomerForm = () => {
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="+966501234567"
+                data-tutorial="customer-form-phone"
                 required
               />
             </div>

@@ -1503,6 +1503,7 @@ const StitchingForm = () => {
                 <button
                   type="button"
                   onClick={() => setDropdownOpen(!dropdownOpen)}
+                  data-tutorial="stitching-form-customer-select"
                   className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors"
                 >
                   {selectedCustomer ? (
@@ -1530,6 +1531,7 @@ const StitchingForm = () => {
                         value={customerSearch}
                         onChange={(e) => setCustomerSearch(e.target.value)}
                         placeholder="Search by name or phone..."
+                        data-tutorial="stitching-form-customer-search"
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-slate-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         autoFocus
                       />

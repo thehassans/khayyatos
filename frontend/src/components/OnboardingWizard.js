@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Modal from './ui/Modal';
 import { Button } from './ui/Button';
@@ -32,6 +32,7 @@ const measurementTen = () => ({
 const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { api, user, updateUser } = useAuth();
 
   const steps = useMemo(() => {
@@ -79,7 +80,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         actions: [
           { label: t('onboardingWizard.steps.createCustomer.action'), to: `/user/customers/new?tutorial=1&name=${encodeURIComponent(EXAMPLE_CUSTOMER_NAME)}&phone=${encodeURIComponent(EXAMPLE_CUSTOMER_PHONE)}` }
         ],
-        target: '[data-tutorial="customers-create-button"]',
+        target: '[data-tutorial="customers-create-button"], [data-tutorial="customer-form-name"], [data-tutorial="customer-form-phone"]',
         autoTo: '/user/customers?tutorial=1'
       },
       {
@@ -89,7 +90,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         actions: [
           { label: t('onboardingWizard.steps.createOrder.action'), to: `/user/stitchings/new?tutorial=1&customerPhone=${encodeURIComponent(EXAMPLE_CUSTOMER_PHONE)}&fillMeasurements=1` }
         ],
-        target: '[data-tutorial="stitchings-create-button"]',
+        target: '[data-tutorial="stitchings-create-button"], [data-tutorial="stitching-form-customer-select"], [data-tutorial="stitching-form-customer-search"]',
         autoTo: '/user/stitchings?tutorial=1'
       },
       {
@@ -272,7 +273,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
       window.removeEventListener('resize', onResize);
       window.removeEventListener('scroll', onResize, true);
     };
-  }, [isOpen, step, steps]);
+  }, [isOpen, step, steps, location?.pathname, location?.search]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -351,20 +352,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
       startY = coachmarkRect.top;
     }
 
-    const midX = (startX + endX) / 2;
-    const midY = (startY + endY) / 2;
-
-    const curve = 110;
-    let controlX = midX;
-    let controlY = midY;
-
-    if (coachmark.placement === 'left' || coachmark.placement === 'right') {
-      controlY = midY - curve;
-    } else {
-      controlX = midX + (isRtl ? -curve : curve);
-    }
-
-    return `M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}`;
+    return `M ${startX} ${startY} L ${endX} ${endY}`;
   }, [coachmark?.placement, coachmarkRect, isRtl, spotlight]);
 
   useEffect(() => {
@@ -739,7 +727,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         <div className="fixed inset-0 z-[110] pointer-events-none">
           <div className="absolute inset-0 bg-black/10 transition-opacity duration-300" />
           <div
-            className="absolute rounded-2xl border border-slate-900/25 shadow-[0_0_0_10px_rgba(15,23,42,0.06)] transition-all duration-300 ease-out"
+            className="absolute rounded-2xl border border-slate-900/20 shadow-[0_0_0_10px_rgba(15,23,42,0.05)] transition-all duration-300 ease-out"
             style={{ top: spotlight.top, left: spotlight.left, width: spotlight.width, height: spotlight.height }}
           />
           <div
@@ -750,8 +738,7 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
             }}
           >
             <div className="relative">
-              <div className="absolute inline-flex h-3 w-3 rounded-full bg-slate-900/40 opacity-60 animate-ping" />
-              <div className="relative inline-flex h-3 w-3 rounded-full bg-slate-900 shadow" />
+              <div className="relative inline-flex h-2 w-2 rounded-full bg-slate-900/70" />
             </div>
           </div>
         </div>
@@ -762,31 +749,30 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
           <defs>
             <marker
               id="coachmark-arrowhead"
-              markerWidth="12"
-              markerHeight="12"
-              refX="10"
-              refY="6"
+              markerWidth="8"
+              markerHeight="8"
+              refX="7"
+              refY="4"
               orient="auto"
               markerUnits="strokeWidth"
             >
-              <path d="M 0 0 L 0 12 L 12 6 z" fill="rgba(15,23,42,0.88)" />
+              <path d="M 0 0 L 0 8 L 8 4 z" fill="rgba(15,23,42,0.42)" />
             </marker>
           </defs>
           <path
             ref={coachmarkArrowRef}
             d={coachmarkArrowPath}
             fill="none"
-            stroke="rgba(15,23,42,0.88)"
-            strokeWidth="4"
+            stroke="rgba(15,23,42,0.42)"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             markerEnd="url(#coachmark-arrowhead)"
             style={{
-              filter: 'drop-shadow(0 18px 26px rgba(15,23,42,0.18))',
               strokeDasharray: arrowStroke.len ? `${arrowStroke.len}` : undefined,
               strokeDashoffset: arrowStroke.len ? `${arrowStroke.offset}` : undefined,
               transition: arrowStroke.animate
-                ? 'stroke-dashoffset 900ms cubic-bezier(0.2, 0.9, 0.2, 1)'
+                ? 'stroke-dashoffset 420ms cubic-bezier(0.2, 0.9, 0.2, 1)'
                 : 'none'
             }}
           />
