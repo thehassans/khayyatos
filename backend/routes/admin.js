@@ -406,7 +406,7 @@ router.put('/users/:id/whatsapp-addon', async (req, res) => {
     user.whatsappAddon.activated = !!activated;
     if (activated) {
       user.whatsappAddon.activatedAt = new Date();
-      user.whatsappAddon.activatedBy = req.user.name || 'admin';
+      user.whatsappAddon.activatedBy = req.admin?.name || 'admin';
     }
     await user.save();
     res.json({ success: true, whatsappAddon: user.whatsappAddon });
