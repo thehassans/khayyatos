@@ -171,6 +171,11 @@ const userSchema = new mongoose.Schema({
     type: fabricColorsCatalogSchema,
     default: () => ({ colors: [] })
   },
+  whatsappAddon: {
+    activated: { type: Boolean, default: false },
+    activatedAt: { type: Date, default: null },
+    activatedBy: { type: String, default: null }
+  },
   whatsappSettings: {
     enabled: { type: Boolean, default: false },
     accessToken: { type: String, default: '' },

@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { ArrowLeft, Upload } from 'lucide-react';
+import { ArrowLeft, Upload, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminUserForm = () => {
@@ -17,6 +17,8 @@ const AdminUserForm = () => {
 
   const [loading, setLoading] = useState(false);
   const [logoPreview, setLogoPreview] = useState(null);
+  const [whatsappAddon, setWhatsappAddon] = useState(false);
+  const [whatsappAddonSaving, setWhatsappAddonSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     nameAr: '',
@@ -51,6 +53,7 @@ const AdminUserForm = () => {
         isActive: user.isActive
       });
       if (user.logo) setLogoPreview(user.logo);
+      setWhatsappAddon(user.whatsappAddon?.activated || false);
     } catch (error) {
       toast.error('Failed to load user');
       navigate('/admin/users');
@@ -253,6 +256,42 @@ const AdminUserForm = () => {
                 <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
                   {t('common.active')}
                 </label>
+              </div>
+            )}
+
+            {isEdit && (
+              <div className="rounded-xl border border-gray-200 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#25D36615' }}>
+                      <MessageCircle className="w-5 h-5" style={{ color: '#25D366' }} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">WhatsApp Add-on</p>
+                      <p className="text-xs text-gray-500">{whatsappAddon ? 'Active' : 'Not activated'}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={whatsappAddonSaving}
+                    onClick={async () => {
+                      setWhatsappAddonSaving(true);
+                      try {
+                        await api.put(`/admin/users/${id}/whatsapp-addon`, { activated: !whatsappAddon });
+                        setWhatsappAddon(!whatsappAddon);
+                        toast.success(whatsappAddon ? 'WhatsApp add-on deactivated' : 'WhatsApp add-on activated');
+                      } catch (e) { toast.error('Failed'); }
+                      setWhatsappAddonSaving(false);
+                    }}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      whatsappAddon
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                        : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                    }`}
+                  >
+                    {whatsappAddonSaving ? '...' : whatsappAddon ? 'Deactivate' : 'Activate'}
+                  </button>
+                </div>
               </div>
             )}
 

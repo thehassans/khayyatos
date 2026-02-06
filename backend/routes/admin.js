@@ -357,4 +357,62 @@ router.post('/users/:id/renew', async (req, res) => {
   }
 });
 
+// Get addon pricing
+router.get('/addons', async (req, res) => {
+  try {
+    const doc = await SystemSettings.findOne({});
+    const addons = doc?.addons || {};
+    res.json({
+      whatsapp: {
+        price: addons.whatsapp?.price || 0,
+        currency: addons.whatsapp?.currency || 'SAR',
+        billingCycle: addons.whatsapp?.billingCycle || 'monthly',
+        description: addons.whatsapp?.description || ''
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update addon pricing
+router.put('/addons', async (req, res) => {
+  try {
+    const { whatsapp } = req.body;
+    const doc = (await SystemSettings.findOne({})) || new SystemSettings({});
+    if (!doc.addons) doc.addons = {};
+    if (whatsapp) {
+      if (!doc.addons.whatsapp) doc.addons.whatsapp = {};
+      if (whatsapp.price !== undefined) doc.addons.whatsapp.price = whatsapp.price;
+      if (whatsapp.currency) doc.addons.whatsapp.currency = whatsapp.currency;
+      if (whatsapp.billingCycle) doc.addons.whatsapp.billingCycle = whatsapp.billingCycle;
+      if (whatsapp.description) doc.addons.whatsapp.description = whatsapp.description;
+    }
+    await doc.save();
+    res.json({ success: true, addons: doc.addons });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Toggle WhatsApp addon for a user
+router.put('/users/:id/whatsapp-addon', async (req, res) => {
+  try {
+    const { activated } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (!user.whatsappAddon) user.whatsappAddon = {};
+    user.whatsappAddon.activated = !!activated;
+    if (activated) {
+      user.whatsappAddon.activatedAt = new Date();
+      user.whatsappAddon.activatedBy = req.user.name || 'admin';
+    }
+    await user.save();
+    res.json({ success: true, whatsappAddon: user.whatsappAddon });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

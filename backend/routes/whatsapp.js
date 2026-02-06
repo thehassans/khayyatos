@@ -1,10 +1,33 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const SystemSettings = require('../models/SystemSettings');
 const { verifyToken, isUser } = require('../middleware/auth');
 const whatsappService = require('../utils/whatsappService');
 
 router.use(verifyToken, isUser);
+
+// Get WhatsApp addon status + pricing
+router.get('/addon-status', async (req, res) => {
+  try {
+    const addon = req.user.whatsappAddon || {};
+    const doc = await SystemSettings.findOne({});
+    const pricing = doc?.addons?.whatsapp || {};
+    res.json({
+      activated: addon.activated || false,
+      activatedAt: addon.activatedAt || null,
+      activatedBy: addon.activatedBy || null,
+      pricing: {
+        price: pricing.price || 0,
+        currency: pricing.currency || 'SAR',
+        billingCycle: pricing.billingCycle || 'monthly',
+        description: pricing.description || ''
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // Get WhatsApp settings
 router.get('/settings', async (req, res) => {
