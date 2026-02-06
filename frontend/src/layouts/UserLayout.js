@@ -164,16 +164,16 @@ const UserLayout = () => {
 
   // Get header classes based on style
   const getHeaderClasses = () => {
-    const base = 'sticky top-0 z-30 border-b';
+    const base = 'sticky top-0 z-40 border-b';
     switch (headerStyle) {
       case 'colored':
         return `${base} ${colors.bg} text-white border-transparent`;
       case 'gradient':
         return `${base} bg-gradient-to-r ${colors.gradient} text-white border-transparent`;
       case 'transparent':
-        return `${base} bg-transparent backdrop-blur-sm border-gray-100 dark:border-slate-800`;
+        return `${base} bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-gray-100 dark:border-slate-800`;
       default:
-        return `${base} bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800`;
+        return `${base} bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-gray-100 dark:border-slate-800`;
     }
   };
 
@@ -343,8 +343,8 @@ const UserLayout = () => {
         return (
           <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
             <div className="relative">
-              <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/80 backdrop-blur-2xl border-t border-gray-200/60 dark:border-slate-700/60" />
-              <div className="relative flex items-center justify-around px-2 py-1 safe-area-pb">
+              <div className="absolute inset-0 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]" />
+              <div className="relative flex items-center justify-around px-2 py-2 pb-3 safe-area-pb">
                 {bottomNavItems.map((item) => {
                   const active = isBottomActive(item.to);
                   return (
