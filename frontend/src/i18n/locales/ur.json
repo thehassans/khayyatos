@@ -348,7 +348,11 @@
     "featureDueReminder": "ڈیو یاددہانیاں",
     "featureDueReminderDesc": "آرڈر ڈیو ڈیٹ سے پہلے خودکار یاددہانیاں بھیجیں۔",
     "featureBulkMsg": "بلک میسجنگ",
-    "featureBulkMsgDesc": "ایک ساتھ متعدد گاہکوں کو پروموشنل یا معلوماتی پیغامات بھیجیں۔"
+    "featureBulkMsgDesc": "ایک ساتھ متعدد گاہکوں کو پروموشنل یا معلوماتی پیغامات بھیجیں۔",
+    "sendDueRemindersNow": "ابھی ڈیو یاددہانیاں بھیجیں",
+    "invoiceTemplate": "انوائس پیغام ٹیمپلیٹ",
+    "statusUpdateTemplate": "اسٹیٹس اپڈیٹ پیغام ٹیمپلیٹ",
+    "dueReminderTemplate": "ڈیو یاددہانی پیغام ٹیمپلیٹ"
   },
   "settings": {
     "title": "ترتیبات",

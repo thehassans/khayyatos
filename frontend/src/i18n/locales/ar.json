@@ -348,7 +348,11 @@
     "featureDueReminder": "تذكيرات المواعيد",
     "featureDueReminderDesc": "تذكيرات تلقائية قبل مواعيد استلام الطلبات.",
     "featureBulkMsg": "الرسائل الجماعية",
-    "featureBulkMsgDesc": "إرسال رسائل ترويجية أو إعلامية لعدة عملاء في وقت واحد."
+    "featureBulkMsgDesc": "إرسال رسائل ترويجية أو إعلامية لعدة عملاء في وقت واحد.",
+    "sendDueRemindersNow": "إرسال تذكيرات الاستحقاق الآن",
+    "invoiceTemplate": "قالب رسالة الفاتورة",
+    "statusUpdateTemplate": "قالب رسالة تحديث الحالة",
+    "dueReminderTemplate": "قالب رسالة تذكير الاستحقاق"
   },
   "settings": {
     "title": "الإعدادات",

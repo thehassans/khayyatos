@@ -348,7 +348,11 @@
     "featureDueReminder": "ডিউ রিমাইন্ডার",
     "featureDueReminderDesc": "অর্ডার ডিউ ডেটের আগে স্বয়ংক্রিয় রিমাইন্ডার পাঠান।",
     "featureBulkMsg": "বাল্ক মেসেজিং",
-    "featureBulkMsgDesc": "একসাথে একাধিক গ্রাহকদের প্রোমোশনাল বা তথ্যমূলক বার্তা পাঠান।"
+    "featureBulkMsgDesc": "একসাথে একাধিক গ্রাহকদের প্রোমোশনাল বা তথ্যমূলক বার্তা পাঠান।",
+    "sendDueRemindersNow": "এখনই ডিউ রিমাইন্ডার পাঠান",
+    "invoiceTemplate": "ইনভয়েস বার্তা টেমপ্লেট",
+    "statusUpdateTemplate": "স্ট্যাটাস আপডেট বার্তা টেমপ্লেট",
+    "dueReminderTemplate": "ডিউ রিমাইন্ডার বার্তা টেমপ্লেট"
   },
   "settings": {
     "title": "সেটিংস",

@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const SystemSettings = require('../models/SystemSettings');
+const Stitching = require('../models/Stitching');
+const Customer = require('../models/Customer');
 const { verifyToken, isUser } = require('../middleware/auth');
 const whatsappService = require('../utils/whatsappService');
 
@@ -41,9 +43,15 @@ router.get('/settings', async (req, res) => {
       autoMessageOnOrder: settings.autoMessageOnOrder !== false,
       autoMessageOnReady: settings.autoMessageOnReady !== false,
       autoMessageOnDelivery: settings.autoMessageOnDelivery !== false,
+      autoInvoice: settings.autoInvoice || false,
+      autoStatusUpdate: settings.autoStatusUpdate || false,
+      autoDueReminder: settings.autoDueReminder || false,
       orderMessageTemplate: settings.orderMessageTemplate || '',
       readyMessageTemplate: settings.readyMessageTemplate || '',
-      deliveryMessageTemplate: settings.deliveryMessageTemplate || ''
+      deliveryMessageTemplate: settings.deliveryMessageTemplate || '',
+      invoiceMessageTemplate: settings.invoiceMessageTemplate || '',
+      statusUpdateMessageTemplate: settings.statusUpdateMessageTemplate || '',
+      dueReminderMessageTemplate: settings.dueReminderMessageTemplate || ''
     });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
@@ -56,7 +64,9 @@ router.put('/settings', async (req, res) => {
     const { 
       enabled, accessToken, phoneNumberId, businessAccountId,
       autoMessageOnOrder, autoMessageOnReady, autoMessageOnDelivery,
-      orderMessageTemplate, readyMessageTemplate, deliveryMessageTemplate
+      autoInvoice, autoStatusUpdate, autoDueReminder,
+      orderMessageTemplate, readyMessageTemplate, deliveryMessageTemplate,
+      invoiceMessageTemplate, statusUpdateMessageTemplate, dueReminderMessageTemplate
     } = req.body;
 
     if (!req.user.whatsappSettings) {
@@ -70,9 +80,15 @@ router.put('/settings', async (req, res) => {
     if (autoMessageOnOrder !== undefined) req.user.whatsappSettings.autoMessageOnOrder = autoMessageOnOrder;
     if (autoMessageOnReady !== undefined) req.user.whatsappSettings.autoMessageOnReady = autoMessageOnReady;
     if (autoMessageOnDelivery !== undefined) req.user.whatsappSettings.autoMessageOnDelivery = autoMessageOnDelivery;
+    if (autoInvoice !== undefined) req.user.whatsappSettings.autoInvoice = autoInvoice;
+    if (autoStatusUpdate !== undefined) req.user.whatsappSettings.autoStatusUpdate = autoStatusUpdate;
+    if (autoDueReminder !== undefined) req.user.whatsappSettings.autoDueReminder = autoDueReminder;
     if (orderMessageTemplate) req.user.whatsappSettings.orderMessageTemplate = orderMessageTemplate;
     if (readyMessageTemplate) req.user.whatsappSettings.readyMessageTemplate = readyMessageTemplate;
     if (deliveryMessageTemplate) req.user.whatsappSettings.deliveryMessageTemplate = deliveryMessageTemplate;
+    if (invoiceMessageTemplate) req.user.whatsappSettings.invoiceMessageTemplate = invoiceMessageTemplate;
+    if (statusUpdateMessageTemplate) req.user.whatsappSettings.statusUpdateMessageTemplate = statusUpdateMessageTemplate;
+    if (dueReminderMessageTemplate) req.user.whatsappSettings.dueReminderMessageTemplate = dueReminderMessageTemplate;
 
     await req.user.save();
     
@@ -130,6 +146,40 @@ router.post('/send', async (req, res) => {
   }
 });
 
+// Trigger due-date reminders for orders due within next 24h
+router.post('/send-due-reminders', async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user?.whatsappSettings?.enabled || !user?.whatsappSettings?.autoDueReminder || !user?.whatsappAddon?.activated) {
+      return res.json({ success: false, sent: 0, error: 'Due reminders not enabled or addon not activated' });
+    }
+
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    const orders = await Stitching.find({
+      userId: req.user._id,
+      status: { $in: ['pending', 'in-progress', 'completed'] },
+      dueDate: { $gte: now, $lte: tomorrow }
+    }).populate('customerId', 'name phone nameI18n');
+
+    let sent = 0;
+    for (const order of orders) {
+      const customer = order.customerId;
+      if (!customer?.phone) continue;
+      try {
+        const result = await whatsappService.sendDueReminderNotification(user, customer, order);
+        if (result.success) sent++;
+      } catch (e) { console.error('Due reminder error:', e); }
+    }
+
+    res.json({ success: true, sent, total: orders.length });
+  } catch (error) {
+    console.error('Due reminder route error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get message templates info
 router.get('/templates', async (req, res) => {
   try {
@@ -147,7 +197,10 @@ router.get('/templates', async (req, res) => {
       defaultTemplates: {
         order: 'Thank you for your order at {businessName}! Your order #{receiptNumber} has been received. Total: {price} SAR. Due date: {dueDate}. We will notify you when it is ready.',
         ready: 'Good news! Your order #{receiptNumber} at {businessName} is ready for pickup. Please visit us at your earliest convenience.',
-        delivery: 'Thank you for choosing {businessName}! Your order #{receiptNumber} has been delivered. We hope to serve you again soon!'
+        delivery: 'Thank you for choosing {businessName}! Your order #{receiptNumber} has been delivered. We hope to serve you again soon!',
+        invoice: '🧾 Invoice from {businessName}\n\nOrder: #{receiptNumber}\nCustomer: {customerName}\nTotal: {price} SAR\nPaid: {paidAmount} SAR\nBalance: {balance} SAR\nDue Date: {dueDate}\n\nThank you for your business!',
+        statusUpdate: '📋 Order Update from {businessName}\n\nYour order #{receiptNumber} status has been updated to: {status}\n\nWe will keep you informed of any further changes.',
+        dueReminder: '⏰ Reminder from {businessName}\n\nYour order #{receiptNumber} is due on {dueDate}. Please visit us to collect your order.\n\nBalance remaining: {balance} SAR'
       }
     });
   } catch (error) {

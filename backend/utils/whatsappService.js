@@ -180,6 +180,84 @@ const sendDeliveryNotification = async (user, customer, order) => {
   return sendMessage(settings, customer.phone, message);
 };
 
+const sendInvoiceNotification = async (user, customer, order) => {
+  const settings = user.whatsappSettings;
+  if (!settings?.enabled || !settings?.autoInvoice) {
+    return { success: false, error: 'Auto-invoice disabled' };
+  }
+  if (!user.whatsappAddon?.activated) {
+    return { success: false, error: 'WhatsApp addon not activated' };
+  }
+
+  const template = settings.invoiceMessageTemplate || '🧾 Invoice from {businessName}\n\nOrder: #{receiptNumber}\nCustomer: {customerName}\nTotal: {price} SAR\nPaid: {paidAmount} SAR\nBalance: {balance} SAR\nDue Date: {dueDate}\n\nThank you for your business!';
+  const message = parseMessageTemplate(template, {
+    businessName: user.businessName,
+    receiptNumber: order.receiptNumber,
+    customerName: customer.name,
+    price: order.price || 0,
+    paidAmount: order.paidAmount || 0,
+    balance: (order.price || 0) - (order.paidAmount || 0),
+    dueDate: order.dueDate ? new Date(order.dueDate).toLocaleDateString() : 'TBD'
+  });
+
+  return sendMessage(settings, customer.phone, message);
+};
+
+const sendStatusUpdateNotification = async (user, customer, order, newStatus) => {
+  const settings = user.whatsappSettings;
+  if (!settings?.enabled || !settings?.autoStatusUpdate) {
+    return { success: false, error: 'Auto-status-update disabled' };
+  }
+  if (!user.whatsappAddon?.activated) {
+    return { success: false, error: 'WhatsApp addon not activated' };
+  }
+
+  const statusLabels = {
+    pending: 'Pending / قيد الانتظار',
+    'in-progress': 'In Progress / قيد التنفيذ',
+    completed: 'Completed / مكتمل',
+    delivered: 'Delivered / تم التسليم',
+    cancelled: 'Cancelled / ملغي'
+  };
+
+  const template = settings.statusUpdateMessageTemplate || '📋 Order Update from {businessName}\n\nYour order #{receiptNumber} status has been updated to: {status}\n\nWe will keep you informed of any further changes.';
+  const message = parseMessageTemplate(template, {
+    businessName: user.businessName,
+    receiptNumber: order.receiptNumber,
+    customerName: customer.name,
+    status: statusLabels[newStatus] || newStatus,
+    price: order.price || 0,
+    paidAmount: order.paidAmount || 0,
+    balance: (order.price || 0) - (order.paidAmount || 0),
+    dueDate: order.dueDate ? new Date(order.dueDate).toLocaleDateString() : 'TBD'
+  });
+
+  return sendMessage(settings, customer.phone, message);
+};
+
+const sendDueReminderNotification = async (user, customer, order) => {
+  const settings = user.whatsappSettings;
+  if (!settings?.enabled || !settings?.autoDueReminder) {
+    return { success: false, error: 'Auto-due-reminder disabled' };
+  }
+  if (!user.whatsappAddon?.activated) {
+    return { success: false, error: 'WhatsApp addon not activated' };
+  }
+
+  const template = settings.dueReminderMessageTemplate || '⏰ Reminder from {businessName}\n\nYour order #{receiptNumber} is due on {dueDate}. Please visit us to collect your order.\n\nBalance remaining: {balance} SAR';
+  const message = parseMessageTemplate(template, {
+    businessName: user.businessName,
+    receiptNumber: order.receiptNumber,
+    customerName: customer.name,
+    price: order.price || 0,
+    paidAmount: order.paidAmount || 0,
+    balance: (order.price || 0) - (order.paidAmount || 0),
+    dueDate: order.dueDate ? new Date(order.dueDate).toLocaleDateString() : 'TBD'
+  });
+
+  return sendMessage(settings, customer.phone, message);
+};
+
 module.exports = {
   sendMessage,
   sendTemplateMessage,
@@ -188,5 +266,8 @@ module.exports = {
   sendOrderNotification,
   sendReadyNotification,
   sendDeliveryNotification,
+  sendInvoiceNotification,
+  sendStatusUpdateNotification,
+  sendDueReminderNotification,
   formatPhoneNumber
 };

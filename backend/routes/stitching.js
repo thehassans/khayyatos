@@ -290,6 +290,16 @@ router.post('/', blockDemoWrites, async (req, res) => {
         })
         .catch(err => console.error('WhatsApp error:', err));
     }
+
+    // Send WhatsApp auto-invoice on order creation (addon feature)
+    if (user?.whatsappSettings?.enabled && user?.whatsappSettings?.autoInvoice && user?.whatsappAddon?.activated) {
+      whatsappService.sendInvoiceNotification(user, customer, stitching)
+        .then(result => {
+          if (result.success) console.log('WhatsApp invoice notification sent');
+          else console.log('WhatsApp invoice failed:', result.error);
+        })
+        .catch(err => console.error('WhatsApp invoice error:', err));
+    }
     
     res.status(201).json({ 
       message: 'Stitching order created successfully',
@@ -524,6 +534,15 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
               if (result.success) console.log('WhatsApp delivery notification sent');
             })
             .catch(err => console.error('WhatsApp error:', err));
+        }
+
+        // Live Status Update notification (addon feature) — fires for ALL status changes
+        if (user.whatsappSettings.autoStatusUpdate && user.whatsappAddon?.activated) {
+          whatsappService.sendStatusUpdateNotification(user, customer, stitching, status)
+            .then(result => {
+              if (result.success) console.log('WhatsApp status update notification sent');
+            })
+            .catch(err => console.error('WhatsApp status update error:', err));
         }
       }
     }

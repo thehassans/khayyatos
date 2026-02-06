@@ -184,9 +184,15 @@ const userSchema = new mongoose.Schema({
     autoMessageOnOrder: { type: Boolean, default: true },
     autoMessageOnReady: { type: Boolean, default: true },
     autoMessageOnDelivery: { type: Boolean, default: true },
+    autoInvoice: { type: Boolean, default: false },
+    autoStatusUpdate: { type: Boolean, default: false },
+    autoDueReminder: { type: Boolean, default: false },
     orderMessageTemplate: { type: String, default: 'Thank you for your order at {businessName}! Your order #{receiptNumber} has been received. Total: {price} SAR. Due date: {dueDate}. We will notify you when it is ready.' },
     readyMessageTemplate: { type: String, default: 'Good news! Your order #{receiptNumber} at {businessName} is ready for pickup. Please visit us at your earliest convenience.' },
-    deliveryMessageTemplate: { type: String, default: 'Thank you for choosing {businessName}! Your order #{receiptNumber} has been delivered. We hope to serve you again soon!' }
+    deliveryMessageTemplate: { type: String, default: 'Thank you for choosing {businessName}! Your order #{receiptNumber} has been delivered. We hope to serve you again soon!' },
+    invoiceMessageTemplate: { type: String, default: '🧾 Invoice from {businessName}\n\nOrder: #{receiptNumber}\nCustomer: {customerName}\nTotal: {price} SAR\nPaid: {paidAmount} SAR\nBalance: {balance} SAR\nDue Date: {dueDate}\n\nThank you for your business!' },
+    statusUpdateMessageTemplate: { type: String, default: '📋 Order Update from {businessName}\n\nYour order #{receiptNumber} status has been updated to: {status}\n\nWe will keep you informed of any further changes.' },
+    dueReminderMessageTemplate: { type: String, default: '⏰ Reminder from {businessName}\n\nYour order #{receiptNumber} is due on {dueDate}. Please visit us to collect your order.\n\nBalance remaining: {balance} SAR' }
   },
   zatcaSettings: {
     vatNumber: { type: String, default: '' },

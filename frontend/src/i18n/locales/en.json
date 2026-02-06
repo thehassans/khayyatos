@@ -354,7 +354,11 @@
     "featureDueReminder": "Due Reminders",
     "featureDueReminderDesc": "Automated reminders sent before order due dates.",
     "featureBulkMsg": "Bulk Messaging",
-    "featureBulkMsgDesc": "Send promotional or informational messages to multiple customers at once."
+    "featureBulkMsgDesc": "Send promotional or informational messages to multiple customers at once.",
+    "sendDueRemindersNow": "Send Due Reminders Now",
+    "invoiceTemplate": "Invoice Message Template",
+    "statusUpdateTemplate": "Status Update Message Template",
+    "dueReminderTemplate": "Due Reminder Message Template"
   },
   "settings": {
     "title": "Settings",

@@ -348,7 +348,11 @@
     "featureDueReminder": "ड्यू रिमाइंडर",
     "featureDueReminderDesc": "ऑर्डर ड्यू डेट से पहले स्वचालित रिमाइंडर भेजें।",
     "featureBulkMsg": "बल्क मैसेजिंग",
-    "featureBulkMsgDesc": "एक साथ कई ग्राहकों को प्रमोशनल या सूचनात्मक संदेश भेजें।"
+    "featureBulkMsgDesc": "एक साथ कई ग्राहकों को प्रमोशनल या सूचनात्मक संदेश भेजें।",
+    "sendDueRemindersNow": "अभी ड्यू रिमाइंडर भेजें",
+    "invoiceTemplate": "इनवॉइस संदेश टेम्पलेट",
+    "statusUpdateTemplate": "स्टेटस अपडेट संदेश टेम्पलेट",
+    "dueReminderTemplate": "ड्यू रिमाइंडर संदेश टेम्पलेट"
   },
   "settings": {
     "title": "सेटिंग्स",

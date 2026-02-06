@@ -25,6 +25,7 @@ const WhatsApp = () => {
   const [addonStatus, setAddonStatus] = useState({ activated: false, pricing: {} });
   const [addonLoading, setAddonLoading] = useState(true);
   
+  const [sendingReminders, setSendingReminders] = useState(false);
   const [settings, setSettings] = useState({
     enabled: false,
     accessToken: '',
@@ -33,15 +34,24 @@ const WhatsApp = () => {
     autoMessageOnOrder: true,
     autoMessageOnReady: true,
     autoMessageOnDelivery: true,
+    autoInvoice: false,
+    autoStatusUpdate: false,
+    autoDueReminder: false,
     orderMessageTemplate: '',
     readyMessageTemplate: '',
-    deliveryMessageTemplate: ''
+    deliveryMessageTemplate: '',
+    invoiceMessageTemplate: '',
+    statusUpdateMessageTemplate: '',
+    dueReminderMessageTemplate: ''
   });
 
   const defaultTemplates = {
     order: 'Thank you for your order at {businessName}! Your order #{receiptNumber} has been received. Total: {price} SAR. Due date: {dueDate}. We will notify you when it is ready.\n\nشكراً لطلبكم من {businessName}! تم استلام طلبكم رقم #{receiptNumber}. المبلغ: {price} ريال. موعد التسليم: {dueDate}.',
     ready: 'Good news! Your order #{receiptNumber} at {businessName} is ready for pickup. Please visit us at your earliest convenience.\n\nأخبار سارة! طلبكم رقم #{receiptNumber} جاهز للاستلام. نتطلع لزيارتكم!',
-    delivery: 'Thank you for choosing {businessName}! Your order #{receiptNumber} has been delivered. We hope to serve you again soon!\n\nشكراً لاختياركم {businessName}! تم تسليم طلبكم رقم #{receiptNumber}. نتمنى خدمتكم مرة أخرى!'
+    delivery: 'Thank you for choosing {businessName}! Your order #{receiptNumber} has been delivered. We hope to serve you again soon!\n\nشكراً لاختياركم {businessName}! تم تسليم طلبكم رقم #{receiptNumber}. نتمنى خدمتكم مرة أخرى!',
+    invoice: '🧾 Invoice from {businessName}\n\nOrder: #{receiptNumber}\nCustomer: {customerName}\nTotal: {price} SAR\nPaid: {paidAmount} SAR\nBalance: {balance} SAR\nDue Date: {dueDate}\n\nThank you for your business!',
+    statusUpdate: '📋 Order Update from {businessName}\n\nYour order #{receiptNumber} status has been updated to: {status}\n\nWe will keep you informed of any further changes.',
+    dueReminder: '⏰ Reminder from {businessName}\n\nYour order #{receiptNumber} is due on {dueDate}. Please visit us to collect your order.\n\nBalance remaining: {balance} SAR'
   };
 
   useEffect(() => {
@@ -65,7 +75,10 @@ const WhatsApp = () => {
         accessToken: '',
         orderMessageTemplate: response.data.orderMessageTemplate || defaultTemplates.order,
         readyMessageTemplate: response.data.readyMessageTemplate || defaultTemplates.ready,
-        deliveryMessageTemplate: response.data.deliveryMessageTemplate || defaultTemplates.delivery
+        deliveryMessageTemplate: response.data.deliveryMessageTemplate || defaultTemplates.delivery,
+        invoiceMessageTemplate: response.data.invoiceMessageTemplate || defaultTemplates.invoice,
+        statusUpdateMessageTemplate: response.data.statusUpdateMessageTemplate || defaultTemplates.statusUpdate,
+        dueReminderMessageTemplate: response.data.dueReminderMessageTemplate || defaultTemplates.dueReminder
       });
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -424,7 +437,7 @@ const WhatsApp = () => {
                     <p className="text-sm text-gray-500 dark:text-slate-400">{t('whatsapp.autoInvoiceDesc')}</p>
                   </div>
                 </div>
-                <span className="text-xs text-gray-400 dark:text-slate-500 italic">Coming soon</span>
+                <input type="checkbox" checked={settings.autoInvoice} onChange={(e) => setSettings({ ...settings, autoInvoice: e.target.checked })} className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
               </div>
             </CardBody>
           </Card>
@@ -448,7 +461,7 @@ const WhatsApp = () => {
                     <p className="text-sm text-gray-500 dark:text-slate-400">{t('whatsapp.autoStatusUpdateDesc')}</p>
                   </div>
                 </div>
-                <span className="text-xs text-gray-400 dark:text-slate-500 italic">Coming soon</span>
+                <input type="checkbox" checked={settings.autoStatusUpdate} onChange={(e) => setSettings({ ...settings, autoStatusUpdate: e.target.checked })} className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
               </div>
             </CardBody>
           </Card>
@@ -461,7 +474,7 @@ const WhatsApp = () => {
               </h2>
               <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{t('whatsapp.autoDueReminderDesc')}</p>
             </div>
-            <CardBody>
+            <CardBody className="space-y-3">
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 rounded-xl">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-xl ${colorMap.rose.bg} flex items-center justify-center`}>
@@ -472,8 +485,26 @@ const WhatsApp = () => {
                     <p className="text-sm text-gray-500 dark:text-slate-400">{t('whatsapp.autoDueReminderDesc')}</p>
                   </div>
                 </div>
-                <span className="text-xs text-gray-400 dark:text-slate-500 italic">Coming soon</span>
+                <input type="checkbox" checked={settings.autoDueReminder} onChange={(e) => setSettings({ ...settings, autoDueReminder: e.target.checked })} className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
               </div>
+              {settings.autoDueReminder && (
+                <Button
+                  variant="outline"
+                  loading={sendingReminders}
+                  icon={Clock}
+                  onClick={async () => {
+                    setSendingReminders(true);
+                    try {
+                      const res = await api.post('/whatsapp/send-due-reminders');
+                      if (res.data.success) toast.success(`Sent ${res.data.sent} of ${res.data.total} reminders`);
+                      else toast.error(res.data.error || 'Failed');
+                    } catch (e) { toast.error('Failed to send reminders'); }
+                    setSendingReminders(false);
+                  }}
+                >
+                  {t('whatsapp.sendDueRemindersNow')}
+                </Button>
+              )}
             </CardBody>
           </Card>
 
@@ -489,7 +520,7 @@ const WhatsApp = () => {
           <Card className="p-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
             <h3 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">{t('whatsapp.availableVars')}</h3>
             <div className="flex flex-wrap gap-2">
-              {['{businessName}', '{receiptNumber}', '{customerName}', '{price}', '{paidAmount}', '{balance}', '{dueDate}'].map((v) => (
+              {['{businessName}', '{receiptNumber}', '{customerName}', '{price}', '{paidAmount}', '{balance}', '{dueDate}', '{status}'].map((v) => (
                 <code key={v} className="px-2 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded text-sm">{v}</code>
               ))}
             </div>
@@ -498,11 +529,17 @@ const WhatsApp = () => {
           {[
             { key: 'orderMessageTemplate', label: t('whatsapp.orderTemplate'), dflt: defaultTemplates.order },
             { key: 'readyMessageTemplate', label: t('whatsapp.readyTemplate'), dflt: defaultTemplates.ready },
-            { key: 'deliveryMessageTemplate', label: t('whatsapp.deliveryTemplate'), dflt: defaultTemplates.delivery }
+            { key: 'deliveryMessageTemplate', label: t('whatsapp.deliveryTemplate'), dflt: defaultTemplates.delivery },
+            { key: 'invoiceMessageTemplate', label: t('whatsapp.autoInvoice'), dflt: defaultTemplates.invoice, addon: true },
+            { key: 'statusUpdateMessageTemplate', label: t('whatsapp.autoStatusUpdate'), dflt: defaultTemplates.statusUpdate, addon: true },
+            { key: 'dueReminderMessageTemplate', label: t('whatsapp.autoDueReminder'), dflt: defaultTemplates.dueReminder, addon: true }
           ].map((tmpl) => (
             <Card key={tmpl.key}>
               <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800">
-                <h2 className="font-semibold text-gray-900 dark:text-slate-100">{tmpl.label}</h2>
+                <h2 className="font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
+                  {tmpl.label}
+                  {tmpl.addon && <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider" style={{ background: `${GOLD}20`, color: GOLD }}>{t('whatsapp.addonBadge')}</span>}
+                </h2>
               </div>
               <CardBody>
                 <Textarea value={settings[tmpl.key]} onChange={(e) => setSettings({ ...settings, [tmpl.key]: e.target.value })} rows={4} />
