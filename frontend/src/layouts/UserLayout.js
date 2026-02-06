@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import OnboardingWizard from '../components/OnboardingWizard';
@@ -31,6 +31,7 @@ const UserLayout = () => {
   const { t, i18n } = useTranslation();
   const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(user?.sidebarCollapsed || false);
   const [langOpen, setLangOpen] = useState(false);
@@ -329,16 +330,81 @@ const UserLayout = () => {
         </div>
       </aside>
 
+      {/* Bottom Navigation Bar — Mobile & Tablet only */}
+      {(() => {
+        const bottomNavItems = [
+          { key: 'dashboard', to: '/user/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
+          { key: 'stitchings', to: '/user/stitchings', icon: Scissors, label: t('nav.stitchings') },
+          { key: 'customers', to: '/user/customers', icon: UserPlus, label: t('nav.customers') },
+          { key: 'workers', to: '/user/workers', icon: Users, label: t('nav.workers') },
+        ];
+        const isBottomActive = (to) => location.pathname === to || location.pathname.startsWith(to + '/');
+
+        return (
+          <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
+            <div className="relative">
+              <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/80 backdrop-blur-2xl border-t border-gray-200/60 dark:border-slate-700/60" />
+              <div className="relative flex items-center justify-around px-2 py-1 safe-area-pb">
+                {bottomNavItems.map((item) => {
+                  const active = isBottomActive(item.to);
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => navigate(item.to)}
+                      className={`relative flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl transition-all duration-200 min-w-[60px] ${
+                        active
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-gray-400 dark:text-slate-500 active:text-gray-600 dark:active:text-slate-300'
+                      }`}
+                    >
+                      {active && (
+                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+                      )}
+                      <item.icon className={`w-5 h-5 transition-transform duration-200 ${active ? 'scale-110' : ''}`} />
+                      <span className={`text-[10px] font-semibold leading-tight ${active ? 'text-emerald-700 dark:text-emerald-300' : ''}`}>{item.label}</span>
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  className="relative flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl transition-all duration-200 min-w-[60px] text-gray-400 dark:text-slate-500 active:text-gray-600 dark:active:text-slate-300"
+                >
+                  <Menu className="w-5 h-5" />
+                  <span className="text-[10px] font-semibold leading-tight">{t('common.more', { defaultValue: 'More' })}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       <div className={`transition-all duration-300 ${
         isRTL 
           ? (sidebarCollapsed ? 'lg:mr-20' : 'lg:mr-64') 
           : (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64')
       }`}>
         <header className={getHeaderClasses()}>
-          <div className="flex items-center justify-between px-4 py-3 lg:px-6">
+          <div className="flex items-center justify-between px-4 py-2.5 lg:px-6 lg:py-3">
+            {/* Mobile/Tablet: show logo + business name instead of hamburger */}
+            <div className="flex items-center gap-3 lg:hidden min-w-0">
+              {user?.logo ? (
+                <div className="w-9 h-9 rounded-xl overflow-hidden bg-emerald-950/20 border border-gray-200/70 dark:border-slate-700 flex-shrink-0 shadow-sm">
+                  <img src={user.logo} alt="Logo" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+                  <Scissors className="w-4 h-4 text-white" />
+                </div>
+              )}
+              <span className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate">{user?.businessName || t('common.appName')}</span>
+            </div>
+
+            {/* Desktop: hamburger (hidden on lg) */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className={`p-2 rounded-lg lg:hidden ${
+              className={`p-2 rounded-lg hidden ${
                 headerStyle === 'colored' || headerStyle === 'gradient' 
                   ? 'hover:bg-white/20 text-white' 
                   : 'hover:bg-gray-100 dark:hover:bg-slate-800/50'
@@ -347,7 +413,7 @@ const UserLayout = () => {
               <Menu className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-4 ml-auto">
+            <div className="flex items-center gap-2 sm:gap-3 ml-auto">
               <button
                 type="button"
                 onClick={() => {
@@ -356,7 +422,7 @@ const UserLayout = () => {
                   setOnboardingOpen(true);
                 }}
                 data-tutorial="header-tutorial"
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all border shadow-sm hover:shadow ${
+                className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-xl transition-all border shadow-sm hover:shadow ${
                   headerStyle === 'colored' || headerStyle === 'gradient'
                     ? 'bg-white/15 hover:bg-white/25 border-white/20 text-white'
                     : 'bg-white/70 hover:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 border-gray-200/70 dark:border-slate-700/70'
@@ -364,7 +430,7 @@ const UserLayout = () => {
                 title={t('onboardingWizard.liveTutorial', { defaultValue: 'Live tutorial' })}
               >
                 <HelpCircle className="w-4 h-4" />
-                <span className="text-sm font-medium">
+                <span className="text-sm font-medium hidden sm:inline">
                   {t('onboardingWizard.liveTutorial', { defaultValue: 'Live tutorial' })}
                 </span>
               </button>
@@ -373,19 +439,19 @@ const UserLayout = () => {
               <div className="relative">
                 <button
                   onClick={() => setLangOpen(!langOpen)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all border shadow-sm hover:shadow ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-xl transition-all border shadow-sm hover:shadow ${
                     headerStyle === 'colored' || headerStyle === 'gradient'
                       ? 'bg-white/15 hover:bg-white/25 border-white/20 text-white'
                       : 'bg-white/70 hover:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 border-gray-200/70 dark:border-slate-700/70'
                   }`}
                 >
                   <span className="text-lg">{languages.find(l => l.code === currentLang)?.flag}</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${langOpen ? 'rotate-180' : ''} ${headerStyle === 'colored' || headerStyle === 'gradient' ? 'text-white/60' : 'text-gray-400 dark:text-slate-400'}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${langOpen ? 'rotate-180' : ''} ${headerStyle === 'colored' || headerStyle === 'gradient' ? 'text-white/60' : 'text-gray-400 dark:text-slate-400'}`} />
                 </button>
                 {langOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setLangOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 py-2 z-50 animate-fadeIn">
+                    <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} mt-2 w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 py-2 z-50 animate-fadeIn`}>
                       <div className="px-4 py-2 border-b border-gray-100 dark:border-slate-800">
                         <p className="text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wider">Select Language</p>
                       </div>
@@ -418,7 +484,7 @@ const UserLayout = () => {
           </div>
         </header>
 
-        <main className="p-4 lg:p-6">
+        <main className="p-4 lg:p-6 pb-24 lg:pb-6">
           <Outlet />
         </main>
       </div>

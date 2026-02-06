@@ -250,38 +250,41 @@ const CustomerProfile = () => {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4 min-w-0">
-          <button onClick={() => navigate('/user/customers')} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800/50 dark:text-slate-300 rounded-lg">
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/user/customers')} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800/50 dark:text-slate-300 rounded-lg flex-shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 truncate">{displayName}</h1>
-            <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-slate-400">
-              <span className="inline-flex items-center gap-1"><Phone className="w-4 h-4" />{customer.phone}</span>
-              <span className="inline-flex items-center gap-1"><Receipt className="w-4 h-4" />{customer.totalOrders || 0} {t('customers.totalOrders')}</span>
-              <span className="inline-flex items-center gap-1"><SARIcon className="w-4 h-4" />{customer.totalSpent || 0}</span>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 truncate">{displayName}</h1>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-gray-500 dark:text-slate-400">
+              <span className="inline-flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{customer.phone}</span>
+              <span className="hidden sm:inline-flex items-center gap-1"><Receipt className="w-3.5 h-3.5" />{customer.totalOrders || 0} {t('customers.totalOrders')}</span>
+              <span className="hidden sm:inline-flex items-center gap-1"><SARIcon className="w-3.5 h-3.5" />{customer.totalSpent || 0}</span>
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Button
-            variant="success"
-            onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate(`/user/stitchings/new?customerId=${customer._id}`))}
-            icon={Plus}
-            disabled={isDemo}
-          >
-            {t('stitchings.createOrder')}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate(`/user/customers/${customer._id}/edit`))}
-            icon={Edit}
-            disabled={isDemo}
-          >
-            {t('common.edit', { defaultValue: 'Edit' })}
-          </Button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Button
+              variant="success"
+              size="sm"
+              onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate(`/user/stitchings/new?customerId=${customer._id}`))}
+              icon={Plus}
+              disabled={isDemo}
+              className="whitespace-nowrap"
+            >
+              <span className="hidden sm:inline">{t('stitchings.createOrder')}</span>
+              <span className="sm:hidden">{t('common.new', { defaultValue: 'New' })}</span>
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate(`/user/customers/${customer._id}/edit`))}
+              icon={Edit}
+              disabled={isDemo}
+            >
+              <span className="hidden sm:inline">{t('common.edit', { defaultValue: 'Edit' })}</span>
+            </Button>
+          </div>
         </div>
       </div>
 

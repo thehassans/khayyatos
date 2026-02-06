@@ -125,6 +125,11 @@ input:focus, select:focus, textarea:focus {
   animation: spin-reverse 8s linear infinite;
 }
 
+/* Safe area padding for bottom nav on iOS */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* Video fade-in for login page */
 @keyframes fadeInVideo {
   from { opacity: 0; }
