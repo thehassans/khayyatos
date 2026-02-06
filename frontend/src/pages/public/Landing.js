@@ -42,6 +42,7 @@ const Landing = () => {
   const featuresRef = useRef(null);
   const howRef = useRef(null);
   const contactRef = useRef(null);
+  const heroVideoRef = useRef(null);
 
   const currentLang = (i18n?.language || 'en').split('-')[0];
   const isRTL = ['ar', 'ur'].includes(currentLang);
@@ -63,6 +64,14 @@ const Landing = () => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const v = heroVideoRef.current;
+    if (!v) return;
+    const onTime = () => { if (v.currentTime >= 5) { v.currentTime = 0; v.play(); } };
+    v.addEventListener('timeupdate', onTime);
+    return () => v.removeEventListener('timeupdate', onTime);
   }, []);
 
   const handleDemo = async () => {
@@ -133,7 +142,8 @@ const Landing = () => {
             <div className="flex items-center gap-2">
               <div className="relative">
                 <button onClick={() => setLangOpen(v => !v)} className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-sm transition-colors ${scrolled ? 'border border-slate-200/70 bg-white/80 hover:bg-white' : 'border border-white/20 bg-white/10 hover:bg-white/20'}`}>
-                  <span>{languages.find(l => l.code === currentLang)?.flag}</span>
+                  <span className={scrolled ? '' : 'drop-shadow-sm'}>{languages.find(l => l.code === currentLang)?.flag}</span>
+                  <span className={`text-xs font-medium transition-colors ${scrolled ? 'text-slate-700' : 'text-white'}`}>{languages.find(l => l.code === currentLang)?.label}</span>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${langOpen ? 'rotate-180' : ''} ${scrolled ? 'text-slate-400' : 'text-white/60'}`} />
                 </button>
                 {langOpen && (
@@ -188,9 +198,9 @@ const Landing = () => {
       {/* ── Hero ── */}
       <section className="relative overflow-hidden bg-[#060606] pt-28 sm:pt-36 pb-20 sm:pb-28">
         <video
+          ref={heroVideoRef}
           autoPlay
           muted
-          loop
           playsInline
           disablePictureInPicture
           preload="metadata"
