@@ -732,5 +732,152 @@
         }
       }
     }
+  },
+  "help": {
+    "title": "Help & Support",
+    "subtitle": "Get help with KhayyatOS",
+    "contactUs": "Contact Us",
+    "guidesTitle": "Quick Guides",
+    "faqTitle": "Frequently Asked Questions",
+    "workingHours": "Available Sunday – Thursday, 9 AM – 6 PM (Saudi Time)",
+    "footer": "Still need help? Contact us and we'll respond within 24 hours.",
+    "contact": {
+      "phone": "Phone Support",
+      "phoneDesc": "Call us for immediate assistance",
+      "whatsapp": "WhatsApp",
+      "whatsappDesc": "Message us on WhatsApp",
+      "email": "Email",
+      "emailDesc": "Send us an email"
+    },
+    "guides": {
+      "quickStart": "Quick Start Guide",
+      "quickStartDesc": "Get up and running in 5 minutes",
+      "orders": "Managing Orders",
+      "ordersDesc": "Create, assign, and track stitching orders",
+      "languages": "Language & RTL Setup",
+      "languagesDesc": "Configure Arabic, Urdu, and other languages",
+      "zatca": "ZATCA E-Invoicing",
+      "zatcaDesc": "Set up Saudi tax compliance"
+    },
+    "faq": {
+      "q1": "How do I create my first order?",
+      "a1": "Go to Stitchings → Create Order. Select or create a customer, fill in measurements, choose thawb type and style options, set the price and due date, then save.",
+      "q2": "How do I add workers and assign orders?",
+      "a2": "Go to Workers → Create Worker. Once created, you can assign any order to a worker from the order details page. Track their progress and payments from Worker Amounts.",
+      "q3": "How does WhatsApp integration work?",
+      "a3": "Go to Settings → WhatsApp. Enter your WhatsApp Cloud API credentials (Phone Number ID and Access Token). Once connected, automatic notifications will be sent for new orders, ready orders, and deliveries.",
+      "q4": "Can I use the app in Arabic?",
+      "a4": "Yes! KhayyatOS supports 5 languages including Arabic with full RTL layout. Go to Settings → General → Language to switch.",
+      "q5": "How do I set up ZATCA e-invoicing?",
+      "a5": "Go to ZATCA from the sidebar. Enable the integration, enter your VAT number and business details, then follow the onboarding steps to get your compliance and production certificates.",
+      "q6": "How do I track fabric inventory?",
+      "a6": "Go to Fabrics → Add Fabric. Enter the fabric name, made in, price per roll, and stock quantity. You can adjust stock anytime and the system tracks total inventory value."
+    }
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdated": "Last updated: February 2025",
+    "intro": "Welcome to KhayyatOS. Please read these Terms of Service carefully before using our platform. These terms govern your use of KhayyatOS and constitute a legally binding agreement between you and KhayyatOS.",
+    "sections": {
+      "acceptance": {
+        "title": "1. Acceptance of Terms",
+        "content": "By accessing or using KhayyatOS (\"the Service\"), you agree to be bound by these Terms of Service. If you do not agree to these terms, you may not use the Service. These terms apply to all users including shop owners, workers, and administrators."
+      },
+      "description": {
+        "title": "2. Service Description",
+        "content": "KhayyatOS is a cloud-based tailoring management system that provides tools for managing orders, customers, workers, measurements, payments, embroidery designs, fabric inventory, laundry services, WhatsApp notifications, ZATCA e-invoicing, and more. The Service is provided on a subscription basis."
+      },
+      "accounts": {
+        "title": "3. User Accounts",
+        "content": "You are responsible for maintaining the confidentiality of your account credentials. You must provide accurate and complete information when creating an account. You are responsible for all activities that occur under your account. You must notify us immediately of any unauthorized use of your account."
+      },
+      "subscription": {
+        "title": "4. Subscription & Payments",
+        "content": "The Service offers Trial (7 days), Yearly, and Lifetime subscription plans. Subscription fees are non-refundable except as required by applicable law. We reserve the right to modify pricing with 30 days advance notice. Access to the Service may be restricted if your subscription expires."
+      },
+      "usage": {
+        "title": "5. Acceptable Use",
+        "content": "You agree not to: (a) use the Service for any unlawful purpose; (b) attempt to gain unauthorized access to the Service or its related systems; (c) interfere with or disrupt the Service; (d) upload malicious code or content; (e) resell or redistribute the Service without authorization; (f) use the Service to store or transmit content that violates any third party rights."
+      },
+      "data": {
+        "title": "6. Data Ownership",
+        "content": "You retain ownership of all data you enter into the Service, including customer information, orders, measurements, and business data. We do not claim ownership of your data. You grant us a limited license to use your data solely for the purpose of providing and improving the Service."
+      },
+      "availability": {
+        "title": "7. Service Availability",
+        "content": "We strive to maintain 99.9% uptime but do not guarantee uninterrupted access. The Service may be temporarily unavailable due to maintenance, updates, or circumstances beyond our control. We will make reasonable efforts to notify users of planned downtime in advance."
+      },
+      "liability": {
+        "title": "8. Limitation of Liability",
+        "content": "To the maximum extent permitted by law, KhayyatOS shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, or goodwill. Our total liability shall not exceed the amount paid by you in the 12 months preceding the claim."
+      },
+      "termination": {
+        "title": "9. Termination",
+        "content": "We may suspend or terminate your access to the Service at any time for violation of these terms. Upon termination, your right to use the Service will immediately cease. You may request export of your data within 30 days of termination. After 30 days, your data may be permanently deleted."
+      },
+      "changes": {
+        "title": "10. Changes to Terms",
+        "content": "We reserve the right to modify these terms at any time. We will notify users of material changes via email or in-app notification at least 14 days before they take effect. Continued use of the Service after changes become effective constitutes acceptance of the new terms."
+      },
+      "governing": {
+        "title": "11. Governing Law",
+        "content": "These terms are governed by the laws of the Kingdom of Saudi Arabia. Any disputes arising from these terms shall be resolved in the competent courts of Riyadh, Saudi Arabia."
+      },
+      "contact": {
+        "title": "12. Contact Information",
+        "content": "For questions about these Terms of Service, please contact us at support@khayyatos.com or call +966 50 123 4567."
+      }
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated: February 2025",
+    "intro": "At KhayyatOS, we take your privacy seriously. This Privacy Policy explains how we collect, use, store, and protect your information when you use our tailoring management platform. By using KhayyatOS, you consent to the practices described in this policy.",
+    "sections": {
+      "collect": {
+        "title": "1. Information We Collect",
+        "content": "We collect the following types of information:\n\n• Account Information: Name, email address, phone number, business name, and password when you create an account.\n• Business Data: Customer records, worker information, orders, measurements, payment records, and other data you enter into the system.\n• Usage Data: Log data, device information, browser type, IP address, and pages visited to improve our Service.\n• Communication Data: Messages sent through WhatsApp integration (only metadata, not message content)."
+      },
+      "use": {
+        "title": "2. How We Use Your Information",
+        "content": "We use your information to:\n\n• Provide, maintain, and improve the Service.\n• Process your transactions and manage your subscription.\n• Send you important notifications about your account and service updates.\n• Provide customer support and respond to your inquiries.\n• Ensure the security and integrity of the Service.\n• Comply with legal obligations including ZATCA e-invoicing requirements."
+      },
+      "storage": {
+        "title": "3. Data Storage & Security",
+        "content": "Your data is stored on secure cloud servers with industry-standard encryption. We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction. All data transmissions are encrypted using TLS/SSL protocols."
+      },
+      "sharing": {
+        "title": "4. Data Sharing",
+        "content": "We do not sell, trade, or rent your personal information to third parties. We may share your information only in these circumstances:\n\n• With your explicit consent.\n• With service providers who assist in operating our Service (hosting, payment processing).\n• When required by law, court order, or government regulation.\n• To protect the rights, safety, or property of KhayyatOS or its users.\n• In connection with a merger, acquisition, or sale of assets (with prior notice)."
+      },
+      "retention": {
+        "title": "5. Data Retention",
+        "content": "We retain your data for as long as your account is active or as needed to provide you the Service. If you close your account, we will delete or anonymize your data within 30 days, except where we are required to retain it for legal or regulatory purposes (e.g., tax records for ZATCA compliance may be retained for up to 7 years)."
+      },
+      "rights": {
+        "title": "6. Your Rights",
+        "content": "You have the right to:\n\n• Access: Request a copy of your personal data at any time.\n• Correction: Update or correct inaccurate information.\n• Deletion: Request deletion of your personal data (subject to legal retention requirements).\n• Export: Download all your business data in JSON format from Settings → Data & Backup.\n• Restriction: Request that we limit the processing of your personal data.\n• Objection: Object to the processing of your data for specific purposes."
+      },
+      "cookies": {
+        "title": "7. Cookies & Local Storage",
+        "content": "We use essential cookies and local storage to maintain your session, remember your language preference, and store your theme settings. We do not use tracking cookies or third-party advertising cookies. You can clear local storage from Settings → Data & Backup → Clear Cache."
+      },
+      "thirdParty": {
+        "title": "8. Third-Party Services",
+        "content": "The Service may integrate with third-party services including:\n\n• WhatsApp Cloud API (Meta) for customer notifications.\n• ZATCA for e-invoicing compliance.\n\nThese services have their own privacy policies. We recommend reviewing their policies. We only share the minimum data necessary for these integrations to function."
+      },
+      "children": {
+        "title": "9. Children's Privacy",
+        "content": "KhayyatOS is designed for business use and is not intended for children under 18. We do not knowingly collect personal information from children. If we discover that we have collected data from a child, we will delete it promptly."
+      },
+      "changes": {
+        "title": "10. Changes to This Policy",
+        "content": "We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the new policy on this page and sending an in-app notification. Changes are effective when posted. We encourage you to review this policy periodically."
+      },
+      "contact": {
+        "title": "11. Contact Us",
+        "content": "If you have questions about this Privacy Policy or wish to exercise your data rights, please contact us:\n\n• Email: support@khayyatos.com\n• Phone: +966 50 123 4567\n• Address: Riyadh, Kingdom of Saudi Arabia"
+      }
+    }
   }
 }

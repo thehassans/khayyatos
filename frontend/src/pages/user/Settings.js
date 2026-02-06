@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Settings as SettingsIcon, Upload, Globe, Sun, Moon, 
   Shield, Download, Bell, Database, ChevronRight, 
@@ -14,6 +14,7 @@ const Settings = () => {
   const { t, i18n } = useTranslation();
   const { api, user, updateUser } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('general');
   const [loading, setLoading] = useState(false);
   const langKey = (i18n?.language || 'en').split('-')[0];
@@ -1422,9 +1423,9 @@ const Settings = () => {
                 <SettingRow icon={Info} title={t('settings.about.version', { defaultValue: 'Version' })} description={t('settings.about.versionDesc', { defaultValue: 'Current app version' })}>
                   <span className="text-sm font-mono text-gray-500">v2.0.0</span>
                 </SettingRow>
-                <SettingRow icon={HelpCircle} title={t('settings.about.help', { defaultValue: 'Help & Support' })} description={t('settings.about.helpDesc', { defaultValue: 'Get help with the app' })} onClick={() => window.open('mailto:support@khayyatos.com')} />
-                <SettingRow icon={FileText} title={t('settings.about.terms', { defaultValue: 'Terms of Service' })} description={t('settings.about.termsDesc', { defaultValue: 'Read our terms' })} onClick={() => {}} />
-                <SettingRow icon={Shield} title={t('settings.about.privacy', { defaultValue: 'Privacy Policy' })} description={t('settings.about.privacyDesc', { defaultValue: 'How we protect your data' })} onClick={() => {}} />
+                <SettingRow icon={HelpCircle} title={t('settings.about.help', { defaultValue: 'Help & Support' })} description={t('settings.about.helpDesc', { defaultValue: 'Get help with the app' })} onClick={() => window.open('/help', '_blank')} />
+                <SettingRow icon={FileText} title={t('settings.about.terms', { defaultValue: 'Terms of Service' })} description={t('settings.about.termsDesc', { defaultValue: 'Read our terms' })} onClick={() => window.open('/terms', '_blank')} />
+                <SettingRow icon={Shield} title={t('settings.about.privacy', { defaultValue: 'Privacy Policy' })} description={t('settings.about.privacyDesc', { defaultValue: 'How we protect your data' })} onClick={() => window.open('/privacy', '_blank')} />
               </div>
               <div className="p-6 text-center text-sm text-gray-500 dark:text-slate-400">
                 {t('settings.about.madeForTailors', { defaultValue: 'Made with ❤️ for tailors everywhere' })}

@@ -87,6 +87,9 @@ const WorkerSettings = lazyRetry(() => import('./pages/worker/Settings'));
 
 const TrackOrder = lazyRetry(() => import('./pages/public/TrackOrder'));
 const DashboardPreview = lazyRetry(() => import('./pages/public/DashboardPreview'));
+const HelpSupport = lazyRetry(() => import('./pages/public/HelpSupport'));
+const TermsOfService = lazyRetry(() => import('./pages/public/TermsOfService'));
+const PrivacyPolicy = lazyRetry(() => import('./pages/public/PrivacyPolicy'));
 
 // Loading wrapper for lazy components with chunk error boundary
 const LazyPage = ({ children, skeleton = 'page' }) => {
@@ -155,6 +158,9 @@ const AppRoutes = () => {
         <Route path="/" element={<HomeRoute />} />
         <Route path="/track-order" element={<LazyPage><TrackOrder /></LazyPage>} />
         <Route path="/preview/dashboard" element={<LazyPage><DashboardPreview /></LazyPage>} />
+        <Route path="/help" element={<LazyPage><HelpSupport /></LazyPage>} />
+        <Route path="/terms" element={<LazyPage><TermsOfService /></LazyPage>} />
+        <Route path="/privacy" element={<LazyPage><PrivacyPolicy /></LazyPage>} />
         
         {/* Auth Routes */}
         <Route path="/login" element={<LoginPage />} />
