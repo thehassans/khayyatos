@@ -445,34 +445,34 @@ const UserDashboard = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className="p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 dark:text-slate-400">{t('dashboard.inProgress')}</p>
-              <p className="text-3xl font-bold text-primary-600 mt-1">{data?.stats?.inProgressStitchings || 0}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-primary-600 mt-1">{data?.stats?.inProgressStitchings || 0}</p>
             </div>
             <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
               <Clock className="w-6 h-6 text-primary-600" />
             </div>
           </div>
         </Card>
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 dark:text-slate-400">{t('common.completed')}</p>
-              <p className="text-3xl font-bold text-emerald-600 mt-1">{data?.stats?.completedStitchings || 0}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-emerald-600 mt-1">{data?.stats?.completedStitchings || 0}</p>
             </div>
             <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
               <CheckCircle className="w-6 h-6 text-emerald-600" />
             </div>
           </div>
         </Card>
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 dark:text-slate-400">{t('common.pending')} Payments</p>
-              <p className="text-3xl font-bold text-amber-600 mt-1 flex items-center gap-1">{data?.stats?.pendingPayments?.toLocaleString() || 0} <SARIcon className="w-6 h-6" /></p>
+              <p className="text-2xl sm:text-3xl font-bold text-amber-600 mt-1 flex items-center gap-1">{data?.stats?.pendingPayments?.toLocaleString() || 0} <SARIcon className="w-6 h-6" /></p>
             </div>
             <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
               <SARIcon className="w-6 h-6 text-amber-600" />
@@ -483,8 +483,8 @@ const UserDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
-          <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900 dark:text-slate-100">{t('dashboard.upcomingDue', { defaultValue: 'Upcoming Due Dates' })}</h2>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
+            <h2 className="font-semibold text-gray-900 dark:text-slate-100 text-sm sm:text-base">{t('dashboard.upcomingDue', { defaultValue: 'Upcoming Due Dates' })}</h2>
             <button
               type="button"
               onClick={() => navigate('/user/stitchings')}
@@ -508,7 +508,7 @@ const UserDashboard = () => {
                     key={stitch._id}
                     type="button"
                     onClick={() => navigate(`/user/stitchings/${stitch._id}/edit`)}
-                    className="w-full px-6 py-4 text-left hover:bg-gray-50 dark:hover:bg-slate-900/40 transition-colors"
+                    className="w-full px-4 sm:px-6 py-3 sm:py-4 text-left hover:bg-gray-50 dark:hover:bg-slate-900/40 transition-colors"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0">
@@ -546,8 +546,8 @@ const UserDashboard = () => {
 
         {/* Recent Orders */}
         <Card>
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-900 dark:text-slate-100">{t('dashboard.recentOrders')}</h2>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-900 dark:text-slate-100 text-sm sm:text-base">{t('dashboard.recentOrders')}</h2>
           </div>
           {data?.recentStitchings?.length > 0 ? (
             <Table>

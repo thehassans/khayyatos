@@ -127,7 +127,7 @@ const WorkerLayout = () => {
           <div className="flex items-center justify-between px-4 py-3 lg:px-6">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="hidden"
+              className="p-2 rounded-lg hover:bg-gray-100 lg:hidden"
             >
               <Menu className="w-5 h-5" />
             </button>

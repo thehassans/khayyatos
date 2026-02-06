@@ -314,16 +314,16 @@ const Stitchings = () => {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('stitchings.title')}</h1>
-        <Button data-tutorial="stitchings-create-button" variant="success" onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/user/stitchings/new'))} icon={Plus}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100">{t('stitchings.title')}</h1>
+        <Button data-tutorial="stitchings-create-button" variant="success" onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/user/stitchings/new'))} icon={Plus} className="w-full sm:w-auto">
           {t('stitchings.createOrder')}
         </Button>
       </div>
 
       <Card className="p-4">
-        <div className="flex flex-wrap gap-4">
-          <div className="flex-1 min-w-[200px] relative">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className="flex-1 min-w-0 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-400" />
             <input
               type="text"

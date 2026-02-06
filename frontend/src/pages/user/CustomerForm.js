@@ -384,11 +384,11 @@ const CustomerForm = () => {
               </div>
               
               {/* Add Relation */}
-              <div className="flex gap-2 mb-4">
+              <div className="flex flex-col sm:flex-row gap-2 mb-4">
                 <select
                   value={newRelation.customerId}
                   onChange={(e) => setNewRelation({ ...newRelation, customerId: e.target.value })}
-                  className="flex-1 px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="flex-1 min-w-0 px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="">Select existing customer...</option>
                   {allCustomers.filter(c => c._id !== id).map((customer) => (
@@ -397,22 +397,24 @@ const CustomerForm = () => {
                     </option>
                   ))}
                 </select>
-                <select
-                  value={newRelation.relationType}
-                  onChange={(e) => setNewRelation({ ...newRelation, relationType: e.target.value })}
-                  className="px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                  {RELATION_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>{type.label}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={addRelation}
-                  className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
+                <div className="flex gap-2">
+                  <select
+                    value={newRelation.relationType}
+                    onChange={(e) => setNewRelation({ ...newRelation, relationType: e.target.value })}
+                    className="flex-1 sm:flex-none px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    {RELATION_TYPES.map((type) => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={addRelation}
+                    className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex-shrink-0"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Relations List */}
@@ -444,7 +446,7 @@ const CustomerForm = () => {
             </div>
 
             {/* Measurements - Premium Visual UI */}
-            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
+            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-4 sm:p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">
                 {t('customers.measurements')} <span className="text-sm font-normal text-gray-400 dark:text-slate-500">(optional)</span>
               </h3>

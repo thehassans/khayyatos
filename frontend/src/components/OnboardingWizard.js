@@ -226,7 +226,6 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
       return;
     }
 
-    setSpotlight(null);
     spotlightDidScrollRef.current = false;
 
     let alive = true;
@@ -239,8 +238,6 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
         tries += 1;
         if (tries < 60) {
           setTimeout(compute, 250);
-        } else {
-          setSpotlight(null);
         }
         return;
       }
@@ -291,10 +288,10 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
 
     const vw = window.innerWidth || 0;
     const vh = window.innerHeight || 0;
-    const margin = 14;
-    const boxW = Math.min(380, Math.max(260, vw - margin * 2));
+    const margin = 10;
+    const boxW = Math.min(300, Math.max(220, vw - margin * 2));
     const measuredH = Number(coachmarkSize?.height) || 0;
-    const boxH = Math.min(Math.max(180, measuredH || 240), Math.max(180, vh - margin * 2));
+    const boxH = Math.min(Math.max(80, measuredH || 140), Math.max(80, vh - margin * 2));
 
     const viewArea = vw * vh;
     const spotlightArea = (spotlight.width || 0) * (spotlight.height || 0);
@@ -615,9 +612,10 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
       }
     }
 
+    const currentLang = (i18n?.language || 'en').split('-')[0];
     setStep(safe);
-    await savePreferences({ onboardingStep: safe });
-  }, [openSource, savePreferences, steps]);
+    await savePreferences({ language: currentLang, onboardingStep: safe });
+  }, [i18n?.language, openSource, savePreferences, steps]);
 
   const handleFinish = useCallback(async () => {
     if (autoTimeoutRef.current) {
@@ -862,56 +860,34 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
 
   return (
     <>
-      {spotlight ? (
-        <div className="fixed inset-0 z-[110] pointer-events-none">
-          <div className="absolute inset-0 bg-black/10 transition-opacity duration-300" />
-          <div
-            className="absolute rounded-2xl border border-slate-900/20 shadow-[0_0_0_10px_rgba(15,23,42,0.05)] transition-all duration-300 ease-out"
-            style={{ top: spotlight.top, left: spotlight.left, width: spotlight.width, height: spotlight.height }}
-          />
-          <div
-            className="absolute"
-            style={{
-              top: Math.max(0, spotlight.top - 14),
-              left: Math.max(0, spotlight.left + spotlight.width / 2 - 6)
-            }}
-          >
-            <div className="relative">
-              <div className="relative inline-flex h-2 w-2 rounded-full bg-slate-900/70" />
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       {spotlight && coachmarkArrowPath && arrowVisible ? (
         <svg className="fixed inset-0 z-[115] pointer-events-none" width="100%" height="100%">
           <defs>
             <marker
               id="coachmark-arrowhead"
-              markerWidth="5"
-              markerHeight="5"
-              refX="4"
-              refY="2.5"
+              markerWidth="6"
+              markerHeight="6"
+              refX="5"
+              refY="3"
               orient="auto"
               markerUnits="strokeWidth"
             >
-              <path d="M 0 0 L 0 5 L 5 2.5 z" fill="rgba(15,23,42,0.24)" />
+              <path d="M 0 0.5 L 0 5.5 L 5 3 z" fill="rgba(15,23,42,0.35)" />
             </marker>
           </defs>
           <path
             ref={coachmarkArrowRef}
             d={coachmarkArrowPath}
             fill="none"
-            stroke="rgba(15,23,42,0.24)"
-            strokeWidth="1"
+            stroke="rgba(15,23,42,0.35)"
+            strokeWidth="1.2"
             strokeLinecap="round"
-            strokeLinejoin="round"
             markerEnd="url(#coachmark-arrowhead)"
             style={{
               strokeDasharray: arrowStroke.len ? `${arrowStroke.len}` : undefined,
               strokeDashoffset: arrowStroke.len ? `${arrowStroke.offset}` : undefined,
               transition: arrowStroke.animate
-                ? 'stroke-dashoffset 360ms cubic-bezier(0.2, 0.9, 0.2, 1)'
+                ? 'stroke-dashoffset 300ms ease-out'
                 : 'none'
             }}
           />
@@ -919,90 +895,79 @@ const OnboardingWizard = ({ isOpen, openSource = 'auto', onClose }) => {
       ) : null}
 
       <div
-        className="fixed z-[120] pointer-events-auto transition-opacity duration-150 ease-out"
+        className="fixed z-[120] pointer-events-auto"
         ref={coachmarkRef}
         dir={isRtl ? 'rtl' : 'ltr'}
         style={{
-          top: coachmark?.top ?? 16,
-          left: coachmark?.left ?? 16,
-          width: coachmark?.width ?? 360,
-          maxHeight: 'calc(100vh - 28px)',
-          overflow: 'auto'
+          top: coachmark?.top ?? 12,
+          left: coachmark?.left ?? 12,
+          width: coachmark?.width ?? 280,
+          maxHeight: 'calc(100vh - 20px)',
+          overflow: 'auto',
+          transition: 'top 250ms ease-out, left 250ms ease-out'
         }}
       >
-        <div className="relative transition-all duration-300 ease-out">
-          <div className="rounded-[28px] p-[1px] bg-slate-900/10 shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
-            <div className="rounded-[28px] border border-slate-200 bg-white/95 backdrop-blur-2xl">
-              <div className="px-5 pt-5">
-                <div className="h-1.5 rounded-full bg-black/10 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-slate-900"
-                    style={{ width: `${Math.max(5, Math.min(100, (Math.max(1, step) / Math.max(1, totalSteps - 1)) * 100))}%` }}
-                  />
-                </div>
-              </div>
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="px-3 pt-3">
+            <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-slate-800 transition-all duration-300"
+                style={{ width: `${Math.max(5, Math.min(100, (Math.max(1, step) / Math.max(1, totalSteps - 1)) * 100))}%` }}
+              />
+            </div>
+          </div>
 
-              <div className="flex items-start justify-between gap-3 px-5 py-4">
-                <div className="min-w-0">
-                  <div className="text-[11px] font-semibold tracking-wide text-slate-500">
-                    {t('onboardingWizard.stepCount', { current: Math.min(step, totalSteps - 1), total: totalSteps - 1 })}
-                  </div>
-                  <div className="text-sm font-bold text-slate-900 truncate">{current.title}</div>
-                </div>
+          <div className="flex items-start justify-between gap-2 px-3 pt-2.5 pb-1">
+            <div className="min-w-0">
+              <div className="text-[10px] font-medium text-slate-400">
+                {t('onboardingWizard.stepCount', { current: Math.min(step, totalSteps - 1), total: totalSteps - 1 })}
+              </div>
+              <div className="text-xs font-semibold text-slate-800 truncate">{current.title}</div>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-md hover:bg-slate-50 -mt-0.5"
+              aria-label={t('common.close')}
+            >
+              <X className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+          </div>
+
+          <div className="px-3 pb-3 space-y-2.5">
+            <div className="text-[11px] text-slate-500 leading-relaxed whitespace-pre-line">
+              {current.description}
+            </div>
+
+            <div className="flex items-center justify-between gap-1.5">
+              <button
+                type="button"
+                onClick={() => goToStep(step - 1)}
+                disabled={saving || step <= 1}
+                className="px-2.5 py-1 text-[11px] font-medium text-slate-500 rounded-lg hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              >
+                {t('common.back')}
+              </button>
+
+              {step < totalSteps - 1 ? (
                 <button
                   type="button"
-                  onClick={onClose}
-                  className="p-2 rounded-xl hover:bg-slate-100"
-                  aria-label={t('common.close')}
+                  onClick={() => goToStep(step + 1)}
+                  disabled={saving}
+                  className="px-3 py-1 text-[11px] font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-700 disabled:opacity-50 transition-colors"
                 >
-                  <X className="w-4 h-4 text-slate-500" />
+                  {t('common.next')}
                 </button>
-              </div>
-
-              <div className="px-5 pb-5 space-y-4">
-                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                  {current.description}
-                </div>
-
-                {Array.isArray(current.actions) && current.actions.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {current.actions.map((a, idx) => (
-                      <Button
-                        key={`${current.key}-${idx}`}
-                        variant={idx === 0 ? 'outline' : 'secondary'}
-                        size="sm"
-                        onClick={() => navigate(a.to)}
-                        disabled={saving}
-                        className="rounded-2xl"
-                      >
-                        {a.label}
-                      </Button>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className="flex items-center justify-between gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => goToStep(step - 1)}
-                    disabled={saving || step <= 1}
-                    className="rounded-2xl"
-                  >
-                    {t('common.back')}
-                  </Button>
-
-                  {step < totalSteps - 1 ? (
-                    <Button size="sm" onClick={() => goToStep(step + 1)} disabled={saving} loading={saving} className="rounded-2xl">
-                      {t('common.next')}
-                    </Button>
-                  ) : (
-                    <Button size="sm" onClick={handleFinish} disabled={saving} loading={saving} className="rounded-2xl">
-                      {t('onboardingWizard.buttons.finish')}
-                    </Button>
-                  )}
-                </div>
-              </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleFinish}
+                  disabled={saving}
+                  className="px-3 py-1 text-[11px] font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                >
+                  {t('onboardingWizard.buttons.finish')}
+                </button>
+              )}
             </div>
           </div>
         </div>

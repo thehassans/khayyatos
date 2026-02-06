@@ -305,9 +305,9 @@ const EmbroideryDesigns = () => {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{t('embroideryDesigns.title', { defaultValue: 'Embroidery Designs' })}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100">{t('embroideryDesigns.title', { defaultValue: 'Embroidery Designs' })}</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400">{t('embroideryDesigns.subtitle', { defaultValue: 'Upload your library and create orders faster.' })}</p>
         </div>
         <Button data-tutorial="embroidery-upload-button" onClick={openUploadModal} icon={Plus}>

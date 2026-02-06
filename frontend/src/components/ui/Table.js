@@ -39,7 +39,7 @@ export const Tr = ({ children, className = '', onClick }) => {
 
 export const Th = ({ children, className = '' }) => {
   return (
-    <th className={`px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-300 uppercase tracking-wider ${className}`}>
+    <th className={`px-3 sm:px-6 py-2.5 sm:py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-300 uppercase tracking-wider ${className}`}>
       {children}
     </th>
   );
@@ -47,7 +47,7 @@ export const Th = ({ children, className = '' }) => {
 
 export const Td = ({ children, className = '' }) => {
   return (
-    <td className={`px-6 py-4 text-sm text-gray-700 dark:text-slate-200 ${className}`}>
+    <td className={`px-3 sm:px-6 py-3 sm:py-4 text-sm text-gray-700 dark:text-slate-200 ${className}`}>
       {children}
     </td>
   );

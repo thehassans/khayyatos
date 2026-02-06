@@ -123,7 +123,7 @@ const WhatsApp = () => {
 
   return (
     <div data-tutorial="page-whatsapp" className="space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <MessageCircle className="w-8 h-8 text-emerald-500" />
           <div>
