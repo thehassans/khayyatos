@@ -98,6 +98,7 @@
     "totalCustomers": "Total Customers",
     "totalRevenue": "Total Revenue",
     "pendingOrders": "Pending Orders",
+    "dueToday": "Due Today",
     "inProgress": "In Progress",
     "completedToday": "Completed Today",
     "recentOrders": "Recent Orders",

@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, StatCard } from '../../components/ui/Card';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
-import { Users, UserPlus, Clock, CheckCircle, AlertCircle, Search, Plus, Calendar } from 'lucide-react';
+import { Users, UserPlus, Clock, CheckCircle, AlertCircle, Search, Plus, Calendar, Truck } from 'lucide-react';
 import SARIcon from '../../components/ui/SARIcon';
 import { Button } from '../../components/ui/Button';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
@@ -379,10 +379,14 @@ const UserDashboard = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 sm:gap-6">
               <div>
                 <p className="text-[11px] font-medium text-white/60">{t('dashboard.pendingOrders')}</p>
                 <p className="mt-1 text-lg sm:text-xl font-bold text-white">{data?.stats?.pendingStitchings || 0}</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-medium text-white/60">{t('dashboard.dueToday', { defaultValue: 'Due Today' })}</p>
+                <p className={`mt-1 text-lg sm:text-xl font-bold ${(data?.stats?.dueTodayCount || 0) > 0 ? 'text-amber-300' : 'text-white'}`}>{data?.stats?.dueTodayCount || 0}</p>
               </div>
               <div>
                 <p className="text-[11px] font-medium text-white/60">{t('dashboard.totalRevenue')}</p>
@@ -533,6 +537,25 @@ const UserDashboard = () => {
                           ) : null}
                         </div>
                         <StatusBadge status={stitch.status} />
+                        {stitch.status !== 'delivered' && (
+                          <button
+                            type="button"
+                            title={t('common.delivered', { defaultValue: 'Delivered' })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isDemo) { setDemoBlockedOpen(true); return; }
+                              (async () => {
+                                try {
+                                  await api.put(`/stitchings/${stitch._id}`, { status: 'delivered' });
+                                  fetchDashboard();
+                                } catch (err) { console.error(err); }
+                              })();
+                            }}
+                            className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 transition-colors"
+                          >
+                            <Truck className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </button>

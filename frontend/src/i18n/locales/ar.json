@@ -98,6 +98,7 @@
     "totalCustomers": "إجمالي العملاء",
     "totalRevenue": "إجمالي الإيرادات",
     "pendingOrders": "الطلبات المعلقة",
+    "dueToday": "مستحق اليوم",
     "inProgress": "قيد التنفيذ",
     "completedToday": "مكتمل اليوم",
     "recentOrders": "الطلبات الأخيرة",

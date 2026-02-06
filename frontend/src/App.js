@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, Component } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -15,39 +15,80 @@ import LoginPage from './pages/auth/LoginPage';
 
 import Landing from './pages/public/Landing';
 
+// Retry wrapper for lazy imports — handles chunk load failures after deploy
+const lazyRetry = (importFn) => lazy(() =>
+  importFn().catch(() => {
+    // Chunk failed to load (likely stale after deploy) — force reload once
+    const reloaded = sessionStorage.getItem('chunk_reload');
+    if (!reloaded) {
+      sessionStorage.setItem('chunk_reload', '1');
+      window.location.reload();
+      return new Promise(() => {}); // never resolves, page is reloading
+    }
+    sessionStorage.removeItem('chunk_reload');
+    return importFn(); // retry once more
+  })
+);
+
+// Error boundary for chunk failures
+class ChunkErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error) {
+    if (error?.name === 'ChunkLoadError') {
+      const reloaded = sessionStorage.getItem('chunk_reload');
+      if (!reloaded) {
+        sessionStorage.setItem('chunk_reload', '1');
+        window.location.reload();
+      }
+    }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <p className="text-gray-600">Something went wrong loading this page.</p>
+          <button onClick={() => window.location.reload()} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Reload</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Lazy load all other pages for faster initial load
-const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
-const AdminUsers = lazy(() => import('./pages/admin/Users'));
-const AdminUserForm = lazy(() => import('./pages/admin/UserForm'));
-const AdminGeminiSettings = lazy(() => import('./pages/admin/GeminiSettings'));
+const AdminDashboard = lazyRetry(() => import('./pages/admin/Dashboard'));
+const AdminUsers = lazyRetry(() => import('./pages/admin/Users'));
+const AdminUserForm = lazyRetry(() => import('./pages/admin/UserForm'));
+const AdminGeminiSettings = lazyRetry(() => import('./pages/admin/GeminiSettings'));
 
-const UserDashboard = lazy(() => import('./pages/user/Dashboard'));
-const Workers = lazy(() => import('./pages/user/Workers'));
-const WorkerForm = lazy(() => import('./pages/user/WorkerForm'));
-const WorkerProfile = lazy(() => import('./pages/user/WorkerProfile'));
-const WorkerAmounts = lazy(() => import('./pages/user/WorkerAmounts'));
-const Customers = lazy(() => import('./pages/user/Customers'));
-const CustomerForm = lazy(() => import('./pages/user/CustomerForm'));
-const CustomerProfile = lazy(() => import('./pages/user/CustomerProfile'));
-const EmbroideryDesigns = lazy(() => import('./pages/user/EmbroideryDesigns'));
-const Laundry = lazy(() => import('./pages/user/Laundry'));
-const Stitchings = lazy(() => import('./pages/user/Stitchings'));
-const StitchingForm = lazy(() => import('./pages/user/StitchingForm'));
-const FabricRollar = lazy(() => import('./pages/user/FabricRollar'));
-const Loyalty = lazy(() => import('./pages/user/Loyalty'));
-const WhatsApp = lazy(() => import('./pages/user/WhatsApp'));
-const Zatca = lazy(() => import('./pages/user/Zatca'));
-const Settings = lazy(() => import('./pages/user/Settings'));
+const UserDashboard = lazyRetry(() => import('./pages/user/Dashboard'));
+const Workers = lazyRetry(() => import('./pages/user/Workers'));
+const WorkerForm = lazyRetry(() => import('./pages/user/WorkerForm'));
+const WorkerProfile = lazyRetry(() => import('./pages/user/WorkerProfile'));
+const WorkerAmounts = lazyRetry(() => import('./pages/user/WorkerAmounts'));
+const Customers = lazyRetry(() => import('./pages/user/Customers'));
+const CustomerForm = lazyRetry(() => import('./pages/user/CustomerForm'));
+const CustomerProfile = lazyRetry(() => import('./pages/user/CustomerProfile'));
+const EmbroideryDesigns = lazyRetry(() => import('./pages/user/EmbroideryDesigns'));
+const Laundry = lazyRetry(() => import('./pages/user/Laundry'));
+const Stitchings = lazyRetry(() => import('./pages/user/Stitchings'));
+const StitchingForm = lazyRetry(() => import('./pages/user/StitchingForm'));
+const FabricRollar = lazyRetry(() => import('./pages/user/FabricRollar'));
+const Loyalty = lazyRetry(() => import('./pages/user/Loyalty'));
+const WhatsApp = lazyRetry(() => import('./pages/user/WhatsApp'));
+const Zatca = lazyRetry(() => import('./pages/user/Zatca'));
+const Settings = lazyRetry(() => import('./pages/user/Settings'));
 
-const WorkerDashboard = lazy(() => import('./pages/worker/Dashboard'));
-const WorkerStitchings = lazy(() => import('./pages/worker/Stitchings'));
-const WorkerAmountsPage = lazy(() => import('./pages/worker/Amounts'));
-const WorkerSettings = lazy(() => import('./pages/worker/Settings'));
+const WorkerDashboard = lazyRetry(() => import('./pages/worker/Dashboard'));
+const WorkerStitchings = lazyRetry(() => import('./pages/worker/Stitchings'));
+const WorkerAmountsPage = lazyRetry(() => import('./pages/worker/Amounts'));
+const WorkerSettings = lazyRetry(() => import('./pages/worker/Settings'));
 
-const TrackOrder = lazy(() => import('./pages/public/TrackOrder'));
-const DashboardPreview = lazy(() => import('./pages/public/DashboardPreview'));
+const TrackOrder = lazyRetry(() => import('./pages/public/TrackOrder'));
+const DashboardPreview = lazyRetry(() => import('./pages/public/DashboardPreview'));
 
-// Loading wrapper for lazy components
+// Loading wrapper for lazy components with chunk error boundary
 const LazyPage = ({ children, skeleton = 'page' }) => {
   const skeletons = {
     dashboard: <DashboardSkeleton />,
@@ -55,9 +96,11 @@ const LazyPage = ({ children, skeleton = 'page' }) => {
     form: <FormSkeleton />
   };
   return (
-    <Suspense fallback={skeletons[skeleton] || skeletons.page}>
-      {children}
-    </Suspense>
+    <ChunkErrorBoundary>
+      <Suspense fallback={skeletons[skeleton] || skeletons.page}>
+        {children}
+      </Suspense>
+    </ChunkErrorBoundary>
   );
 };
 

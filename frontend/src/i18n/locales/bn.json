@@ -98,6 +98,7 @@
     "totalCustomers": "মোট গ্রাহক",
     "totalRevenue": "মোট আয়",
     "pendingOrders": "বিচারাধীন অর্ডার",
+    "dueToday": "আজ বকেয়া",
     "inProgress": "চলমান",
     "completedToday": "আজ সম্পন্ন",
     "recentOrders": "সাম্প্রতিক অর্ডার",

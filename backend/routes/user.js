@@ -16,6 +16,9 @@ router.get('/dashboard', async (req, res) => {
     const userIdStr = req.user._id;
     const userId = new mongoose.Types.ObjectId(userIdStr);
 
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+
     const [
       workersCount,
       customersCount,
@@ -26,7 +29,8 @@ router.get('/dashboard', async (req, res) => {
       pendingStitchings,
       inProgressStitchings,
       completedStitchings,
-      workerPayments
+      workerPayments,
+      dueTodayCount
     ] = await Promise.all([
       Worker.countDocuments({ userId: userIdStr }),
       Customer.countDocuments({ userId: userIdStr }),
@@ -66,7 +70,12 @@ router.get('/dashboard', async (req, res) => {
       Payment.aggregate([
         { $match: { userId } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
-      ])
+      ]),
+      Stitching.countDocuments({
+        userId: userIdStr,
+        dueDate: { $gte: todayStart, $lte: todayEnd },
+        status: { $nin: ['delivered', 'done'] }
+      })
     ]);
 
     const endDate = req.user.subscriptionEndDate ? new Date(req.user.subscriptionEndDate) : null;
@@ -84,7 +93,8 @@ router.get('/dashboard', async (req, res) => {
         totalRevenue: totalRevenue[0]?.total || 0,
         totalPaid: totalRevenue[0]?.paid || 0,
         pendingPayments: (totalRevenue[0]?.total || 0) - (totalRevenue[0]?.paid || 0),
-        workerPayments: workerPayments[0]?.total || 0
+        workerPayments: workerPayments[0]?.total || 0,
+        dueTodayCount
       },
       stitchingStats,
       recentStitchings,
