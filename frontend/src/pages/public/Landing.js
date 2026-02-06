@@ -117,24 +117,24 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-18">
             <div className="flex items-center gap-2.5">
-              <img src="/khayatoslogo.webp" alt="KhayyatOS" className="h-9 w-auto object-contain" />
+              <img src="/khayatoslogo.webp" alt="KhayyatOS" className="h-16 w-auto object-contain" />
               <div className="hidden sm:block">
-                <div className="text-sm font-bold tracking-[0.2em] text-slate-900">KHAYYAT</div>
-                <div className="text-[10px] text-slate-500 tracking-wider -mt-0.5">Tailoring OS</div>
+                <div className={`text-sm font-bold tracking-[0.2em] transition-colors ${scrolled ? 'text-slate-900' : 'text-white'}`}>KHAYYAT</div>
+                <div className={`text-[10px] tracking-wider -mt-0.5 transition-colors ${scrolled ? 'text-slate-500' : 'text-white/60'}`}>Tailoring OS</div>
               </div>
             </div>
 
             <div className="hidden lg:flex items-center gap-6">
-              <button onClick={() => scrollTo(featuresRef)} className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">{t('landing.nav.features')}</button>
-              <button onClick={() => scrollTo(howRef)} className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">{t('landing.nav.howItWorks')}</button>
-              <button onClick={() => scrollTo(contactRef)} className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">{t('landing.nav.contact')}</button>
+              <button onClick={() => scrollTo(featuresRef)} className={`text-sm font-medium transition-colors ${scrolled ? 'text-slate-600 hover:text-slate-900' : 'text-white/80 hover:text-white'}`}>{t('landing.nav.features')}</button>
+              <button onClick={() => scrollTo(howRef)} className={`text-sm font-medium transition-colors ${scrolled ? 'text-slate-600 hover:text-slate-900' : 'text-white/80 hover:text-white'}`}>{t('landing.nav.howItWorks')}</button>
+              <button onClick={() => scrollTo(contactRef)} className={`text-sm font-medium transition-colors ${scrolled ? 'text-slate-600 hover:text-slate-900' : 'text-white/80 hover:text-white'}`}>{t('landing.nav.contact')}</button>
             </div>
 
             <div className="flex items-center gap-2">
               <div className="relative">
-                <button onClick={() => setLangOpen(v => !v)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200/70 bg-white/80 hover:bg-white text-sm transition-colors">
+                <button onClick={() => setLangOpen(v => !v)} className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-sm transition-colors ${scrolled ? 'border border-slate-200/70 bg-white/80 hover:bg-white' : 'border border-white/20 bg-white/10 hover:bg-white/20'}`}>
                   <span>{languages.find(l => l.code === currentLang)?.flag}</span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${langOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${langOpen ? 'rotate-180' : ''} ${scrolled ? 'text-slate-400' : 'text-white/60'}`} />
                 </button>
                 {langOpen && (
                   <>
@@ -151,7 +151,7 @@ const Landing = () => {
                 )}
               </div>
 
-              <button onClick={handleDemo} disabled={demoLoading} className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200/70 bg-white/80 hover:bg-white text-sm font-medium text-slate-700 transition-colors disabled:opacity-50">
+              <button onClick={handleDemo} disabled={demoLoading} className={`hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 ${scrolled ? 'border border-slate-200/70 bg-white/80 hover:bg-white text-slate-700' : 'border border-white/20 bg-white/10 hover:bg-white/20 text-white'}`}>
                 {demoLoading ? <span className="animate-spin w-3.5 h-3.5 border-2 border-slate-300 border-t-slate-700 rounded-full" /> : null}
                 {t('landing.liveDemo')}
               </button>
@@ -159,7 +159,7 @@ const Landing = () => {
                 {t('auth.login', { defaultValue: 'Login' })}
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
-              <button onClick={() => setMobileMenuOpen(v => !v)} className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors">
+              <button onClick={() => setMobileMenuOpen(v => !v)} className={`lg:hidden p-2 rounded-lg transition-colors ${scrolled ? 'hover:bg-slate-100 text-slate-900' : 'hover:bg-white/10 text-white'}`}>
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
             </div>
