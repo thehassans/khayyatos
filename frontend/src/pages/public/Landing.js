@@ -1,18 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Button } from '../../components/ui/Button';
-import { Card, CardBody } from '../../components/ui/Card';
 import {
   LayoutDashboard,
-  Shirt,
+  Scissors,
   Ruler,
   Layers,
   Image as ImageIcon,
   Users,
   UserRound,
-  Scissors,
   Receipt,
   Wallet,
   Droplets,
@@ -21,11 +18,16 @@ import {
   Globe,
   Database,
   ShieldCheck,
-  BarChart3,
-  Settings,
+  Zap,
   ArrowRight,
-  ChevronDown
+  ChevronDown,
+  Menu,
+  X,
+  Phone,
+  Sparkles
 } from 'lucide-react';
+
+const GOLD = '#D5B25B';
 
 const Landing = () => {
   const { t, i18n } = useTranslation();
@@ -33,7 +35,13 @@ const Landing = () => {
   const { loginDemo } = useAuth();
 
   const [langOpen, setLangOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  const featuresRef = useRef(null);
+  const howRef = useRef(null);
+  const contactRef = useRef(null);
 
   const currentLang = (i18n?.language || 'en').split('-')[0];
   const isRTL = ['ar', 'ur'].includes(currentLang);
@@ -48,288 +56,94 @@ const Landing = () => {
 
   useEffect(() => {
     document.documentElement.classList.remove('dark');
-    if (!localStorage.getItem('theme')) {
-      localStorage.setItem('theme', 'light');
-    }
+    if (!localStorage.getItem('theme')) localStorage.setItem('theme', 'light');
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   const handleDemo = async () => {
     setDemoLoading(true);
     const result = await loginDemo();
     setDemoLoading(false);
-    if (result?.success) {
-      navigate('/user/dashboard');
-      return;
-    }
+    if (result?.success) navigate('/user/dashboard');
   };
 
-  const aToZ = [
-    {
-      icon: LayoutDashboard,
-      title: 'Dashboard (Live Overview)',
-      desc: 'A clear overview of daily work: orders, due dates, totals, and workload at a glance.'
-    },
-    {
-      icon: Scissors,
-      title: 'Orders & Stitchings',
-      desc: 'Create orders fast, assign workers, track status, and print labels/receipts.'
-    },
-    {
-      icon: Shirt,
-      title: 'Thawb Types & Catalogs',
-      desc: 'Manage thawb type catalogs and style catalogs so every order stays consistent.'
-    },
-    {
-      icon: Layers,
-      title: 'Style Options',
-      desc: 'Select collar, cuff, pocket, bain and more using structured options saved per order.'
-    },
-    {
-      icon: Ruler,
-      title: 'Measurements',
-      desc: 'Store measurements per customer and reuse them to avoid repeated manual entry.'
-    },
-    {
-      icon: ImageIcon,
-      title: 'Embroidery Designs',
-      desc: 'Upload designs, preview instantly, and attach them to orders with a clean workflow.'
-    },
-    {
-      icon: Users,
-      title: 'Customers',
-      desc: 'Customer profiles with history, quick actions, and a timeline of past orders.'
-    },
-    {
-      icon: UserRound,
-      title: 'Relations (Order For)',
-      desc: 'Store and use relations like son/brother/relation to keep customer records accurate.'
-    },
-    {
-      icon: Wallet,
-      title: 'Payments & Pending',
-      desc: 'Track paid vs pending amounts clearly to avoid mistakes at checkout.'
-    },
-    {
-      icon: Droplets,
-      title: 'Laundry Module',
-      desc: 'Laundry pricing per piece, assigned pieces, and payment history per laundry item.'
-    },
-    {
-      icon: Receipt,
-      title: 'Invoices & Printing',
-      desc: 'Generate invoices/receipts and print labels with consistent formatting.'
-    },
-    {
-      icon: BadgeCheck,
-      title: 'ZATCA E‑Invoicing',
-      desc: 'ZATCA-ready e-invoicing features with QR code and compliance utilities.'
-    },
-    {
-      icon: MessageCircle,
-      title: 'WhatsApp & Notifications',
-      desc: 'Send updates and messages with templates to keep customers informed.'
-    },
-    {
-      icon: Globe,
-      title: 'Multi‑Language + RTL',
-      desc: 'Interface supports multiple languages and RTL where needed.'
-    },
-    {
-      icon: BarChart3,
-      title: 'Reports',
-      desc: 'Track totals, performance and key numbers to support better decisions.'
-    },
-    {
-      icon: ShieldCheck,
-      title: 'Roles & Security',
-      desc: 'Admin/user/worker role separation with safe defaults and controlled actions.'
-    },
-    {
-      icon: Database,
-      title: 'Backup & Export',
-      desc: 'Keep your business data safe with export options and structured storage.'
-    },
-    {
-      icon: Settings,
-      title: 'Settings',
-      desc: 'Configure your shop preferences, language, invoice settings, and more.'
-    }
+  const scrollTo = (ref) => {
+    setMobileMenuOpen(false);
+    ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const features = [
+    { key: 'dashboard', icon: LayoutDashboard },
+    { key: 'orders', icon: Scissors },
+    { key: 'measurements', icon: Ruler },
+    { key: 'customers', icon: Users },
+    { key: 'workers', icon: UserRound },
+    { key: 'embroidery', icon: ImageIcon },
+    { key: 'styles', icon: Layers },
+    { key: 'fabrics', icon: Wallet },
+    { key: 'invoices', icon: Receipt },
+    { key: 'whatsapp', icon: MessageCircle },
+    { key: 'zatca', icon: BadgeCheck },
+    { key: 'laundry', icon: Droplets },
+    { key: 'loyalty', icon: Sparkles },
+    { key: 'languages', icon: Globe },
+    { key: 'roles', icon: ShieldCheck },
+    { key: 'backup', icon: Database }
   ];
 
-  const featureDetail = [
-    {
-      icon: LayoutDashboard,
-      title: 'Live Dashboard Preview',
-      points: [
-        'See totals, due dates, and workload in one place.',
-        'Search orders, customers, and workers instantly.',
-        'Quick actions for the most common tasks.'
-      ]
-    },
-    {
-      icon: Scissors,
-      title: 'Orders & Stitchings (End‑to‑End)',
-      points: [
-        'Create orders with thawb type, style options, measurements, and instructions.',
-        'Assign workers and track progress with clear statuses.',
-        'Print labels/receipts and keep everything consistent for front desk staff.'
-      ]
-    },
-    {
-      icon: Users,
-      title: 'Customers + Profiles',
-      points: [
-        'Profiles include contact, history, and quick actions.',
-        'Relations supported (Order For: son/brother/relation).',
-        'Faster repeat orders using saved data.'
-      ]
-    },
-    {
-      icon: Ruler,
-      title: 'Measurements',
-      points: [
-        'Store measurements per customer and reuse anytime.',
-        'Reduce manual mistakes by keeping measurements standardized.',
-        'Edit, review, and print measurements when needed.'
-      ]
-    },
-    {
-      icon: Layers,
-      title: 'Style Options + Thawb Types',
-      points: [
-        'Use structured style choices (collar, cuff, pocket, bain, etc.).',
-        'Consistency across staff: same names, same saved values.',
-        'Quick selection during order entry.'
-      ]
-    },
-    {
-      icon: ImageIcon,
-      title: 'Embroidery Designs',
-      points: [
-        'Upload designs and preview immediately.',
-        'Attach designs to orders so workers see the right reference.',
-        'Build a reusable library for your shop.'
-      ]
-    },
-    {
-      icon: Wallet,
-      title: 'Payments + Pending Amount',
-      points: [
-        'Track paid vs pending at order level.',
-        'Clear totals for front desk decisions.',
-        'Avoid under/over-collection with a visible pending.'
-      ]
-    },
-    {
-      icon: Droplets,
-      title: 'Laundry (Pricing + Payments)',
-      points: [
-        'Price per piece, assigned pieces, and totals.',
-        'Payment history for each laundry customer/item.',
-        'Clear pending amount to manage collections.'
-      ]
-    },
-    {
-      icon: BadgeCheck,
-      title: 'ZATCA E‑Invoicing',
-      points: [
-        'Generate invoice data with QR.',
-        'Designed for Saudi compliance workflows.',
-        'Export and manage invoice-related details.'
-      ]
-    },
-    {
-      icon: MessageCircle,
-      title: 'WhatsApp + Customer Updates',
-      points: [
-        'Send updates quickly using templates.',
-        'Reduce customer calls by proactively sharing status.',
-        'Keep communication consistent across staff.'
-      ]
-    },
-    {
-      icon: Globe,
-      title: 'Multi‑Language + RTL',
-      points: [
-        'English + العربية + हिन्दी + اردو + বাংলা.',
-        'RTL support where needed.',
-        'Better experience for diverse teams.'
-      ]
-    },
-    {
-      icon: ShieldCheck,
-      title: 'Roles + Access Control',
-      points: [
-        'Admin/user/worker separation.',
-        'Safer operations with controlled actions.',
-        'Designed to scale from one branch to multiple.'
-      ]
-    },
-    {
-      icon: Database,
-      title: 'Backup + Export',
-      points: [
-        'Keep records safe and portable.',
-        'Export data for reporting or safekeeping.',
-        'Structured storage for long-term reliability.'
-      ]
-    },
-    {
-      icon: Settings,
-      title: 'Settings',
-      points: [
-        'Shop settings in one place.',
-        'Invoice/ZATCA related settings.',
-        'Language preferences.'
-      ]
-    }
+  const steps = [
+    { num: '01', titleKey: 'landing.step1Title', descKey: 'landing.step1Desc' },
+    { num: '02', titleKey: 'landing.step2Title', descKey: 'landing.step2Desc' },
+    { num: '03', titleKey: 'landing.step3Title', descKey: 'landing.step3Desc' }
+  ];
+
+  const stats = [
+    { key: 'features', icon: Zap },
+    { key: 'languages', icon: Globe },
+    { key: 'rtl', icon: ArrowRight },
+    { key: 'fast', icon: Sparkles }
   ];
 
   return (
     <div className={`min-h-screen bg-white text-slate-950 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute -top-40 -left-40 w-[560px] h-[560px] rounded-full bg-[#D5B25B]/10 blur-3xl" />
-          <div className="absolute -top-56 right-[-120px] w-[620px] h-[620px] rounded-full bg-[#D5B25B]/8 blur-3xl" />
-          <div className="absolute bottom-[-160px] left-1/3 w-[520px] h-[520px] rounded-full bg-black/5 blur-3xl" />
-        </div>
 
-        <div className="relative z-10 max-w-6xl mx-auto px-4 py-10">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <img src="/khayatoslogo.png" alt="KhayyatOS" className="h-10 w-auto object-contain" />
-              <div>
-                <div className="text-sm font-semibold tracking-[0.25em]">KHAYYAT</div>
-                <div className="text-xs text-slate-500">Tailoring OS</div>
+      {/* ── Navbar ── */}
+      <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-xl border-b border-slate-200/70 shadow-sm' : 'bg-transparent'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-18">
+            <div className="flex items-center gap-2.5">
+              <img src="/khayatoslogo.png" alt="KhayyatOS" className="h-9 w-auto object-contain" />
+              <div className="hidden sm:block">
+                <div className="text-sm font-bold tracking-[0.2em] text-slate-900">KHAYYAT</div>
+                <div className="text-[10px] text-slate-500 tracking-wider -mt-0.5">Tailoring OS</div>
               </div>
+            </div>
+
+            <div className="hidden lg:flex items-center gap-6">
+              <button onClick={() => scrollTo(featuresRef)} className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">{t('landing.nav.features')}</button>
+              <button onClick={() => scrollTo(howRef)} className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">{t('landing.nav.howItWorks')}</button>
+              <button onClick={() => scrollTo(contactRef)} className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">{t('landing.nav.contact')}</button>
             </div>
 
             <div className="flex items-center gap-2">
               <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setLangOpen((v) => !v)}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl border border-slate-200 bg-white/80 hover:bg-white transition-colors"
-                >
-                  <span className="text-lg">{languages.find((l) => l.code === currentLang)?.flag}</span>
-                  <ChevronDown className="w-4 h-4 text-slate-500" />
+                <button onClick={() => setLangOpen(v => !v)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200/70 bg-white/80 hover:bg-white text-sm transition-colors">
+                  <span>{languages.find(l => l.code === currentLang)?.flag}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${langOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {langOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setLangOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white shadow-2xl z-50 overflow-hidden">
-                      {languages.map((lang) => (
-                        <button
-                          key={lang.code}
-                          type="button"
-                          onClick={() => {
-                            i18n.changeLanguage(lang.code);
-                            setLangOpen(false);
-                          }}
-                          className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors ${currentLang === lang.code ? 'bg-slate-50' : ''}`}
-                        >
-                          <span className="text-xl">{lang.flag}</span>
-                          <span className={`text-sm font-medium ${currentLang === lang.code ? 'text-slate-900' : 'text-slate-900'}`}>{lang.label}</span>
+                    <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} mt-2 w-48 rounded-xl border border-slate-200 bg-white shadow-2xl z-50 overflow-hidden py-1`}>
+                      {languages.map(lang => (
+                        <button key={lang.code} onClick={() => { i18n.changeLanguage(lang.code); setLangOpen(false); }} className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors text-sm ${currentLang === lang.code ? 'bg-slate-50 font-semibold' : ''}`}>
+                          <span className="text-base">{lang.flag}</span>
+                          <span>{lang.label}</span>
                         </button>
                       ))}
                     </div>
@@ -337,174 +151,227 @@ const Landing = () => {
                 )}
               </div>
 
-              <Button variant="outline" className="rounded-2xl" onClick={() => navigate('/track-order')}>
-                {t('landing.trackOrder', { defaultValue: 'Track Order' })}
-              </Button>
-              <Button variant="outline" className="rounded-2xl" onClick={handleDemo} loading={demoLoading}>
-                {t('landing.liveDemo', { defaultValue: 'Live Demo' })}
-              </Button>
-              <Button
-                variant="outline"
-                className="rounded-2xl bg-[#D5B25B] hover:bg-[#caa84f] border-[#D5B25B] text-black focus:ring-[#D5B25B]"
-                onClick={() => navigate('/login')}
-              >
+              <button onClick={handleDemo} disabled={demoLoading} className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200/70 bg-white/80 hover:bg-white text-sm font-medium text-slate-700 transition-colors disabled:opacity-50">
+                {demoLoading ? <span className="animate-spin w-3.5 h-3.5 border-2 border-slate-300 border-t-slate-700 rounded-full" /> : null}
+                {t('landing.liveDemo')}
+              </button>
+              <button onClick={() => navigate('/login')} className="hidden sm:inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-semibold text-black transition-all hover:brightness-95" style={{ background: `linear-gradient(135deg, ${GOLD}, #E8C96A)` }}>
                 {t('auth.login', { defaultValue: 'Login' })}
-                <ArrowRight className="w-4 h-4" />
-              </Button>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => setMobileMenuOpen(v => !v)} className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors">
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
             </div>
           </div>
+        </div>
 
-          <div className="mt-14 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 border border-slate-200 text-slate-700 text-xs tracking-widest">
-                <BadgeCheck className="w-4 h-4 text-[#D5B25B]" />
-                {t('landing.badge', { defaultValue: 'TAILORING MANAGEMENT SYSTEM' })}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t border-slate-200/70 bg-white/95 backdrop-blur-xl">
+            <div className="px-4 py-4 space-y-2">
+              <button onClick={() => scrollTo(featuresRef)} className="w-full text-start px-4 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50">{t('landing.nav.features')}</button>
+              <button onClick={() => scrollTo(howRef)} className="w-full text-start px-4 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50">{t('landing.nav.howItWorks')}</button>
+              <button onClick={() => scrollTo(contactRef)} className="w-full text-start px-4 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50">{t('landing.nav.contact')}</button>
+              <div className="pt-2 flex flex-col gap-2">
+                <button onClick={handleDemo} disabled={demoLoading} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                  {t('landing.liveDemo')}
+                </button>
+                <button onClick={() => navigate('/login')} className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-black" style={{ background: `linear-gradient(135deg, ${GOLD}, #E8C96A)` }}>
+                  {t('auth.login', { defaultValue: 'Login' })}
+                </button>
               </div>
-
-              <h1 className="mt-6 text-4xl md:text-5xl font-semibold leading-tight">
-                {t('landing.heroTitle', { defaultValue: 'Run your tailor shop with clarity and speed.' })}
-              </h1>
-              <p className="mt-4 text-slate-600 text-base md:text-lg max-w-xl">
-                {t('landing.heroSubtitle', { defaultValue: 'Orders, customers, workers, catalogs, ZATCA, WhatsApp, embroidery designs, multi‑language, laundry and payments — all in one system.' })}
-              </p>
-
-              <div className="mt-7 flex flex-col sm:flex-row gap-3">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => navigate('/login')}
-                  className="rounded-2xl bg-[#D5B25B] hover:bg-[#caa84f] border-[#D5B25B] text-black focus:ring-[#D5B25B]"
-                >
-                  {t('landing.ctaPrimary', { defaultValue: 'Get Started' })}
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="lg" onClick={handleDemo} className="rounded-2xl" loading={demoLoading}>
-                  {t('landing.liveDemo', { defaultValue: 'Live Demo' })}
-                </Button>
-              </div>
-
-              <div className="mt-8 flex flex-wrap items-center gap-3 text-xs text-slate-600">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#D5B25B]/10 border border-[#D5B25B]/20">
-                  <ShieldCheck className="w-4 h-4 text-[#D5B25B]" />
-                  {t('landing.zatcaReady', { defaultValue: 'ZATCA Ready' })}
-                </div>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/5 border border-black/10">
-                  <Globe className="w-4 h-4 text-slate-700" />
-                  {t('landing.multiLang', { defaultValue: 'Multi‑Language + RTL' })}
-                </div>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/5 border border-black/10">
-                  <LayoutDashboard className="w-4 h-4 text-slate-700" />
-                  {t('landing.demoHint', { defaultValue: 'Live demo is read‑only' })}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <Card className="bg-white/90 border border-slate-200 rounded-3xl overflow-hidden">
-                <CardBody>
-                  <div className="p-6">
-                    <div className="text-sm font-semibold text-slate-900 tracking-widest">
-                      {t('landing.whatsInside', { defaultValue: 'LIVE DASHBOARD PREVIEW' })}
-                    </div>
-                    <div className="mt-4 rounded-2xl border border-slate-200 bg-white overflow-hidden">
-                      <div className="aspect-[16/10] w-full bg-white">
-                        <iframe
-                          title="KhayyatOS Dashboard Preview"
-                          src="/preview/dashboard"
-                          className="w-full h-full"
-                          loading="lazy"
-                          referrerPolicy="no-referrer"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mt-5 flex gap-3">
-                      <Button variant="outline" className="rounded-2xl" onClick={handleDemo} loading={demoLoading}>
-                        {t('landing.liveDemo', { defaultValue: 'Open Live Demo' })}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="rounded-2xl bg-[#D5B25B] hover:bg-[#caa84f] border-[#D5B25B] text-black focus:ring-[#D5B25B]"
-                        onClick={() => navigate('/login')}
-                      >
-                        {t('landing.ctaPrimary', { defaultValue: 'Get Started' })}
-                        <ArrowRight className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
             </div>
           </div>
+        )}
+      </nav>
 
-          <div className="mt-14">
-            <div className="text-sm font-semibold text-slate-900 tracking-widest">
-              {t('landing.featuresTitle', { defaultValue: 'A‑to‑Z FEATURES' })}
-            </div>
-            <div className="mt-2 text-slate-600">
-              Everything below is available inside the system.
-            </div>
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden bg-[#060606] pt-28 sm:pt-36 pb-20 sm:pb-28">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full opacity-20" style={{ background: `radial-gradient(circle, ${GOLD} 0%, transparent 70%)` }} />
+          <div className="absolute -bottom-60 -right-40 w-[600px] h-[600px] rounded-full opacity-15" style={{ background: `radial-gradient(circle, ${GOLD} 0%, transparent 70%)` }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full opacity-[0.04]" style={{ background: `radial-gradient(circle, white 0%, transparent 70%)` }} />
+        </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-4">
-              {aToZ.map((f) => (
-                <div key={f.title} className="rounded-3xl border border-slate-200 bg-white p-5">
-                  <div className="flex items-start gap-4">
-                    <div className="w-11 h-11 rounded-2xl bg-[#D5B25B]/10 border border-[#D5B25B]/20 flex items-center justify-center shrink-0">
-                      <f.icon className="w-5 h-5 text-[#7E6426]" />
-                    </div>
-                    <div>
-                      <div className="text-base font-semibold text-slate-900">{f.title}</div>
-                      <div className="mt-1 text-sm text-slate-600 leading-relaxed">{f.desc}</div>
-                    </div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm">
+            <BadgeCheck className="w-4 h-4" style={{ color: GOLD }} />
+            <span className="text-xs font-semibold tracking-widest text-white/70">{t('landing.badge')}</span>
+          </div>
+
+          <h1 className="mt-8 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] text-white max-w-4xl mx-auto">
+            {t('landing.heroTitle')}
+          </h1>
+
+          <p className="mt-6 text-base sm:text-lg md:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed">
+            {t('landing.heroSubtitle')}
+          </p>
+
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button onClick={() => navigate('/login')} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl text-sm font-bold text-black transition-all hover:brightness-95 hover:scale-[1.02]" style={{ background: `linear-gradient(135deg, ${GOLD}, #E8C96A)` }}>
+              {t('landing.ctaPrimary')}
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <button onClick={handleDemo} disabled={demoLoading} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl text-sm font-semibold text-white border border-white/15 bg-white/5 hover:bg-white/10 transition-all disabled:opacity-50">
+              {demoLoading ? <span className="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full" /> : null}
+              {t('landing.liveDemo')}
+            </button>
+            <button onClick={() => navigate('/track-order')} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl text-sm font-medium text-white/70 border border-white/10 hover:bg-white/5 transition-all">
+              {t('landing.trackOrder')}
+            </button>
+          </div>
+
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-xs">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5">
+              <ShieldCheck className="w-3.5 h-3.5" style={{ color: GOLD }} />
+              <span className="text-white/60">{t('landing.zatcaReady')}</span>
+            </div>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5">
+              <Globe className="w-3.5 h-3.5" style={{ color: GOLD }} />
+              <span className="text-white/60">{t('landing.multiLang')}</span>
+            </div>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5">
+              <LayoutDashboard className="w-3.5 h-3.5" style={{ color: GOLD }} />
+              <span className="text-white/60">{t('landing.demoHint')}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Stats Strip ── */}
+      <section className="relative -mt-8 z-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="rounded-2xl border border-slate-200/70 bg-white shadow-xl shadow-black/5">
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-slate-100">
+              {stats.map(s => (
+                <div key={s.key} className="flex items-center gap-3 px-5 py-5 sm:px-6 sm:py-6">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${GOLD}15` }}>
+                    <s.icon className="w-5 h-5" style={{ color: '#7E6426' }} />
                   </div>
+                  <div className="text-sm font-bold text-slate-900">{t(`landing.stats.${s.key}`)}</div>
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
 
-            <div className="mt-12">
-              <div className="text-sm font-semibold text-slate-900 tracking-widest">
-                {t('landing.featuresDetailTitle', { defaultValue: 'FEATURES (DETAILED)' })}
-              </div>
-              <div className="mt-6 space-y-4">
-                {featureDetail.map((f, idx) => (
-                  <div key={f.title} className="rounded-3xl border border-slate-200 bg-white p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-[#D5B25B]/10 border border-[#D5B25B]/20 flex items-center justify-center shrink-0">
-                        <f.icon className="w-6 h-6 text-[#7E6426]" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="text-lg font-semibold text-slate-900">{f.title}</div>
-                          <div className="text-xs text-slate-500 tracking-widest">{String(idx + 1).padStart(2, '0')}</div>
-                        </div>
-                        <div className="mt-3 space-y-2">
-                          {f.points.map((p) => (
-                            <div key={p} className="flex items-start gap-2 text-sm text-slate-700">
-                              <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-[#D5B25B]" />
-                              <span className="leading-relaxed">{p}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+      {/* ── Features Grid ── */}
+      <section ref={featuresRef} className="pt-24 pb-20 scroll-mt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto">
+            <div className="text-xs font-bold tracking-widest uppercase" style={{ color: GOLD }}>{t('landing.whatsInside')}</div>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-slate-900">{t('landing.featuresTitle')}</h2>
+            <p className="mt-3 text-slate-500 text-sm sm:text-base leading-relaxed">{t('landing.featuresSubtitle')}</p>
           </div>
 
-          <div className="mt-14 border-t border-slate-200 pt-8 pb-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="text-sm text-slate-600">
-                {t('landing.contact', { defaultValue: 'Contact' })}: <a className="text-slate-900 underline" href="tel:+966596775485">+966596775485</a>
+          <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {features.map(f => (
+              <div key={f.key} className="group rounded-2xl border border-slate-200/70 bg-white p-5 hover:shadow-lg hover:border-slate-300/70 hover:-translate-y-0.5 transition-all duration-300">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: `${GOLD}12`, border: `1px solid ${GOLD}25` }}>
+                  <f.icon className="w-5 h-5" style={{ color: '#7E6426' }} />
+                </div>
+                <div className="mt-4 text-sm font-bold text-slate-900">{t(`landing.features.${f.key}.title`)}</div>
+                <div className="mt-1.5 text-xs text-slate-500 leading-relaxed">{t(`landing.features.${f.key}.desc`)}</div>
               </div>
-              <div className="text-sm text-slate-600">
-                {t('landing.footerNote', { defaultValue: 'Book a demo for your tailor shop.' })}
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── How It Works ── */}
+      <section ref={howRef} className="py-20 sm:py-28 bg-[#FAFAFA] scroll-mt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto">
+            <div className="text-xs font-bold tracking-widest uppercase" style={{ color: GOLD }}>{t('landing.howTitle')}</div>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-slate-900">{t('landing.howSubtitle')}</h2>
+          </div>
+
+          <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {steps.map((step, i) => (
+              <div key={step.num} className="relative rounded-2xl border border-slate-200/70 bg-white p-6 sm:p-8">
+                <div className="text-5xl sm:text-6xl font-black leading-none" style={{ color: `${GOLD}20` }}>{step.num}</div>
+                <h3 className="mt-4 text-lg font-bold text-slate-900">{t(step.titleKey)}</h3>
+                <p className="mt-2 text-sm text-slate-500 leading-relaxed">{t(step.descKey)}</p>
+                {i < steps.length - 1 && (
+                  <div className="hidden md:block absolute top-1/2 -translate-y-1/2 -right-3 w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center z-10" style={{ [isRTL ? 'left' : 'right']: '-12px' }}>
+                    <ArrowRight className={`w-3 h-3 text-slate-400 ${isRTL ? 'rotate-180' : ''}`} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA Banner ── */}
+      <section className="py-20 sm:py-28">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-3xl p-8 sm:p-12 md:p-16" style={{ background: `linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 100%)` }}>
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute -top-20 -right-20 w-[400px] h-[400px] rounded-full opacity-15" style={{ background: `radial-gradient(circle, ${GOLD} 0%, transparent 70%)` }} />
+              <div className="absolute -bottom-20 -left-20 w-[300px] h-[300px] rounded-full opacity-10" style={{ background: `radial-gradient(circle, ${GOLD} 0%, transparent 70%)` }} />
+            </div>
+
+            <div className="relative z-10 text-center max-w-2xl mx-auto">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-tight">{t('landing.ctaTitle')}</h2>
+              <p className="mt-4 text-white/50 text-sm sm:text-base leading-relaxed">{t('landing.ctaDesc')}</p>
+
+              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button onClick={() => navigate('/login')} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl text-sm font-bold text-black transition-all hover:brightness-95 hover:scale-[1.02]" style={{ background: `linear-gradient(135deg, ${GOLD}, #E8C96A)` }}>
+                  {t('landing.ctaPrimary')}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <button onClick={handleDemo} disabled={demoLoading} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl text-sm font-semibold text-white border border-white/15 bg-white/5 hover:bg-white/10 transition-all disabled:opacity-50">
+                  {t('landing.liveDemo')}
+                </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer ref={contactRef} className="border-t border-slate-200/70 bg-[#FAFAFA] scroll-mt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <img src="/khayatoslogo.png" alt="KhayyatOS" className="h-8 w-auto object-contain" />
+                <div>
+                  <div className="text-sm font-bold tracking-[0.2em] text-slate-900">KHAYYAT</div>
+                  <div className="text-[10px] text-slate-500 tracking-wider -mt-0.5">Tailoring OS</div>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-slate-500 leading-relaxed max-w-xs">{t('landing.footerTagline')}</p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <div className="text-xs font-bold tracking-wider text-slate-400 uppercase mb-1">{t('landing.nav.features')}</div>
+              <button onClick={() => scrollTo(featuresRef)} className="text-start text-sm text-slate-600 hover:text-slate-900 transition-colors">{t('landing.nav.features')}</button>
+              <button onClick={() => scrollTo(howRef)} className="text-start text-sm text-slate-600 hover:text-slate-900 transition-colors">{t('landing.nav.howItWorks')}</button>
+              <button onClick={handleDemo} className="text-start text-sm text-slate-600 hover:text-slate-900 transition-colors">{t('landing.liveDemo')}</button>
+              <button onClick={() => navigate('/track-order')} className="text-start text-sm text-slate-600 hover:text-slate-900 transition-colors">{t('landing.trackOrder')}</button>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <div className="text-xs font-bold tracking-wider text-slate-400 uppercase mb-1">{t('landing.nav.contact')}</div>
+              <a href="tel:+966596775485" className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                <Phone className="w-3.5 h-3.5" /> +966596775485
+              </a>
+              <p className="text-sm text-slate-500">{t('landing.footerNote')}</p>
+            </div>
+          </div>
+
+          <div className="mt-10 pt-6 border-t border-slate-200/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="text-xs text-slate-400">&copy; {new Date().getFullYear()} KhayyatOS. {t('landing.footerRights')}</div>
+            <div className="flex items-center gap-4">
+              <button onClick={() => navigate('/login')} className="text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors">{t('auth.login', { defaultValue: 'Login' })}</button>
+              <button onClick={() => navigate('/track-order')} className="text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors">{t('landing.trackOrder')}</button>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

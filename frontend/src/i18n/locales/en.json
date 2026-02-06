@@ -362,9 +362,9 @@
   },
   "landing": {
     "trackOrder": "Track Order",
-    "badge": "ULTRA‑PREMIUM TAILORING PLATFORM",
-    "heroTitle": "Run your tailor shop like a modern SaaS.",
-    "heroSubtitle": "Orders, customers, workers, catalogs, ZATCA, WhatsApp, embroidery designs, multi-language, and more — crafted with premium UX.",
+    "badge": "TAILORING MANAGEMENT SYSTEM",
+    "heroTitle": "The operating system for modern tailor shops.",
+    "heroSubtitle": "Orders, measurements, workers, customers, payments, ZATCA e-invoicing, WhatsApp notifications, embroidery designs, fabric inventory, and multi-language support — all in one premium platform.",
     "ctaPrimary": "Get Started",
     "ctaSecondary": "Track an Order",
     "liveDemo": "Live Demo",
@@ -373,42 +373,98 @@
     "themeDark": "Dark",
     "zatcaReady": "ZATCA Ready",
     "multiLang": "Multi‑Language + RTL",
-    "whatsInside": "WHAT’S INSIDE",
-    "featuresTitle": "A‑to‑Z FEATURES",
+    "whatsInside": "WHAT'S INSIDE",
+    "featuresTitle": "Everything You Need",
+    "featuresSubtitle": "A complete suite of tools designed specifically for tailor shops — from order creation to final delivery.",
     "contact": "Contact",
     "footerNote": "Book a free trial for your tailor shop.",
+    "footerRights": "All rights reserved.",
+    "footerTagline": "The complete tailoring management system.",
+    "nav": {
+      "features": "Features",
+      "howItWorks": "How It Works",
+      "contact": "Contact"
+    },
+    "stats": {
+      "features": "18+ Features",
+      "languages": "5 Languages",
+      "rtl": "Full RTL",
+      "fast": "Lightning Fast"
+    },
+    "howTitle": "How It Works",
+    "howSubtitle": "Get your tailor shop running in minutes — not days.",
+    "step1Title": "Create Your Account",
+    "step1Desc": "Sign up instantly, set your shop name, logo, and language preferences.",
+    "step2Title": "Set Up Your Shop",
+    "step2Desc": "Add workers, customers, measurement catalogs, style options, and fabric inventory.",
+    "step3Title": "Start Managing Orders",
+    "step3Desc": "Create stitching orders, assign workers, track progress, collect payments, and print receipts.",
+    "ctaTitle": "Ready to modernize your tailor shop?",
+    "ctaDesc": "Join tailor shops across Saudi Arabia using KhayyatOS to manage their entire business with clarity and speed.",
     "features": {
+      "dashboard": {
+        "title": "Live Dashboard",
+        "desc": "Real-time overview of orders, payments, due dates, and business performance at a glance."
+      },
       "orders": {
         "title": "Orders & Stitchings",
-        "desc": "Create, assign, track, and print receipts with a premium workflow."
+        "desc": "Create orders with thawb type, style options, measurements, and instructions — assign and track end-to-end."
       },
-      "embroidery": {
-        "title": "Embroidery Designs",
-        "desc": "Upload design library, auto-WEBP, preview, and create orders with one click."
+      "measurements": {
+        "title": "Smart Measurements",
+        "desc": "Store and reuse customer measurements with visual cards, catalogs, and image references."
       },
       "customers": {
         "title": "Customers & Profiles",
-        "desc": "Full customer profiles, relations, history timeline, and quick actions."
+        "desc": "Full customer profiles with relations, order history, timeline, and quick repeat orders."
       },
-      "loyalty": {
-        "title": "Customer Loyalty",
-        "desc": "Loyalty points, totals, and retention-focused tools built-in."
+      "workers": {
+        "title": "Worker Management",
+        "desc": "Assign orders to workers, track earnings, manage salary or per-piece payments."
+      },
+      "embroidery": {
+        "title": "Embroidery Designs",
+        "desc": "Upload a design library, preview instantly, and attach designs to orders with one click."
+      },
+      "styles": {
+        "title": "Style Catalogs",
+        "desc": "Structured collar, cuff, pocket, and bain options per thawb type for consistent orders."
+      },
+      "fabrics": {
+        "title": "Fabric Inventory",
+        "desc": "Track fabric rolls with stock, pricing, color, and origin — link fabrics to orders."
+      },
+      "invoices": {
+        "title": "Invoices & Labels",
+        "desc": "Generate and print professional invoices, receipts, and labels with QR codes."
       },
       "whatsapp": {
-        "title": "WhatsApp Integration",
-        "desc": "Send order updates and notifications with templates and automation."
+        "title": "WhatsApp Notifications",
+        "desc": "Send automated order updates and messages via WhatsApp Cloud API with templates."
       },
       "zatca": {
         "title": "ZATCA E‑Invoicing",
-        "desc": "Saudi ZATCA-ready workflow with QR and compliance features."
+        "desc": "Saudi ZATCA-compliant e-invoicing with QR codes and VAT number integration."
+      },
+      "laundry": {
+        "title": "Laundry Module",
+        "desc": "Manage laundry pricing per piece, assigned items, and payment tracking."
+      },
+      "loyalty": {
+        "title": "Customer Loyalty",
+        "desc": "Built-in loyalty points, spending totals, and customer retention tools."
       },
       "languages": {
-        "title": "Multi‑Language",
-        "desc": "English, العربية, हिन्दी, اردو, বাংলা with RTL support."
+        "title": "Multi‑Language + RTL",
+        "desc": "English, العربية, हिन्दी, اردو, বাংলা — full right-to-left layout support."
+      },
+      "roles": {
+        "title": "Roles & Security",
+        "desc": "Admin, user, and worker roles with controlled access and safe operations."
       },
       "backup": {
         "title": "Backup & Export",
-        "desc": "Export data safely and keep your shop protected."
+        "desc": "Export your business data safely for reporting, migration, or safekeeping."
       }
     }
   },
