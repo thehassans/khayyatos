@@ -18,7 +18,7 @@ const DashboardPreview = () => {
       <div className="border-b border-slate-200 bg-white/85 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <img src="/khayatoslogo.png" alt="KhayyatOS" className="h-8 w-auto object-contain" />
+            <img src="/khayatoslogo.webp" alt="KhayyatOS" className="h-8 w-auto object-contain" />
             <div className="min-w-0">
               <div className="text-sm font-semibold tracking-[0.22em] truncate">DASHBOARD</div>
               <div className="text-xs text-slate-500 truncate">Preview</div>

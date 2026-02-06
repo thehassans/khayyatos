@@ -160,7 +160,7 @@ const LoginPage = () => {
           <div className="text-center mb-7 sm:mb-9 md:mb-11">
             <div className="flex items-center justify-center">
               <img
-                src="/khayatoslogo.png"
+                src="/khayatoslogo.webp"
                 alt="KhayyatOS"
                 className="h-28 sm:h-32 md:h-40 w-auto max-w-[320px] object-contain"
                 loading="eager"

@@ -117,7 +117,7 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-18">
             <div className="flex items-center gap-2.5">
-              <img src="/khayatoslogo.png" alt="KhayyatOS" className="h-9 w-auto object-contain" />
+              <img src="/khayatoslogo.webp" alt="KhayyatOS" className="h-9 w-auto object-contain" />
               <div className="hidden sm:block">
                 <div className="text-sm font-bold tracking-[0.2em] text-slate-900">KHAYYAT</div>
                 <div className="text-[10px] text-slate-500 tracking-wider -mt-0.5">Tailoring OS</div>
@@ -337,7 +337,7 @@ const Landing = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
             <div>
               <div className="flex items-center gap-2.5">
-                <img src="/khayatoslogo.png" alt="KhayyatOS" className="h-8 w-auto object-contain" />
+                <img src="/khayatoslogo.webp" alt="KhayyatOS" className="h-8 w-auto object-contain" />
                 <div>
                   <div className="text-sm font-bold tracking-[0.2em] text-slate-900">KHAYYAT</div>
                   <div className="text-[10px] text-slate-500 tracking-wider -mt-0.5">Tailoring OS</div>

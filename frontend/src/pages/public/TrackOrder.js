@@ -61,7 +61,7 @@ const TrackOrder = () => {
       {/* Header */}
       <div className="border-b border-slate-200 bg-white/85 backdrop-blur-xl px-6 py-5">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <img src="/khayatoslogo.png" alt="KhayyatOS" className="h-9 w-auto object-contain" />
+          <img src="/khayatoslogo.webp" alt="KhayyatOS" className="h-9 w-auto object-contain" />
           <div className="min-w-0">
             <h1 className="font-semibold text-slate-900 tracking-wide">Track Order</h1>
             <p className="text-xs text-slate-500 tracking-widest uppercase">تتبع الطلب</p>
