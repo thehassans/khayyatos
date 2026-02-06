@@ -22,6 +22,14 @@ html.dark body {
 /* RTL Support */
 [dir="rtl"] {
   text-align: right;
+  font-family: 'Noto Sans Arabic', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+[dir="rtl"] input,
+[dir="rtl"] textarea,
+[dir="rtl"] select,
+[dir="rtl"] button {
+  font-family: 'Noto Sans Arabic', 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 /* Custom scrollbar */
