@@ -187,11 +187,19 @@ const Landing = () => {
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden bg-[#060606] pt-28 sm:pt-36 pb-20 sm:pb-28">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full opacity-20" style={{ background: `radial-gradient(circle, ${GOLD} 0%, transparent 70%)` }} />
-          <div className="absolute -bottom-60 -right-40 w-[600px] h-[600px] rounded-full opacity-15" style={{ background: `radial-gradient(circle, ${GOLD} 0%, transparent 70%)` }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full opacity-[0.04]" style={{ background: `radial-gradient(circle, white 0%, transparent 70%)` }} />
-        </div>
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          disablePictureInPicture
+          preload="metadata"
+          className="absolute inset-0 w-full h-full object-cover opacity-40"
+        >
+          <source src="/videos/Thawb.webm" type="video/webm" />
+          <source src="/videos/Thawb.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-[#060606]" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm">
