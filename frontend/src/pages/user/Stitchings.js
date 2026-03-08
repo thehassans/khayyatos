@@ -251,21 +251,21 @@ const Stitchings = () => {
         <style>
           @page { size: 80mm auto; margin: 0; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; font-size: 11px; padding: 8px; width: 80mm; }
+          body { font-family: Arial, sans-serif; font-size: 11px; padding: 8px; width: 80mm; font-weight: bold; word-break: break-word; overflow-wrap: break-word; }
           .header { text-align: center; border-bottom: 2px dashed #333; padding-bottom: 10px; margin-bottom: 8px; }
           .logo { width: 60px; height: 60px; object-fit: contain; margin: 0 auto 8px; display: block; border-radius: 8px; }
           .shop-name { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
           .shop-name-ar { font-size: 13px; font-weight: bold; direction: rtl; color: #333; }
-          .shop-address { font-size: 9px; color: #666; margin-top: 4px; }
+          .shop-address { font-size: 9px; color: #333; font-weight: bold; margin-top: 4px; word-break: break-word; overflow-wrap: break-word; }
           .receipt-no { font-size: 16px; font-weight: bold; margin: 8px 0; text-align: center; }
-          .info-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #ccc; }
-          .label { color: #666; }
-          .value { font-weight: 600; }
+          .info-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; padding: 4px 0; border-bottom: 1px dotted #ccc; }
+          .label { color: #333; font-weight: bold; }
+          .value { font-weight: bold; word-break: break-word; overflow-wrap: break-word; }
           .qr-container { display: flex; justify-content: center; gap: 16px; margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
           .qr-box { flex: 1; text-align: center; max-width: 100px; }
           .qr-box img { width: 70px; height: 70px; border: 2px solid #e5e7eb; border-radius: 8px; padding: 4px; background: #fff; }
-          .qr-label { font-size: 8px; color: #374151; margin-top: 6px; font-weight: 600; line-height: 1.2; }
-          .qr-sublabel { font-size: 7px; color: #6b7280; margin-top: 2px; }
+          .qr-label { font-size: 8px; color: #374151; margin-top: 6px; font-weight: bold; line-height: 1.2; }
+          .qr-sublabel { font-size: 7px; color: #333; font-weight: bold; margin-top: 2px; }
           .single-qr { text-align: center; margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
           .single-qr img { width: 80px; height: 80px; border: 2px solid #e5e7eb; border-radius: 8px; padding: 4px; background: #fff; }
         </style>
