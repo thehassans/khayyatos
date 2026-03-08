@@ -250,8 +250,8 @@ const Stitchings = () => {
         <title>Print Label</title>
         <style>
           @page { size: 80mm auto; margin: 0; }
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; font-size: 11px; padding: 8px; width: 80mm; font-weight: bold; word-break: break-word; overflow-wrap: break-word; }
+          * { margin: 0; padding: 0; box-sizing: border-box; font-weight: bold !important; }
+          body { font-family: Arial, sans-serif; font-size: 11px; padding: 8px; width: 80mm; font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; }
           .header { text-align: center; border-bottom: 2px dashed #333; padding-bottom: 10px; margin-bottom: 8px; }
           .logo { width: 60px; height: 60px; object-fit: contain; margin: 0 auto 8px; display: block; border-radius: 8px; }
           .shop-name { font-size: 14px; font-weight: bold; margin-bottom: 2px; }

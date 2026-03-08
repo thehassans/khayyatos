@@ -948,17 +948,17 @@ const StitchingForm = () => {
         <title>Order Label</title>
         <style>
           @page { size: 80mm auto; margin: 2mm; }
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; width: 76mm; padding: 3mm; font-size: 11px; direction: ${isRTL ? 'rtl' : 'ltr'}; font-weight: bold; word-break: break-word; overflow-wrap: break-word; }
+          * { margin: 0; padding: 0; box-sizing: border-box; font-weight: bold !important; }
+          body { font-family: Arial, sans-serif; width: 76mm; padding: 3mm; font-size: 11px; direction: ${isRTL ? 'rtl' : 'ltr'}; font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; }
           .header { text-align: center; margin-bottom: 8px; border-bottom: 2px dashed #333; padding-bottom: 10px; }
           .logo { width: 60px; height: 60px; object-fit: contain; margin: 0 auto 8px; display: block; border-radius: 8px; }
-          .shop-name { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
-          .shop-name-ar { font-size: 13px; font-weight: bold; direction: rtl; color: #333; }
-          .shop-address { font-size: 9px; color: #333; font-weight: bold; margin-top: 4px; word-break: break-word; overflow-wrap: break-word; }
-          .receipt-no { font-size: 16px; font-weight: bold; text-align: center; margin: 8px 0; }
+          .shop-name { font-size: 14px; font-weight: bold !important; margin-bottom: 2px; }
+          .shop-name-ar { font-size: 13px; font-weight: bold !important; direction: rtl; color: #333; }
+          .shop-address { font-size: 9px; color: #333; font-weight: bold !important; margin-top: 4px; word-break: break-word; overflow-wrap: break-word; }
+          .receipt-no { font-size: 16px; font-weight: bold !important; text-align: center; margin: 8px 0; }
           .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; padding: 4px 0; border-bottom: 1px dotted #ccc; }
-          .label { color: #333; font-size: 10px; font-weight: bold; }
-          .value { font-weight: bold; word-break: break-word; overflow-wrap: break-word; }
+          .label { color: #333; font-size: 10px; font-weight: bold !important; }
+          .value { font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; }
           .status { text-align: center; padding: 6px; background: #f0f0f0; border-radius: 4px; margin: 8px 0; font-weight: bold; }
           .no-logo { width: 60px; height: 60px; background: #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280; font-size: 24px; margin: 0 auto 8px; }
           .qr-container { display: flex; justify-content: center; gap: 16px; margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
@@ -1107,21 +1107,21 @@ const StitchingForm = () => {
         <title>Family Invoice</title>
         <style>
           @page { size: 80mm auto; margin: 2mm; }
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; width: 76mm; padding: 3mm; font-size: 11px; direction: ${isRTL ? 'rtl' : 'ltr'}; font-weight: bold; word-break: break-word; overflow-wrap: break-word; }
+          * { margin: 0; padding: 0; box-sizing: border-box; font-weight: bold !important; }
+          body { font-family: Arial, sans-serif; width: 76mm; padding: 3mm; font-size: 11px; direction: ${isRTL ? 'rtl' : 'ltr'}; font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; }
           .header { text-align: center; margin-bottom: 8px; border-bottom: 2px dashed #333; padding-bottom: 10px; }
           .logo { width: 60px; height: 60px; object-fit: contain; margin: 0 auto 8px; display: block; border-radius: 8px; }
-          .no-logo { width: 60px; height: 60px; background: #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280; font-size: 24px; margin: 0 auto 8px; }
-          .shop-name { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
-          .shop-name-ar { font-size: 13px; font-weight: bold; direction: rtl; color: #333; }
-          .receipt-title { font-size: 14px; font-weight: bold; text-align: center; margin: 8px 0; }
+          .no-logo { width: 60px; height: 60px; background: #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold !important; color: #6b7280; font-size: 24px; margin: 0 auto 8px; }
+          .shop-name { font-size: 14px; font-weight: bold !important; margin-bottom: 2px; }
+          .shop-name-ar { font-size: 13px; font-weight: bold !important; direction: rtl; color: #333; }
+          .receipt-title { font-size: 14px; font-weight: bold !important; text-align: center; margin: 8px 0; }
           .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; padding: 4px 0; border-bottom: 1px dotted #ccc; }
-          .label { color: #333; font-size: 10px; font-weight: bold; }
-          .value { font-weight: bold; word-break: break-word; overflow-wrap: break-word; }
+          .label { color: #333; font-size: 10px; font-weight: bold !important; }
+          .value { font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; }
           .items { margin-top: 10px; }
           .item-row { padding: 6px 0; border-bottom: 1px dotted #ddd; word-break: break-word; overflow-wrap: break-word; }
-          .item-name { font-weight: bold; font-size: 11px; word-break: break-word; overflow-wrap: break-word; }
-          .item-meta { margin-top: 2px; font-size: 9px; color: #333; font-weight: bold; line-height: 1.2; word-break: break-word; overflow-wrap: break-word; }
+          .item-name { font-weight: bold !important; font-size: 11px; word-break: break-word; overflow-wrap: break-word; }
+          .item-meta { margin-top: 2px; font-size: 9px; color: #333; font-weight: bold !important; line-height: 1.2; word-break: break-word; overflow-wrap: break-word; }
           .qr { text-align: center; margin-top: 10px; padding-top: 10px; border-top: 2px dashed #333; }
           .qr img { width: 90px; height: 90px; border: 2px solid #e5e7eb; border-radius: 10px; padding: 4px; background: #fff; }
         </style>
