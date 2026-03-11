@@ -74,6 +74,7 @@ const EmbroideryDesigns = lazyRetry(() => import('./pages/user/EmbroideryDesigns
 const Laundry = lazyRetry(() => import('./pages/user/Laundry'));
 const Stitchings = lazyRetry(() => import('./pages/user/Stitchings'));
 const StitchingForm = lazyRetry(() => import('./pages/user/StitchingForm'));
+const InvoiceForm = lazyRetry(() => import('./pages/user/InvoiceForm'));
 const FabricRollar = lazyRetry(() => import('./pages/user/FabricRollar'));
 const Loyalty = lazyRetry(() => import('./pages/user/Loyalty'));
 const WhatsApp = lazyRetry(() => import('./pages/user/WhatsApp'));
@@ -201,6 +202,7 @@ const AppRoutes = () => {
           <Route path="stitchings" element={<LazyPage><Stitchings /></LazyPage>} />
           <Route path="stitchings/new" element={<LazyPage skeleton="form"><StitchingForm /></LazyPage>} />
           <Route path="stitchings/:id/edit" element={<LazyPage skeleton="form"><StitchingForm /></LazyPage>} />
+          <Route path="invoices/new" element={<LazyPage skeleton="form"><InvoiceForm /></LazyPage>} />
           <Route path="fabrics" element={<LazyPage><FabricRollar /></LazyPage>} />
           <Route path="loyalty" element={<LazyPage><Loyalty /></LazyPage>} />
           <Route path="whatsapp" element={<LazyPage><WhatsApp /></LazyPage>} />

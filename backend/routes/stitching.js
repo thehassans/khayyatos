@@ -37,6 +37,26 @@ const buildSaudiPhoneNeedles = (q) => {
   return Array.from(set);
 };
 
+const computeReceiptPrefixFromBusinessName = (businessName) => {
+  const rawShop = typeof businessName === 'string' ? businessName : '';
+  const shop = rawShop.trim().replace(/\s+/g, '-');
+  const safeShop = shop.replace(/[^\p{L}\p{N}-]/gu, '').slice(0, 24);
+  return safeShop || 'SHOP';
+};
+
+const syncManualReceiptCounter = async (user, receiptNumber) => {
+  if (!user || !receiptNumber) return;
+  const prefix = computeReceiptPrefixFromBusinessName(user.businessName);
+  const pattern = new RegExp(`^${escapeRegex(prefix)}-(\\d+)$`, 'u');
+  const match = String(receiptNumber).trim().match(pattern);
+  if (!match) return;
+  const manualCounter = Number(match[1]);
+  if (!Number.isFinite(manualCounter)) return;
+  if (manualCounter <= (Number(user.receiptCounter) || 0)) return;
+  user.receiptCounter = manualCounter;
+  await user.save();
+};
+
 router.use(verifyToken, isUser);
 
 // Get all stitchings
@@ -189,11 +209,13 @@ router.post('/', blockDemoWrites, async (req, res) => {
       relationToSave = relExists;
     }
     
+    const user = await User.findById(req.user._id);
     let finalReceiptNumber = receiptNumber;
     if (!finalReceiptNumber) {
-      const user = await User.findById(req.user._id);
       finalReceiptNumber = user.generateReceiptNumber();
       await user.save();
+    } else {
+      await syncManualReceiptCounter(user, finalReceiptNumber);
     }
 
     let designIdToSave = null;
@@ -281,7 +303,6 @@ router.post('/', blockDemoWrites, async (req, res) => {
     await stitching.populate('fabricId', 'name madeIn pricePerRoll rollsInStock');
     
     // Send WhatsApp notification for new order
-    const user = await User.findById(req.user._id);
     if (user?.whatsappSettings?.enabled && user?.whatsappSettings?.autoMessageOnOrder) {
       whatsappService.sendOrderNotification(user, customer, stitching)
         .then(result => {

@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, StatCard } from '../../components/ui/Card';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
-import { Users, UserPlus, Clock, CheckCircle, AlertCircle, Search, Plus, Calendar, Truck } from 'lucide-react';
+import { Users, UserPlus, Clock, CheckCircle, AlertCircle, Search, Plus, Calendar, Truck, FileText } from 'lucide-react';
 import SARIcon from '../../components/ui/SARIcon';
 import { Button } from '../../components/ui/Button';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
@@ -342,6 +342,15 @@ const UserDashboard = () => {
             disabled={isDemo}
           >
             {t('stitchings.createOrder')}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/user/invoices/new'))}
+            icon={FileText}
+            className="rounded-2xl px-5 py-3"
+            disabled={isDemo}
+          >
+            Create Invoice
           </Button>
           <Button
             variant="outline"
