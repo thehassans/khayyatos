@@ -8,7 +8,6 @@ import { Select, Textarea } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import { ArrowLeft, ChevronDown, Calendar, Printer, Users, Image as ImageIcon, Plus, UserPlus, Search, User, X } from 'lucide-react';
-import MeasurementCard from '../../components/ui/MeasurementCard';
 import MeasurementAtelierPanel from '../../components/ui/MeasurementAtelierPanel';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
@@ -1383,6 +1382,46 @@ const StitchingForm = () => {
         })
     : fallbackThawbTypes;
 
+  const thawbTypeChoices = thawbTypes.map((thawb) => {
+    const label = thawb.name || t(`thawbTypes.${thawb.key}`, { defaultValue: thawb.fallbackLabel || thawb.key });
+    return {
+      key: thawb.key,
+      label,
+      subtitle: thawb.fallbackLabelAr || '',
+      imageSrc: thawb.image ? `${resolveUploadsUrl(thawb.image)}${thawb.imageUpdatedAt ? `?v=${thawb.imageUpdatedAt}` : ''}` : thawb.fallbackImage
+    };
+  });
+
+  const fallbackStyleGroups = [
+    { key: 'collar', name: '', enabled: true, sortOrder: 0, options: [{ key: 'classic', name: '' }, { key: 'round', name: '' }, { key: 'mandarin', name: '' }, { key: 'open', name: '' }] },
+    { key: 'bain', name: '', enabled: true, sortOrder: 1, options: [{ key: 'hidden', name: '' }, { key: 'visible', name: '' }, { key: 'zip', name: '' }, { key: 'half', name: '' }] },
+    { key: 'cuff', name: '', enabled: true, sortOrder: 2, options: [{ key: 'single', name: '' }, { key: 'double', name: '' }, { key: 'round', name: '' }, { key: 'angled', name: '' }] },
+    { key: 'pocket', name: '', enabled: true, sortOrder: 3, options: [{ key: 'none', name: '' }, { key: 'chest', name: '' }, { key: 'side', name: '' }, { key: 'both', name: '' }] },
+    { key: 'buttons', name: '', enabled: true, sortOrder: 4, options: [{ key: 'classic', name: '' }, { key: 'hidden', name: '' }, { key: 'snap', name: '' }, { key: 'premium', name: '' }] },
+    { key: 'embroidery', name: '', enabled: true, sortOrder: 5, options: [{ key: 'none', name: '' }, { key: 'name', name: '' }, { key: 'logo', name: '' }, { key: 'premium', name: '' }] }
+  ];
+
+  const styleGroups = ((styleCatalog?.groups?.length ? styleCatalog.groups : fallbackStyleGroups) || [])
+    .filter((group) => group && group.enabled !== false)
+    .slice()
+    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    .map((group) => ({
+      key: group.key,
+      label: group.nameI18n?.[langKey] || group.name || t(`styleOptions.${group.key}`, { defaultValue: group.key }),
+      options: (group.options || [])
+        .filter((option) => option && option.enabled !== false)
+        .slice()
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+        .map((option) => ({
+          value: option.key,
+          label: option.nameI18n?.[langKey] || option.name || t(`styleOptions.options.${group.key}.${option.key}`, { defaultValue: option.key }),
+          imageSrc: option.image ? `${resolveUploadsUrl(option.image)}${option.imageUpdatedAt ? `?v=${option.imageUpdatedAt}` : ''}` : undefined
+        }))
+    }));
+
+  const workspaceStyleGroups = styleGroups.filter((group) => ['collar', 'pocket'].includes(group.key));
+  const advancedStyleGroups = styleGroups.filter((group) => !['collar', 'pocket'].includes(group.key));
+
   const fallbackFabricColors = [
     { key: 'white', name: 'White', nameAr: 'أبيض', hex: '#FFFFFF' },
     { key: 'cream', name: 'Cream', nameAr: 'كريمي', hex: '#FFFDD0' },
@@ -1417,49 +1456,35 @@ const StitchingForm = () => {
   const batchTotalPrice = batchItemsPrice;
   const batchTotalPaid = totalPaidOverride === null ? 0 : totalPaidOverride;
   const measurementUi = user?.measurementUi || 'cards';
-  const isAtelierMeasurementUi = measurementUi === 'atelier';
+  const measurementVariant = measurementUi === 'atelier' ? 'board' : 'sheet';
+  const measurementLogoSrc = user?.logo ? resolveUploadsUrl(user.logo) : null;
 
-  const renderMeasurementInputs = ({ title, subtitle, values, onChange, disabled = false, loading = false, badges = [], tone = 'slate' }) => {
-    if (isAtelierMeasurementUi) {
-      return (
-        <div className="mt-4">
-          <MeasurementAtelierPanel
-            title={title}
-            subtitle={subtitle}
-            fields={measurementFields}
-            values={values}
-            onChange={onChange}
-            disabled={disabled}
-            loading={loading}
-            thawbType={formData.thawbType}
-            badges={badges}
-            tone={tone}
-          />
-        </div>
-      );
-    }
-
-    return (
-      <>
-        {loading ? (
-          <div className="text-sm text-gray-500 dark:text-slate-400 mt-4">Loading…</div>
-        ) : null}
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {measurementFields.map((field) => (
-            <MeasurementCard
-              key={`${title}-${field.key}`}
-              measurementKey={field.key}
-              label={field.label}
-              value={values?.[field.key]}
-              onChange={(value) => onChange(field.key, value)}
-              disabled={disabled}
-              imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
-            />
-          ))}
-        </div>
-      </>
-    );
-  };
+  const renderMeasurementInputs = ({ title, subtitle, values, onChange, disabled = false, loading = false, badges = [], tone = 'slate', showDesignControls = false }) => (
+    <div className="mt-4">
+      <MeasurementAtelierPanel
+        variant={measurementVariant}
+        title={title}
+        subtitle={subtitle}
+        fields={measurementFields}
+        values={values}
+        onChange={onChange}
+        disabled={disabled}
+        loading={loading}
+        thawbType={formData.thawbType}
+        badges={badges}
+        tone={tone}
+        logoSrc={measurementLogoSrc}
+        businessName={user?.businessName || ''}
+        businessPhone={user?.phone || ''}
+        styleGroups={workspaceStyleGroups}
+        styleValues={formData.styleOptions || {}}
+        onStyleChange={handleStyleOptionChange}
+        showStyleControls={showDesignControls}
+        thawbTypes={thawbTypeChoices}
+        onThawbTypeChange={(value) => setFormData((prev) => ({ ...prev, thawbType: value }))}
+      />
+    </div>
+  );
 
   // If order created, show print option
   if (createdOrder) {
@@ -1526,7 +1551,7 @@ const StitchingForm = () => {
   }
 
   return (
-    <div className={`${isAtelierMeasurementUi ? 'max-w-[1400px]' : 'max-w-2xl'} mx-auto space-y-6 animate-fadeIn`}>
+    <div className={`${measurementVariant === 'board' ? 'max-w-[1520px]' : 'max-w-[1380px]'} mx-auto space-y-6 animate-fadeIn`}>
       <div className="flex items-center gap-4">
         <button onClick={() => navigate('/user/stitchings')} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800/50 dark:text-slate-300 rounded-lg">
           <ArrowLeft className="w-5 h-5" />
@@ -1642,13 +1667,14 @@ const StitchingForm = () => {
               </div>
             ) : null}
 
+            {advancedStyleGroups.length > 0 ? (
              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
               <button
                 type="button"
                 onClick={() => setStyleOptionsOpen((p) => !p)}
                 className="w-full flex items-center justify-between mb-4"
               >
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('styleOptions.title')}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Additional Style Options</h3>
                 <ChevronDown
                   className={`w-5 h-5 text-gray-500 dark:text-slate-400 transition-transform ${styleOptionsOpen ? 'rotate-180' : ''}`}
                 />
@@ -1659,71 +1685,28 @@ const StitchingForm = () => {
                   {styleCatalogLoading ? (
                     <div className="text-sm text-gray-500 dark:text-slate-400">Loading…</div>
                   ) : (
-                    ((styleCatalog?.groups?.length ? styleCatalog.groups : [
-                      { key: 'collar', name: '', enabled: true, sortOrder: 0, options: [ { key: 'classic', name: '' }, { key: 'round', name: '' }, { key: 'mandarin', name: '' }, { key: 'open', name: '' } ] },
-                      { key: 'bain', name: '', enabled: true, sortOrder: 1, options: [ { key: 'hidden', name: '' }, { key: 'visible', name: '' }, { key: 'zip', name: '' }, { key: 'half', name: '' } ] },
-                      { key: 'cuff', name: '', enabled: true, sortOrder: 2, options: [ { key: 'single', name: '' }, { key: 'double', name: '' }, { key: 'round', name: '' }, { key: 'angled', name: '' } ] },
-                      { key: 'pocket', name: '', enabled: true, sortOrder: 3, options: [ { key: 'none', name: '' }, { key: 'chest', name: '' }, { key: 'side', name: '' }, { key: 'both', name: '' } ] },
-                      { key: 'buttons', name: '', enabled: true, sortOrder: 4, options: [ { key: 'classic', name: '' }, { key: 'hidden', name: '' }, { key: 'snap', name: '' }, { key: 'premium', name: '' } ] },
-                      { key: 'embroidery', name: '', enabled: true, sortOrder: 5, options: [ { key: 'none', name: '' }, { key: 'name', name: '' }, { key: 'logo', name: '' }, { key: 'premium', name: '' } ] }
-                    ]))
-                      .filter((g) => g && g.enabled !== false)
-                      .slice()
-                      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-                      .map((group) => {
-                        const groupTitle = group.nameI18n?.[langKey] || group.name || t(`styleOptions.${group.key}`, { defaultValue: group.key });
-                        const groupOptions = (group.options || [])
-                          .filter((o) => o && o.enabled !== false)
-                          .slice()
-                          .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-                          .map((opt) => {
-                            const label = opt.nameI18n?.[langKey] || opt.name || t(`styleOptions.options.${group.key}.${opt.key}`, { defaultValue: opt.key });
-                            return { value: opt.key, label };
-                          });
-
-                        const selectedValue = (formData.styleOptions || {})[group.key] || '';
-                        return (
-                          <div key={group.key}>
-                            <Select
-                              label={groupTitle}
-                              value={selectedValue}
-                              onChange={(e) => handleStyleOptionChange(group.key, e.target.value)}
-                              options={[
-                                { value: '', label: t('common.select', { defaultValue: 'Select' }) },
-                                ...groupOptions
-                              ]}
-                              className="rounded-2xl bg-white/70 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700"
-                            />
-                          </div>
-                        );
-                      })
+                    advancedStyleGroups.map((group) => {
+                      const selectedValue = (formData.styleOptions || {})[group.key] || '';
+                      return (
+                        <div key={group.key}>
+                          <Select
+                            label={group.label}
+                            value={selectedValue}
+                            onChange={(e) => handleStyleOptionChange(group.key, e.target.value)}
+                            options={[
+                              { value: '', label: t('common.select', { defaultValue: 'Select' }) },
+                              ...(group.options || []).map((option) => ({ value: option.value, label: option.label }))
+                            ]}
+                            className="rounded-2xl bg-white/70 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700"
+                          />
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               ) : null}
             </div>
-
-            {/* Thawb Type Selector */}
-            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-5">
-              <label className="block text-sm font-semibold text-gray-800 dark:text-slate-100 mb-4">
-                {t('thawbTypes.title')} / نوع الثوب *
-              </label>
-              {thawbTypesCatalogLoading && (
-                <div className="text-sm text-gray-500 dark:text-slate-400 mb-4">Loading…</div>
-              )}
-              <Select
-                value={formData.thawbType}
-                onChange={(e) => setFormData({ ...formData, thawbType: e.target.value })}
-                options={thawbTypes.map((thawb) => {
-                  const title = thawb.name || t(`thawbTypes.${thawb.key}`, { defaultValue: thawb.fallbackLabel || thawb.key });
-                  const subtitle = thawb.fallbackLabelAr || '';
-                  return {
-                    value: thawb.key,
-                    label: subtitle ? `${title} / ${subtitle}` : title
-                  };
-                })}
-                className="rounded-2xl bg-white/70 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700"
-              />
-            </div>
+            ) : null}
 
             <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-5">
               {/* Fabric (Roll) Selector (Optional) */}
@@ -1920,7 +1903,8 @@ const StitchingForm = () => {
                         selectedCustomer?.measurements && Object.keys(selectedCustomer.measurements).length > 0 ? 'Auto-filled from customer' : null,
                         selectedRelation ? 'Read-only reference' : null
                       ].filter(Boolean),
-                      tone: 'slate'
+                      tone: 'slate',
+                      showDesignControls: !selectedRelation
                     })
                   ) : null}
                 </div>
@@ -1957,7 +1941,8 @@ const StitchingForm = () => {
                         badges: [
                           selectedRelation?.measurements && Object.keys(selectedRelation.measurements).length > 0 ? `Auto-filled from ${selectedRelation.name}` : null
                         ].filter(Boolean),
-                        tone: 'amber'
+                        tone: 'amber',
+                        showDesignControls: true
                       })
                     ) : null}
                   </div>
@@ -2131,39 +2116,19 @@ const StitchingForm = () => {
                                 </div>
                               </div>
 
-                              {isAtelierMeasurementUi ? (
-                                renderMeasurementInputs({
-                                  title: `${it.orderFor || 'Order'} Measurements`,
-                                  subtitle: 'Review each family member with the same atelier-style fitting workspace.',
-                                  values: it.measurements || {},
-                                  onChange: (key, value) => updateOrderItemMeasurement(it.id, key, value),
-                                  loading: measurementsCatalogLoading,
-                                  badges: [
-                                    it.relationType || 'Self',
-                                    `Qty ${it.quantity || 1}`
-                                  ].filter(Boolean),
-                                  tone: 'amber'
-                                })
-                              ) : (
-                                <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 p-4">
-                                  <div className="text-xs font-semibold text-amber-900/80 dark:text-amber-100/80">Measurements</div>
-                                  {measurementsCatalogLoading ? (
-                                    <div className="mt-2 text-xs text-amber-900/60 dark:text-amber-100/60">Loading…</div>
-                                  ) : null}
-                                  <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                                    {measurementFields.map((field) => (
-                                      <MeasurementCard
-                                        key={`${it.id}-${field.key}`}
-                                        measurementKey={field.key}
-                                        label={field.label}
-                                        value={(it.measurements || {})[field.key]}
-                                        onChange={(value) => updateOrderItemMeasurement(it.id, field.key, value)}
-                                        imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
+                              {renderMeasurementInputs({
+                                title: `${it.orderFor || 'Order'} Measurements`,
+                                subtitle: 'Review each family member with the same workspace and keep the shared thawb, collar, and pocket styling aligned across the family order.',
+                                values: it.measurements || {},
+                                onChange: (key, value) => updateOrderItemMeasurement(it.id, key, value),
+                                loading: measurementsCatalogLoading,
+                                badges: [
+                                  it.relationType || 'Self',
+                                  `Qty ${it.quantity || 1}`
+                                ].filter(Boolean),
+                                tone: 'amber',
+                                showDesignControls: true
+                              })}
                             </div>
                           ) : null}
                         </div>

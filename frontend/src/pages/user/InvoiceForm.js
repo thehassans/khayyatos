@@ -27,7 +27,8 @@ const initialFormState = {
   quantity: 1,
   price: '',
   paidAmount: '',
-  receiptNumber: ''
+  receiptNumber: '',
+  dueDate: ''
 };
 
 const InvoiceForm = () => {
@@ -111,6 +112,7 @@ const InvoiceForm = () => {
     const quantity = Math.max(1, Number(formData.quantity) || 1);
     const price = Number(formData.price);
     const paidAmount = Number(formData.paidAmount || 0);
+    const dueDate = String(formData.dueDate || '').trim();
 
     if (!customerName) {
       toast.error('Customer name is required');
@@ -160,7 +162,8 @@ const InvoiceForm = () => {
         price,
         paidAmount,
         receiptNumber,
-        description: 'Invoice'
+        description: 'Invoice',
+        dueDate: dueDate || null
       });
 
       const invoice = response.data?.stitching || response.data;
@@ -279,6 +282,18 @@ const InvoiceForm = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  value={formData.dueDate}
+                  onChange={(e) => handleChange('dueDate', e.target.value)}
+                  className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                   Total
                 </label>
                 <input
@@ -310,7 +325,7 @@ const InvoiceForm = () => {
             </div>
 
             <div className="rounded-2xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-900/10 p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-gray-500 dark:text-slate-400">Quantity</p>
                   <p className="mt-1 font-bold text-gray-900 dark:text-slate-100">{Math.max(1, Number(formData.quantity) || 1)}</p>
@@ -320,8 +335,14 @@ const InvoiceForm = () => {
                   <p className="mt-1 font-bold text-gray-900 dark:text-slate-100">{Number(formData.price || 0).toFixed(2)}</p>
                 </div>
                 <div>
+                  <p className="text-gray-500 dark:text-slate-400">Due Date</p>
+                  <p className="mt-1 font-bold text-gray-900 dark:text-slate-100">
+                    {formData.dueDate ? new Date(formData.dueDate).toLocaleDateString() : '-'}
+                  </p>
+                </div>
+                <div>
                   <p className="text-gray-500 dark:text-slate-400">Pending</p>
-                  <p className={`mt-1 font-bold ${balance > 0 ? 'text-red-600' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  <p className={`mt-1 font-bold ${balance > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-900 dark:text-slate-100'}`}>
                     {balance.toFixed(2)}
                   </p>
                 </div>
