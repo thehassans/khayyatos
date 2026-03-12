@@ -7,7 +7,7 @@ import { Input } from '../../components/ui/Input';
 import { Settings as SettingsIcon, Upload, Trash2, Plus, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const sanitizeKey = (value) => String(value || '').trim().replace(/\s+/g, '-').replace(/[^A-Za-z0-9_-]/g, '');
+const sanitizeKey = (value) => String(value || '').toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '');
 
 const AdminSettings = () => {
   const { t } = useTranslation();
@@ -126,6 +126,14 @@ const AdminSettings = () => {
     setSavingMeasurements(false);
   };
 
+  const persistMeasurementsCatalog = async () => {
+    if (!measurementsCatalog) return measurementsCatalog;
+    const response = await api.put('/admin/measurements-catalog', measurementsCatalog);
+    const nextCatalog = response.data?.catalog || measurementsCatalog;
+    setMeasurementsCatalog(nextCatalog);
+    return nextCatalog;
+  };
+
   const updateGroup = (groupKey, patch) => {
     setStyleCatalog((prev) => ({
       ...prev,
@@ -180,10 +188,19 @@ const AdminSettings = () => {
     setSavingStyles(false);
   };
 
+  const persistStyleCatalog = async () => {
+    if (!styleCatalog) return styleCatalog;
+    const response = await api.put('/admin/style-options-catalog', styleCatalog);
+    const nextCatalog = response.data?.catalog || styleCatalog;
+    setStyleCatalog(nextCatalog);
+    return nextCatalog;
+  };
+
   const uploadMeasurementImage = async (fieldKey, file) => {
     if (!file) return;
     setBusyKey(`m:${fieldKey}`);
     try {
+      await persistMeasurementsCatalog();
       const webp = await convertImageToWebp(file, 720, 0.85);
       const data = new FormData();
       data.append('fieldKey', fieldKey);
@@ -213,6 +230,7 @@ const AdminSettings = () => {
     if (!file) return;
     setBusyKey(`${groupKey}:${optionKey}`);
     try {
+      await persistStyleCatalog();
       const webp = await convertImageToWebp(file, 720, 0.85);
       const data = new FormData();
       data.append('groupKey', groupKey);
