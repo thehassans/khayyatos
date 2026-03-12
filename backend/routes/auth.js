@@ -3,6 +3,7 @@ const router = express.Router();
 const Admin = require('../models/Admin');
 const User = require('../models/User');
 const Worker = require('../models/Worker');
+const Finisher = require('../models/Finisher');
 const { generateToken, verifyToken } = require('../middleware/auth');
 
 const DEMO_PHONE = '+966000000000';
@@ -123,6 +124,32 @@ router.post('/login', async (req, res) => {
               shopName: worker.userId.businessName,
               shopLogo: worker.userId.logo,
               role: 'worker'
+            }
+          });
+        }
+      }
+
+      // Try finisher login
+      const finisher = await Finisher.findOne({ phone: identifier }).populate('userId');
+      if (finisher) {
+        const isMatch = await finisher.comparePassword(password);
+        if (isMatch) {
+          if (!finisher.isActive) {
+            return res.status(403).json({ error: 'Account is inactive' });
+          }
+          if (!finisher.userId?.isSubscriptionActive || !finisher.userId.isSubscriptionActive()) {
+            return res.status(403).json({ error: 'Shop subscription expired' });
+          }
+          const token = generateToken(finisher._id, 'finisher');
+          return res.json({
+            token,
+            role: 'finisher',
+            user: {
+              id: finisher._id,
+              name: finisher.name,
+              phone: finisher.phone,
+              language: finisher.language,
+              role: 'finisher'
             }
           });
         }
@@ -289,6 +316,8 @@ router.get('/verify', verifyToken, async (req, res) => {
       user = await User.findById(req.userId).select('-password');
     } else if (req.userRole === 'worker') {
       user = await Worker.findById(req.userId).select('-password').populate('userId', 'businessName logo');
+    } else if (req.userRole === 'finisher') {
+      user = await Finisher.findById(req.userId).select('-password').populate('userId', 'businessName logo');
     }
     
     if (!user) {

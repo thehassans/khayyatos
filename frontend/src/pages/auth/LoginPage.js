@@ -81,6 +81,8 @@ const LoginPage = () => {
           navigate('/user/dashboard');
         } else if (result.role === 'worker') {
           navigate('/worker/dashboard');
+        } else if (result.role === 'finisher') {
+          navigate('/finisher/dashboard');
         }
       } else {
         toast.error(result.error || t('auth.invalidCredentials'));

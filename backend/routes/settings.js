@@ -18,6 +18,16 @@ const SystemSettings = require('../models/SystemSettings');
 const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 const { verifyToken, isUser } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const {
+  buildDefaultMeasurementsCatalog: buildSystemDefaultMeasurementsCatalog,
+  buildDefaultStyleOptionsCatalog: buildSystemDefaultStyleOptionsCatalog,
+  normalizeMeasurementsCatalog,
+  normalizeStyleOptionsCatalog,
+  mergeMeasurementsCatalog,
+  mergeStyleOptionsCatalog,
+  extractUserMeasurementsCatalog,
+  extractUserStyleOptionsCatalog
+} = require('../utils/catalogs');
 
 router.use(verifyToken, isUser);
 
@@ -185,9 +195,7 @@ const buildDefaultStyleOptionsCatalog = () => ({
 const ensureUserStyleOptionsCatalog = async (user) => {
   const hasGroups = user?.styleOptionsCatalog?.groups && user.styleOptionsCatalog.groups.length > 0;
   if (hasGroups) return user.styleOptionsCatalog;
-  user.styleOptionsCatalog = buildDefaultStyleOptionsCatalog();
-  await user.save();
-  return user.styleOptionsCatalog;
+  return { groups: [] };
 };
 
 const buildDefaultMeasurementsCatalog = () => ({
@@ -204,9 +212,7 @@ const buildDefaultMeasurementsCatalog = () => ({
 const ensureUserMeasurementsCatalog = async (user) => {
   const hasFields = user?.measurementsCatalog?.fields && user.measurementsCatalog.fields.length > 0;
   if (hasFields) return user.measurementsCatalog;
-  user.measurementsCatalog = buildDefaultMeasurementsCatalog();
-  await user.save();
-  return user.measurementsCatalog;
+  return { fields: [] };
 };
 
 const buildDefaultThawbTypesCatalog = () => ({
@@ -298,6 +304,37 @@ const applySystemStyleImagesToCatalog = async (catalog) => {
   return { groups };
 };
 
+const getSystemMeasurementsCatalog = async () => {
+  const doc = await SystemSettings.findOne({}).lean();
+  return normalizeMeasurementsCatalog(
+    doc?.measurementsCatalog?.fields?.length
+      ? doc.measurementsCatalog
+      : buildSystemDefaultMeasurementsCatalog()
+  );
+};
+
+const getSystemStyleOptionsCatalog = async () => {
+  const doc = await SystemSettings.findOne({}).lean();
+  const normalized = normalizeStyleOptionsCatalog(
+    doc?.styleOptionsCatalog?.groups?.length
+      ? doc.styleOptionsCatalog
+      : buildSystemDefaultStyleOptionsCatalog()
+  );
+  return await applySystemStyleImagesToCatalog(normalized);
+};
+
+const getMergedUserMeasurementsCatalog = async (user) => {
+  await ensureUserMeasurementsCatalog(user);
+  const systemCatalog = await getSystemMeasurementsCatalog();
+  return mergeMeasurementsCatalog(systemCatalog, user.measurementsCatalog);
+};
+
+const getMergedUserStyleOptionsCatalog = async (user) => {
+  await ensureUserStyleOptionsCatalog(user);
+  const systemCatalog = await getSystemStyleOptionsCatalog();
+  return mergeStyleOptionsCatalog(systemCatalog, user.styleOptionsCatalog);
+};
+
 const isWebpUpload = (file) => {
   const mime = (file?.mimetype || '').toLowerCase();
   const ext = path.extname(file?.originalname || '').toLowerCase();
@@ -368,7 +405,7 @@ router.put('/preferences', async (req, res) => {
 
 router.get('/measurements-catalog', async (req, res) => {
   try {
-    const catalog = await ensureUserMeasurementsCatalog(req.user);
+    const catalog = await getMergedUserMeasurementsCatalog(req.user);
     res.json({ catalog });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
@@ -377,24 +414,11 @@ router.get('/measurements-catalog', async (req, res) => {
 
 router.put('/measurements-catalog', async (req, res) => {
   try {
-    const fields = Array.isArray(req.body?.fields) ? req.body.fields : [];
-    const allowed = new Set(ALLOWED_MEASUREMENT_KEYS);
-
-    const nextFields = fields
-      .map((f, idx) => {
-        const key = sanitizeExactKey(f.key);
-        if (!key || !allowed.has(key)) return null;
-        return {
-          key,
-          name: typeof f.name === 'string' ? f.name : '',
-          nameI18n: typeof f.nameI18n === 'object' && f.nameI18n ? f.nameI18n : {},
-          enabled: f.enabled !== false,
-          sortOrder: Number.isFinite(f.sortOrder) ? f.sortOrder : idx,
-          image: typeof f.image === 'string' ? f.image : null,
-          imageUpdatedAt: typeof f.imageUpdatedAt === 'number' ? f.imageUpdatedAt : null
-        };
-      })
-      .filter(Boolean);
+    const systemCatalog = await getSystemMeasurementsCatalog();
+    const normalizedCatalog = normalizeMeasurementsCatalog({
+      fields: Array.isArray(req.body?.fields) ? req.body.fields : []
+    });
+    const nextFields = normalizedCatalog.fields || [];
 
     const entries = nextFields
       .filter((f) => typeof f.name === 'string' && f.name.trim())
@@ -409,10 +433,11 @@ router.put('/measurements-catalog', async (req, res) => {
       return { ...f, nameI18n: f.nameI18n || {} };
     });
 
-    req.user.measurementsCatalog = { fields: fieldsWithI18n };
+    req.user.measurementsCatalog = extractUserMeasurementsCatalog(systemCatalog, { fields: fieldsWithI18n });
     req.user.markModified('measurementsCatalog');
     await req.user.save();
-    res.json({ message: 'Measurements updated', catalog: req.user.measurementsCatalog });
+    const catalog = mergeMeasurementsCatalog(systemCatalog, req.user.measurementsCatalog);
+    res.json({ message: 'Measurements updated', catalog });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -421,14 +446,14 @@ router.put('/measurements-catalog', async (req, res) => {
 router.post('/measurements-catalog/image', upload.single('image'), async (req, res) => {
   try {
     const fieldKey = sanitizeExactKey(req.body.fieldKey);
-    if (!fieldKey || !ALLOWED_MEASUREMENT_KEYS.includes(fieldKey)) {
-      return res.status(400).json({ error: 'Unsupported fieldKey' });
+    if (!fieldKey) {
+      return res.status(400).json({ error: 'fieldKey is required' });
     }
     if (!req.file) {
       return res.status(400).json({ error: 'image file is required' });
     }
 
-    const catalog = await ensureUserMeasurementsCatalog(req.user);
+    const catalog = await getMergedUserMeasurementsCatalog(req.user);
     const field = (catalog.fields || []).find((f) => f.key === fieldKey);
     if (!field) {
       return res.status(404).json({ error: 'Field not found' });
@@ -458,10 +483,12 @@ router.post('/measurements-catalog/image', upload.single('image'), async (req, r
 
     field.image = `/uploads/${path.join(relPath, fileName).replace(/\\/g, '/')}`;
     field.imageUpdatedAt = Date.now();
+    const systemCatalog = await getSystemMeasurementsCatalog();
+    req.user.measurementsCatalog = extractUserMeasurementsCatalog(systemCatalog, catalog);
     req.user.markModified('measurementsCatalog');
     await req.user.save();
 
-    res.json({ message: 'Measurement image updated', field, catalog: req.user.measurementsCatalog });
+    res.json({ message: 'Measurement image updated', field, catalog });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -470,11 +497,11 @@ router.post('/measurements-catalog/image', upload.single('image'), async (req, r
 router.delete('/measurements-catalog/image', async (req, res) => {
   try {
     const fieldKey = sanitizeExactKey(req.query.fieldKey);
-    if (!fieldKey || !ALLOWED_MEASUREMENT_KEYS.includes(fieldKey)) {
-      return res.status(400).json({ error: 'Unsupported fieldKey' });
+    if (!fieldKey) {
+      return res.status(400).json({ error: 'fieldKey is required' });
     }
 
-    const catalog = await ensureUserMeasurementsCatalog(req.user);
+    const catalog = await getMergedUserMeasurementsCatalog(req.user);
     const field = (catalog.fields || []).find((f) => f.key === fieldKey);
     if (!field) {
       return res.status(404).json({ error: 'Field not found' });
@@ -488,9 +515,11 @@ router.delete('/measurements-catalog/image', async (req, res) => {
 
     field.image = null;
     field.imageUpdatedAt = Date.now();
+    const systemCatalog = await getSystemMeasurementsCatalog();
+    req.user.measurementsCatalog = extractUserMeasurementsCatalog(systemCatalog, catalog);
     req.user.markModified('measurementsCatalog');
     await req.user.save();
-    res.json({ message: 'Measurement image deleted', field, catalog: req.user.measurementsCatalog });
+    res.json({ message: 'Measurement image deleted', field, catalog });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -680,9 +709,8 @@ router.put('/fabric-colors-catalog', async (req, res) => {
 
 router.get('/style-options', async (req, res) => {
   try {
-    const catalog = await ensureUserStyleOptionsCatalog(req.user);
-    const mergedCatalog = await applySystemStyleImagesToCatalog(catalog);
-    res.json({ catalog: mergedCatalog });
+    const catalog = await getMergedUserStyleOptionsCatalog(req.user);
+    res.json({ catalog });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -690,39 +718,11 @@ router.get('/style-options', async (req, res) => {
 
 router.put('/style-options', async (req, res) => {
   try {
-    const bodyGroups = Array.isArray(req.body?.groups) ? req.body.groups : [];
-
-    const groups = bodyGroups
-      .map((g, groupIdx) => {
-        const groupKey = sanitizeKey(g.key);
-        if (!groupKey || !ALLOWED_STYLE_GROUPS.has(groupKey)) return null;
-        const optionsArr = Array.isArray(g.options) ? g.options : [];
-        const options = optionsArr
-          .map((o, optIdx) => {
-            const optionKey = sanitizeKey(o.key);
-            if (!optionKey) return null;
-            return {
-              key: optionKey,
-              name: typeof o.name === 'string' ? o.name : '',
-              nameI18n: typeof o.nameI18n === 'object' && o.nameI18n ? o.nameI18n : {},
-              image: typeof o.image === 'string' ? o.image : null,
-              imageUpdatedAt: typeof o.imageUpdatedAt === 'number' ? o.imageUpdatedAt : null,
-              enabled: o.enabled !== false,
-              sortOrder: Number.isFinite(o.sortOrder) ? o.sortOrder : optIdx
-            };
-          })
-          .filter(Boolean);
-
-        return {
-          key: groupKey,
-          name: typeof g.name === 'string' ? g.name : '',
-          nameI18n: typeof g.nameI18n === 'object' && g.nameI18n ? g.nameI18n : {},
-          enabled: g.enabled !== false,
-          sortOrder: Number.isFinite(g.sortOrder) ? g.sortOrder : groupIdx,
-          options
-        };
-      })
-      .filter(Boolean);
+    const systemCatalog = await getSystemStyleOptionsCatalog();
+    const normalizedCatalog = normalizeStyleOptionsCatalog({
+      groups: Array.isArray(req.body?.groups) ? req.body.groups : []
+    });
+    const groups = (normalizedCatalog.groups || []).filter((g) => ALLOWED_STYLE_GROUPS.has(g.key));
 
     const entries = [];
     groups.forEach((g) => {
@@ -755,9 +755,10 @@ router.put('/style-options', async (req, res) => {
       return { ...g, nameI18n: groupNameI18n, options: nextOptions };
     });
 
-    req.user.styleOptionsCatalog = { groups: groupsWithI18n };
+    req.user.styleOptionsCatalog = extractUserStyleOptionsCatalog(systemCatalog, { groups: groupsWithI18n });
     await req.user.save();
-    res.json({ message: 'Style options updated', catalog: req.user.styleOptionsCatalog });
+    const catalog = mergeStyleOptionsCatalog(systemCatalog, req.user.styleOptionsCatalog);
+    res.json({ message: 'Style options updated', catalog });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -778,7 +779,7 @@ router.post('/style-options/image', upload.single('image'), async (req, res) => 
       return res.status(400).json({ error: 'image file is required' });
     }
 
-    const catalog = await ensureUserStyleOptionsCatalog(req.user);
+    const catalog = await getMergedUserStyleOptionsCatalog(req.user);
     const { group, option } = findGroupAndOption(catalog, groupKey, optionKey);
     if (!group) {
       return res.status(404).json({ error: 'Group not found' });
@@ -817,10 +818,12 @@ router.post('/style-options/image', upload.single('image'), async (req, res) => 
     targetOption.image = urlPath;
     targetOption.imageUpdatedAt = Date.now();
 
+    const systemCatalog = await getSystemStyleOptionsCatalog();
+    req.user.styleOptionsCatalog = extractUserStyleOptionsCatalog(systemCatalog, catalog);
     req.user.markModified('styleOptionsCatalog');
     await req.user.save();
 
-    res.json({ message: 'Image updated', option: targetOption, catalog: req.user.styleOptionsCatalog });
+    res.json({ message: 'Image updated', option: targetOption, catalog });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -837,7 +840,7 @@ router.delete('/style-options/image', async (req, res) => {
       return res.status(400).json({ error: 'Unsupported groupKey' });
     }
 
-    const catalog = await ensureUserStyleOptionsCatalog(req.user);
+    const catalog = await getMergedUserStyleOptionsCatalog(req.user);
     const { option } = findGroupAndOption(catalog, groupKey, optionKey);
     if (!option) {
       return res.status(404).json({ error: 'Option not found' });
@@ -858,9 +861,11 @@ router.delete('/style-options/image', async (req, res) => {
 
     option.image = null;
     option.imageUpdatedAt = Date.now();
+    const systemCatalog = await getSystemStyleOptionsCatalog();
+    req.user.styleOptionsCatalog = extractUserStyleOptionsCatalog(systemCatalog, catalog);
     req.user.markModified('styleOptionsCatalog');
     await req.user.save();
-    res.json({ message: 'Image deleted', option, catalog: req.user.styleOptionsCatalog });
+    res.json({ message: 'Image deleted', option, catalog });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }

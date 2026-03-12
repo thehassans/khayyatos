@@ -153,6 +153,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginAsFinisher = async (finisherId) => {
+    try {
+      const response = await api.post(`/finisher/login-as/${finisherId}`);
+      const { token: newToken, user: userData, role } = response.data;
+      localStorage.setItem('token', newToken);
+      setToken(newToken);
+      setUser(userData);
+      if (userData?.language) {
+        const lang = String(userData.language).split('-')[0];
+        if (lang) i18n.changeLanguage(lang);
+      }
+      return { success: true, user: userData, role };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || 'Failed' };
+    }
+  };
+
   const updateUser = (userData) => {
     setUser(prev => ({ ...prev, ...userData }));
     if (userData?.theme) {
@@ -174,11 +191,13 @@ export const AuthProvider = ({ children }) => {
       logout,
       loginAsUser,
       loginAsWorker,
+      loginAsFinisher,
       updateUser,
       isAuthenticated: !!user,
       isAdmin: user?.role === 'admin',
       isUser: user?.role === 'user',
-      isWorker: user?.role === 'worker'
+      isWorker: user?.role === 'worker',
+      isFinisher: user?.role === 'finisher'
     }}>
       {children}
     </AuthContext.Provider>

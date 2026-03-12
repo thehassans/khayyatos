@@ -5,6 +5,7 @@ const Stitching = require('../models/Stitching');
 const { verifyToken, isUser } = require('../middleware/auth');
 const { blockDemoWrites } = require('../middleware/demoGuard');
 const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
+const { mergeMeasurementValues, normalizeMeasurementValues } = require('../utils/measurements');
 
 const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -349,6 +350,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', blockDemoWrites, async (req, res) => {
   try {
     const { name, phone, measurements, notes, relations } = req.body;
+    const normalizedMeasurements = normalizeMeasurementValues(measurements);
     
     let customer = await Customer.findOne({ userId: req.user._id, phone });
     const oldRelations = customer ? (Array.isArray(customer.relations) ? customer.relations.slice() : []) : [];
@@ -361,8 +363,8 @@ router.post('/', blockDemoWrites, async (req, res) => {
           customer.nameI18n = translations.name || buildFallbackI18n(name.trim());
         }
       }
-      if (measurements) {
-        customer.measurements = { ...customer.measurements.toObject(), ...measurements };
+      if (measurements && typeof measurements === 'object' && !Array.isArray(measurements)) {
+        customer.measurements = mergeMeasurementValues(customer.measurements, normalizedMeasurements);
       }
       if (notes) customer.notes = notes;
       if (Array.isArray(relations)) customer.relations = relations;
@@ -381,7 +383,7 @@ router.post('/', blockDemoWrites, async (req, res) => {
       userId: req.user._id,
       name,
       phone,
-      measurements: measurements || {},
+      measurements: normalizedMeasurements,
       notes: notes || '',
       relations: Array.isArray(relations) ? relations : []
     });
@@ -410,6 +412,7 @@ router.post('/', blockDemoWrites, async (req, res) => {
 router.put('/:id', blockDemoWrites, async (req, res) => {
   try {
     const { name, phone, measurements, notes, relations } = req.body;
+    const normalizedMeasurements = normalizeMeasurementValues(measurements);
     
     const customer = await Customer.findOne({ 
       _id: req.params.id, 
@@ -430,8 +433,8 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
       }
     }
     if (phone) customer.phone = phone;
-    if (measurements) {
-      customer.measurements = { ...customer.measurements.toObject(), ...measurements };
+    if (measurements && typeof measurements === 'object' && !Array.isArray(measurements)) {
+      customer.measurements = mergeMeasurementValues(customer.measurements, normalizedMeasurements);
     }
     if (notes !== undefined) customer.notes = notes;
     if (Array.isArray(relations)) customer.relations = relations;

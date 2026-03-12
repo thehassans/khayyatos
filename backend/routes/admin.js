@@ -12,6 +12,12 @@ const { generateToken } = require('../middleware/auth');
 const { calculateEndDate } = require('../utils/subscriptionChecker');
 const upload = require('../middleware/upload');
 const { translateMany, buildFallbackI18n, getGeminiConfig, invalidateGeminiConfigCache } = require('../utils/geminiTranslate');
+const {
+  buildDefaultMeasurementsCatalog,
+  buildDefaultStyleOptionsCatalog,
+  normalizeMeasurementsCatalog,
+  normalizeStyleOptionsCatalog
+} = require('../utils/catalogs');
 let sharp = null;
 try {
   sharp = require('sharp');
@@ -67,22 +73,37 @@ const isWebpUpload = (file) => {
   return mime === 'image/webp' || ext === '.webp';
 };
 
-const isAllowedStyleOption = (groupKey, optionKey) => {
-  const group = STYLE_OPTION_GROUPS.find((item) => item.key === groupKey);
-  return !!group && group.options.includes(optionKey);
+const buildAdminMeasurementsCatalog = (doc) => {
+  return normalizeMeasurementsCatalog(
+    doc?.measurementsCatalog?.fields?.length
+      ? doc.measurementsCatalog
+      : buildDefaultMeasurementsCatalog()
+  );
 };
 
-const buildAdminStyleOptionImagesCatalog = (doc) => {
-  const existing = Array.isArray(doc?.styleOptionImages) ? doc.styleOptionImages : [];
+const buildAdminStyleOptionsCatalog = (doc) => {
+  const catalog = normalizeStyleOptionsCatalog(
+    doc?.styleOptionsCatalog?.groups?.length
+      ? doc.styleOptionsCatalog
+      : buildDefaultStyleOptionsCatalog()
+  );
+  const images = Array.isArray(doc?.styleOptionImages) ? doc.styleOptionImages : [];
+  const imageMap = new Map(
+    images
+      .filter((item) => item?.groupKey && item?.optionKey)
+      .map((item) => [`${item.groupKey}:${item.optionKey}`, item])
+  );
+
   return {
-    groups: STYLE_OPTION_GROUPS.map((group) => ({
-      key: group.key,
-      options: group.options.map((optionKey) => {
-        const match = existing.find((item) => item.groupKey === group.key && item.optionKey === optionKey);
+    groups: (catalog.groups || []).map((group) => ({
+      ...group,
+      options: (group.options || []).map((option) => {
+        const match = imageMap.get(`${group.key}:${option.key}`);
+        if (!match) return option;
         return {
-          key: optionKey,
-          image: match?.image || null,
-          imageUpdatedAt: match?.imageUpdatedAt || null
+          ...option,
+          image: match.image || option.image || null,
+          imageUpdatedAt: match.imageUpdatedAt || option.imageUpdatedAt || null
         };
       })
     }))
@@ -152,11 +173,183 @@ router.post('/gemini/translate', async (req, res) => {
   }
 });
 
+router.get('/measurements-catalog', async (req, res) => {
+  try {
+    const doc = await SystemSettings.findOne({});
+    res.json({ catalog: buildAdminMeasurementsCatalog(doc) });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.put('/measurements-catalog', async (req, res) => {
+  try {
+    const normalizedCatalog = normalizeMeasurementsCatalog({
+      fields: Array.isArray(req.body?.fields) ? req.body.fields : []
+    });
+    const entries = (normalizedCatalog.fields || [])
+      .filter((field) => typeof field.name === 'string' && field.name.trim())
+      .map((field) => ({ id: `m:${field.key}`, text: field.name.trim() }));
+    const translations = entries.length ? await translateMany({ entries }) : {};
+
+    const fields = (normalizedCatalog.fields || []).map((field) => {
+      if (typeof field.name === 'string' && field.name.trim()) {
+        return { ...field, nameI18n: translations[`m:${field.key}`] || buildFallbackI18n(field.name.trim()) };
+      }
+      return { ...field, nameI18n: field.nameI18n || {} };
+    });
+
+    const doc = (await SystemSettings.findOne({})) || new SystemSettings({});
+    doc.measurementsCatalog = { fields };
+    doc.markModified('measurementsCatalog');
+    await doc.save();
+
+    res.json({ message: 'Measurements catalog updated', catalog: buildAdminMeasurementsCatalog(doc) });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/measurements-catalog/image', upload.single('image'), async (req, res) => {
+  try {
+    const fieldKey = String(req.body?.fieldKey || '').trim();
+    if (!fieldKey) {
+      return res.status(400).json({ error: 'fieldKey is required' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'image file is required' });
+    }
+
+    const doc = (await SystemSettings.findOne({})) || new SystemSettings({});
+    const catalog = buildAdminMeasurementsCatalog(doc);
+    const field = (catalog.fields || []).find((item) => item.key === fieldKey);
+    if (!field) {
+      return res.status(404).json({ error: 'Field not found' });
+    }
+
+    const relPath = path.join('system-measurements');
+    const dirPath = path.join(uploadsBaseDir, relPath);
+    ensureDir(dirPath);
+    const fileName = `${fieldKey}.webp`;
+    const absTarget = path.join(dirPath, fileName);
+
+    if (sharp) {
+      await sharp(req.file.path)
+        .rotate()
+        .resize({ width: 720, withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .toFile(absTarget);
+      safeUnlink(req.file.path);
+    } else {
+      if (!isWebpUpload(req.file)) {
+        safeUnlink(req.file.path);
+        return res.status(500).json({ error: 'Image processing is not available on this server' });
+      }
+      moveFile(req.file.path, absTarget);
+    }
+
+    field.image = `/uploads/${path.join(relPath, fileName).replace(/\\/g, '/')}`;
+    field.imageUpdatedAt = Date.now();
+    doc.measurementsCatalog = normalizeMeasurementsCatalog(catalog);
+    doc.markModified('measurementsCatalog');
+    await doc.save();
+
+    res.json({ message: 'Measurement image updated', catalog: buildAdminMeasurementsCatalog(doc) });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.delete('/measurements-catalog/image', async (req, res) => {
+  try {
+    const fieldKey = String(req.query?.fieldKey || '').trim();
+    if (!fieldKey) {
+      return res.status(400).json({ error: 'fieldKey is required' });
+    }
+
+    const doc = (await SystemSettings.findOne({})) || new SystemSettings({});
+    const catalog = buildAdminMeasurementsCatalog(doc);
+    const field = (catalog.fields || []).find((item) => item.key === fieldKey);
+    if (!field) {
+      return res.status(404).json({ error: 'Field not found' });
+    }
+
+    if (typeof field.image === 'string' && field.image.startsWith('/uploads/')) {
+      const rel = field.image.replace(/^\/uploads\//, '');
+      const abs = path.join(uploadsBaseDir, rel);
+      safeUnlink(abs);
+    }
+
+    field.image = null;
+    field.imageUpdatedAt = Date.now();
+    doc.measurementsCatalog = normalizeMeasurementsCatalog(catalog);
+    doc.markModified('measurementsCatalog');
+    await doc.save();
+
+    res.json({ message: 'Measurement image deleted', catalog: buildAdminMeasurementsCatalog(doc) });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.get('/style-options-catalog', async (req, res) => {
+  try {
+    const doc = await SystemSettings.findOne({});
+    res.json({ catalog: buildAdminStyleOptionsCatalog(doc) });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.put('/style-options-catalog', async (req, res) => {
+  try {
+    const normalizedCatalog = normalizeStyleOptionsCatalog({
+      groups: Array.isArray(req.body?.groups) ? req.body.groups : []
+    });
+    const groups = (normalizedCatalog.groups || []).filter((group) => STYLE_OPTION_GROUPS.some((item) => item.key === group.key));
+
+    const entries = [];
+    groups.forEach((group) => {
+      if (typeof group.name === 'string' && group.name.trim()) {
+        entries.push({ id: `g:${group.key}`, text: group.name.trim() });
+      }
+      (group.options || []).forEach((option) => {
+        if (typeof option.name === 'string' && option.name.trim()) {
+          entries.push({ id: `o:${group.key}:${option.key}`, text: option.name.trim() });
+        }
+      });
+    });
+    const translations = entries.length ? await translateMany({ entries }) : {};
+
+    const groupsWithI18n = groups.map((group) => ({
+      ...group,
+      nameI18n: typeof group.name === 'string' && group.name.trim()
+        ? (translations[`g:${group.key}`] || buildFallbackI18n(group.name.trim()))
+        : (group.nameI18n || {}),
+      options: (group.options || []).map((option) => ({
+        ...option,
+        nameI18n: typeof option.name === 'string' && option.name.trim()
+          ? (translations[`o:${group.key}:${option.key}`] || buildFallbackI18n(option.name.trim()))
+          : (option.nameI18n || {})
+      }))
+    }));
+
+    const doc = (await SystemSettings.findOne({})) || new SystemSettings({});
+    doc.styleOptionsCatalog = { groups: groupsWithI18n };
+    doc.markModified('styleOptionsCatalog');
+    await doc.save();
+
+    res.json({ message: 'Style options catalog updated', catalog: buildAdminStyleOptionsCatalog(doc) });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.get('/style-option-images', async (req, res) => {
   try {
     const doc = await SystemSettings.findOne({});
     res.json({
-      catalog: buildAdminStyleOptionImagesCatalog(doc)
+      catalog: buildAdminStyleOptionsCatalog(doc)
     });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
@@ -171,14 +364,17 @@ router.post('/style-option-images/image', upload.single('image'), async (req, re
     if (!groupKey || !optionKey) {
       return res.status(400).json({ error: 'groupKey and optionKey are required' });
     }
-    if (!isAllowedStyleOption(groupKey, optionKey)) {
-      return res.status(400).json({ error: 'Unsupported style option' });
-    }
     if (!req.file) {
       return res.status(400).json({ error: 'image file is required' });
     }
 
     const doc = (await SystemSettings.findOne({})) || new SystemSettings({});
+    const catalog = buildAdminStyleOptionsCatalog(doc);
+    const group = (catalog.groups || []).find((item) => item.key === groupKey);
+    const option = (group?.options || []).find((item) => item.key === optionKey);
+    if (!group || !option) {
+      return res.status(404).json({ error: 'Style option not found' });
+    }
     doc.styleOptionImages = Array.isArray(doc.styleOptionImages) ? doc.styleOptionImages : [];
 
     const relPath = path.join('system-style-options', groupKey);
@@ -217,7 +413,7 @@ router.post('/style-option-images/image', upload.single('image'), async (req, re
 
     res.json({
       message: 'Style option image updated',
-      catalog: buildAdminStyleOptionImagesCatalog(doc)
+      catalog: buildAdminStyleOptionsCatalog(doc)
     });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
@@ -232,11 +428,13 @@ router.delete('/style-option-images/image', async (req, res) => {
     if (!groupKey || !optionKey) {
       return res.status(400).json({ error: 'groupKey and optionKey are required' });
     }
-    if (!isAllowedStyleOption(groupKey, optionKey)) {
-      return res.status(400).json({ error: 'Unsupported style option' });
-    }
-
     const doc = (await SystemSettings.findOne({})) || new SystemSettings({});
+    const catalog = buildAdminStyleOptionsCatalog(doc);
+    const group = (catalog.groups || []).find((item) => item.key === groupKey);
+    const option = (group?.options || []).find((item) => item.key === optionKey);
+    if (!group || !option) {
+      return res.status(404).json({ error: 'Style option not found' });
+    }
     doc.styleOptionImages = Array.isArray(doc.styleOptionImages) ? doc.styleOptionImages : [];
 
     const existingIndex = doc.styleOptionImages.findIndex((item) => item.groupKey === groupKey && item.optionKey === optionKey);
@@ -251,7 +449,7 @@ router.delete('/style-option-images/image', async (req, res) => {
 
     res.json({
       message: 'Style option image deleted',
-      catalog: buildAdminStyleOptionImagesCatalog(doc)
+      catalog: buildAdminStyleOptionsCatalog(doc)
     });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });

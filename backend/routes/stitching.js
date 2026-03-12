@@ -9,6 +9,7 @@ const Fabric = require('../models/Fabric');
 const { verifyToken, isUser } = require('../middleware/auth');
 const { blockDemoWrites } = require('../middleware/demoGuard');
 const whatsappService = require('../utils/whatsappService');
+const { mergeMeasurementValues, normalizeMeasurementValues } = require('../utils/measurements');
 
 const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -192,6 +193,8 @@ router.post('/', blockDemoWrites, async (req, res) => {
       fabricId,
       rollsUsed
     } = req.body;
+    const hasMeasurementsPayload = measurements && typeof measurements === 'object' && !Array.isArray(measurements);
+    const normalizedMeasurements = normalizeMeasurementValues(measurements);
     
     const customer = await Customer.findOne({ 
       _id: customerId, 
@@ -256,7 +259,7 @@ router.post('/', blockDemoWrites, async (req, res) => {
       if (!exists) return res.status(400).json({ error: 'Invalid fabric' });
     }
     
-    const defaultMeasurements = relationToSave ? relationToSave.measurements : customer.measurements;
+    const defaultMeasurements = normalizeMeasurementValues(relationToSave ? relationToSave.measurements : customer.measurements);
 
     const stitching = new Stitching({
       userId: req.user._id,
@@ -270,7 +273,7 @@ router.post('/', blockDemoWrites, async (req, res) => {
       fabricColor: fabricColor || null,
       fabricId: fabricToUse,
       rollsUsed: rollsToUse,
-      measurements: measurements || defaultMeasurements,
+      measurements: Object.keys(normalizedMeasurements).length ? normalizedMeasurements : defaultMeasurements,
       styleOptions: styleOptions || {},
       embroideryDesignId: designIdToSave,
       embroideryDesign: designSnapshot,
@@ -288,12 +291,12 @@ router.post('/', blockDemoWrites, async (req, res) => {
     customer.loyaltyPoints += Math.floor(price / 100);
     await customer.save();
 
-    if (measurements) {
+    if (hasMeasurementsPayload && Object.keys(normalizedMeasurements).length) {
       if (relationToSave) {
-        relationToSave.measurements = { ...relationToSave.measurements.toObject(), ...measurements };
+        relationToSave.measurements = mergeMeasurementValues(relationToSave.measurements, normalizedMeasurements);
         await relationToSave.save();
       } else {
-        customer.measurements = { ...customer.measurements.toObject(), ...measurements };
+        customer.measurements = mergeMeasurementValues(customer.measurements, normalizedMeasurements);
         await customer.save();
       }
     }
@@ -356,6 +359,8 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
       fabricId,
       rollsUsed
     } = req.body;
+    const hasMeasurementsPayload = measurements && typeof measurements === 'object' && !Array.isArray(measurements);
+    const normalizedMeasurements = normalizeMeasurementValues(measurements);
     
     const stitching = await Stitching.findOne({ 
       _id: req.params.id, 
@@ -428,7 +433,7 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
       }
     }
     
-    if (measurements) stitching.measurements = measurements;
+    if (hasMeasurementsPayload) stitching.measurements = normalizedMeasurements;
     if (styleOptions) stitching.styleOptions = styleOptions;
     if (embroideryDesignId !== undefined) {
       if (!embroideryDesignId) {
@@ -470,11 +475,11 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
       stitching.orderFor = (relToSave ? (relToSave.nameI18n?.en || relToSave.name) : null) || (orderFor !== undefined ? orderFor : stitching.orderFor);
     }
 
-    if (measurements) {
+    if (hasMeasurementsPayload && Object.keys(normalizedMeasurements).length) {
       const targetId = stitching.relationId ? (stitching.relationId._id || stitching.relationId) : (stitching.customerId?._id || stitching.customerId);
       const targetCustomer = await Customer.findOne({ _id: targetId, userId: req.user._id });
       if (targetCustomer) {
-        targetCustomer.measurements = { ...targetCustomer.measurements.toObject(), ...measurements };
+        targetCustomer.measurements = mergeMeasurementValues(targetCustomer.measurements, normalizedMeasurements);
         await targetCustomer.save();
       }
     }

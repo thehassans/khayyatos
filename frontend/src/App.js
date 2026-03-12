@@ -9,6 +9,7 @@ import { DashboardSkeleton, PageSkeleton, FormSkeleton } from './components/ui/S
 import AdminLayout from './layouts/AdminLayout';
 import UserLayout from './layouts/UserLayout';
 import WorkerLayout from './layouts/WorkerLayout';
+import FinisherLayout from './layouts/FinisherLayout';
 
 // Auth Pages - Keep login fast
 import LoginPage from './pages/auth/LoginPage';
@@ -81,11 +82,16 @@ const Loyalty = lazyRetry(() => import('./pages/user/Loyalty'));
 const WhatsApp = lazyRetry(() => import('./pages/user/WhatsApp'));
 const Zatca = lazyRetry(() => import('./pages/user/Zatca'));
 const Settings = lazyRetry(() => import('./pages/user/Settings'));
+const Finishers = lazyRetry(() => import('./pages/user/Finishers'));
+const FinisherForm = lazyRetry(() => import('./pages/user/FinisherForm'));
 
 const WorkerDashboard = lazyRetry(() => import('./pages/worker/Dashboard'));
 const WorkerStitchings = lazyRetry(() => import('./pages/worker/Stitchings'));
 const WorkerAmountsPage = lazyRetry(() => import('./pages/worker/Amounts'));
 const WorkerSettings = lazyRetry(() => import('./pages/worker/Settings'));
+const FinisherDashboard = lazyRetry(() => import('./pages/finisher/Dashboard'));
+const FinisherShops = lazyRetry(() => import('./pages/finisher/Shops'));
+const FinisherSettings = lazyRetry(() => import('./pages/finisher/Settings'));
 
 const TrackOrder = lazyRetry(() => import('./pages/public/TrackOrder'));
 const DashboardPreview = lazyRetry(() => import('./pages/public/DashboardPreview'));
@@ -149,6 +155,7 @@ const AppRoutes = () => {
       if (user?.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
       if (user?.role === 'user') return <Navigate to="/user/dashboard" replace />;
       if (user?.role === 'worker') return <Navigate to="/worker/dashboard" replace />;
+      if (user?.role === 'finisher') return <Navigate to="/finisher/dashboard" replace />;
     }
     return <Landing />;
   };
@@ -194,6 +201,9 @@ const AppRoutes = () => {
           <Route path="workers/new" element={<LazyPage skeleton="form"><WorkerForm /></LazyPage>} />
           <Route path="workers/:id" element={<LazyPage><WorkerProfile /></LazyPage>} />
           <Route path="workers/:id/edit" element={<LazyPage skeleton="form"><WorkerForm /></LazyPage>} />
+          <Route path="finishers" element={<LazyPage><Finishers /></LazyPage>} />
+          <Route path="finishers/new" element={<LazyPage skeleton="form"><FinisherForm /></LazyPage>} />
+          <Route path="finishers/:id/edit" element={<LazyPage skeleton="form"><FinisherForm /></LazyPage>} />
           <Route path="worker-amounts" element={<LazyPage><WorkerAmounts /></LazyPage>} />
           <Route path="customers" element={<LazyPage><Customers /></LazyPage>} />
           <Route path="customers/new" element={<LazyPage skeleton="form"><CustomerForm /></LazyPage>} />
@@ -223,6 +233,17 @@ const AppRoutes = () => {
           <Route path="stitchings" element={<LazyPage><WorkerStitchings /></LazyPage>} />
           <Route path="amounts" element={<LazyPage><WorkerAmountsPage /></LazyPage>} />
           <Route path="settings" element={<LazyPage skeleton="form"><WorkerSettings /></LazyPage>} />
+        </Route>
+
+        <Route path="/finisher" element={
+          <ProtectedRoute allowedRoles={['finisher']}>
+            <FinisherLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Navigate to="/finisher/dashboard" replace />} />
+          <Route path="dashboard" element={<LazyPage skeleton="dashboard"><FinisherDashboard /></LazyPage>} />
+          <Route path="shops" element={<LazyPage><FinisherShops /></LazyPage>} />
+          <Route path="settings" element={<LazyPage skeleton="form"><FinisherSettings /></LazyPage>} />
         </Route>
 
         {/* Catch all */}

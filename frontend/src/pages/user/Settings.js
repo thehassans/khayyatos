@@ -19,7 +19,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(false);
   const langKey = (i18n?.language || 'en').split('-')[0];
   const isRtl = langKey === 'ar' || langKey === 'ur';
-  const [logoPreview, setLogoPreview] = useState(user?.logo || null);
+  const [logoPreview, setLogoPreview] = useState(null);
   const [settings, setSettings] = useState({
     language: user?.language || 'en',
     theme: user?.theme || 'light',
@@ -251,6 +251,7 @@ const Settings = () => {
 
   const resolveUploadsUrl = useCallback((src) => {
     if (!src) return src;
+    if (src.startsWith('data:')) return src;
     if (src.startsWith('http://') || src.startsWith('https://')) return src;
     if (!src.startsWith('/uploads/')) return src;
     const baseUrl = api?.defaults?.baseURL;
@@ -265,6 +266,19 @@ const Settings = () => {
     return src;
   }, [api]);
 
+  const buildLogoSrc = useCallback((src, cacheBust = false) => {
+    const resolvedSrc = resolveUploadsUrl(src);
+    if (!resolvedSrc) return null;
+    if (!cacheBust) return resolvedSrc;
+    const separator = resolvedSrc.includes('?') ? '&' : '?';
+    return `${resolvedSrc}${separator}v=${Date.now()}`;
+  }, [resolveUploadsUrl]);
+
+  useEffect(() => {
+    if (settings.logo) return;
+    setLogoPreview(buildLogoSrc(user?.logo || null));
+  }, [user?.logo, settings.logo, buildLogoSrc]);
+
   const fetchSettings = async () => {
     try {
       const response = await api.get('/settings');
@@ -277,9 +291,7 @@ const Settings = () => {
         receiptCounter: response.data.settings.receiptCounter,
         businessName: response.data.settings.businessName || user?.businessName || ''
       }));
-      if (response.data.settings.logo && response.data.settings.logo !== 'null') {
-        setLogoPreview(response.data.settings.logo);
-      }
+      setLogoPreview(buildLogoSrc(response.data.settings.logo && response.data.settings.logo !== 'null' ? response.data.settings.logo : null));
     } catch (error) {
       console.error('Error:', error);
     }
@@ -413,7 +425,7 @@ const Settings = () => {
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setSettings({ ...settings, logo: file });
+      setSettings((prev) => ({ ...prev, logo: file }));
       const reader = new FileReader();
       reader.onload = () => {
         if (typeof reader.result === 'string') setLogoPreview(reader.result);
@@ -433,16 +445,32 @@ const Settings = () => {
       data.append('businessName', settings.businessName);
       if (settings.logo) data.append('logo', settings.logo);
 
-      await api.put('/settings', data, {
+      const response = await api.put('/settings', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
-      updateUser({ 
-        language: settings.language, 
-        theme: settings.theme, 
-        measurementUi: settings.measurementUi,
-        businessName: settings.businessName, 
-        logo: logoPreview,
+      const savedSettings = response.data?.settings || {};
+      const savedLogo = savedSettings.logo && savedSettings.logo !== 'null'
+        ? buildLogoSrc(savedSettings.logo, true)
+        : null;
+
+      setLogoPreview(savedLogo);
+      setSettings((prev) => ({
+        ...prev,
+        language: savedSettings.language || prev.language,
+        theme: savedSettings.theme || prev.theme,
+        measurementUi: savedSettings.measurementUi || prev.measurementUi,
+        receiptPrefix: savedSettings.receiptPrefix,
+        receiptCounter: savedSettings.receiptCounter,
+        businessName: savedSettings.businessName || prev.businessName,
+        logo: null
+      }));
+
+      updateUser({
+        language: savedSettings.language || settings.language,
+        theme: savedSettings.theme || settings.theme,
+        measurementUi: savedSettings.measurementUi || settings.measurementUi,
+        businessName: savedSettings.businessName || settings.businessName,
+        logo: savedLogo,
         primaryColor: settings.primaryColor
       });
       toast.success(t('settings.saved'));
@@ -865,9 +893,9 @@ const Settings = () => {
                 <div className="p-6 space-y-6">
                   <div className="flex items-center gap-6">
                     <div className="relative group">
-                      <div className="w-20 h-20 bg-gray-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center overflow-hidden">
+                      <div className="w-40 h-20 bg-gray-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center overflow-hidden px-3">
                         {logoPreview ? (
-                          <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
+                          <img src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
                         ) : (
                           <Upload className="w-6 h-6 text-gray-400" />
                         )}

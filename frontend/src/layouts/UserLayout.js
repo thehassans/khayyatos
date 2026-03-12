@@ -24,12 +24,13 @@ import {
   FileText,
   Image,
   Droplets,
-  Layers
+  Layers,
+  Store
 } from 'lucide-react';
 
 const UserLayout = () => {
   const { t, i18n } = useTranslation();
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout, updateUser, api } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -41,15 +42,34 @@ const UserLayout = () => {
   
   const currentLang = (i18n?.language || 'en').split('-')[0];
   const isRTL = ['ar', 'ur'].includes(currentLang);
+  const resolveLogoSrc = (src) => {
+    if (!src) return null;
+    if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://')) return src;
+    const [cleanSrc, queryString = ''] = String(src).split('?');
+    if (!cleanSrc.startsWith('/uploads/')) return src;
+    const baseUrl = api?.defaults?.baseURL;
+    try {
+      if (baseUrl && (baseUrl.startsWith('http://') || baseUrl.startsWith('https://'))) {
+        const absoluteSrc = `${new URL(baseUrl).origin}${cleanSrc}`;
+        return queryString ? `${absoluteSrc}?${queryString}` : absoluteSrc;
+      }
+    } catch (error) {
+
+    }
+    return src;
+  };
+  const logoSrc = resolveLogoSrc(user?.logo);
 
   useEffect(() => {
     const run = () => {
       import('../pages/user/Customers');
       import('../pages/user/Stitchings');
       import('../pages/user/Workers');
+      import('../pages/user/Finishers');
       import('../pages/user/CustomerForm');
       import('../pages/user/StitchingForm');
       import('../pages/user/WorkerForm');
+      import('../pages/user/FinisherForm');
     };
 
     if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
@@ -213,6 +233,7 @@ const UserLayout = () => {
   const allNavItems = [
     { key: 'dashboard', to: '/user/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
     { key: 'workers', to: '/user/workers', icon: Users, label: t('nav.workers') },
+    { key: 'finishers', to: '/user/finishers', icon: Store, label: t('nav.finishers', { defaultValue: 'Finishers' }) },
     { key: 'workerAmounts', to: '/user/worker-amounts', icon: Wallet, label: t('nav.workerAmounts') },
     { key: 'customers', to: '/user/customers', icon: UserPlus, label: t('nav.customers') },
     { key: 'stitchings', to: '/user/stitchings', icon: Scissors, label: t('nav.stitchings') },
@@ -265,20 +286,24 @@ const UserLayout = () => {
         ${sidebarCollapsed ? 'w-20' : 'w-64'}
       `}>
         <div className={`px-4 py-5 border-b ${sidebarStyle === 'colored' || sidebarStyle === 'dark' ? 'border-white/10' : 'border-gray-100 dark:border-slate-800'}`}>
-          <div className="flex items-center gap-3">
-            {user?.logo ? (
-              <div className={`rounded-xl p-0.5 bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-lg ring-2 ring-white/20 flex-shrink-0 transition-all ${sidebarCollapsed ? 'w-10 h-10' : 'w-12 h-12'}`}>
-                <div className="w-full h-full rounded-[10px] overflow-hidden bg-emerald-950/20">
-                  <img src={user.logo} alt="Logo" className="w-full h-full object-cover" />
+          <div className={sidebarCollapsed ? 'flex items-center justify-center' : 'space-y-4'}>
+            {logoSrc ? (
+              sidebarCollapsed ? (
+                <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/90 dark:bg-slate-950/70 border border-white/10 dark:border-slate-700 shadow-sm p-1.5">
+                  <img src={logoSrc} alt="Logo" className="w-full h-full object-contain" />
                 </div>
-              </div>
+              ) : (
+                <div className="w-full rounded-2xl border border-white/10 dark:border-slate-700 bg-white/95 dark:bg-slate-950/80 shadow-sm px-3 py-3">
+                  <img src={logoSrc} alt="Logo" className="w-full h-14 object-contain" />
+                </div>
+              )
             ) : (
-              <div className={`bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center shadow-lg ring-emerald-500/20 flex-shrink-0 transition-all ${sidebarCollapsed ? 'w-10 h-10' : 'w-12 h-12'}`}>
+              <div className={`bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center shadow-lg ring-emerald-500/20 flex-shrink-0 transition-all ${sidebarCollapsed ? 'w-10 h-10 mx-auto' : 'w-12 h-12'}`}>
                 <Scissors className={`text-white ${sidebarCollapsed ? 'w-5 h-5' : 'w-6 h-6'}`} />
               </div>
             )}
             {!sidebarCollapsed && (
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0">
                 <h1 className={`font-bold truncate text-sm ${sidebarStyle === 'colored' || sidebarStyle === 'dark' ? 'text-white' : 'text-gray-900 dark:text-slate-100'}`}>{user?.businessName || t('common.appName')}</h1>
                 <p className={`text-xs truncate ${sidebarStyle === 'colored' || sidebarStyle === 'dark' ? 'text-white/70' : 'text-gray-500 dark:text-slate-400'}`}>{user?.name}</p>
               </div>
@@ -389,16 +414,16 @@ const UserLayout = () => {
           <div className="flex items-center justify-between px-4 py-2.5 lg:px-6 lg:py-3">
             {/* Mobile/Tablet: show logo + business name instead of hamburger */}
             <div className="flex items-center gap-3 lg:hidden min-w-0">
-              {user?.logo ? (
-                <div className="w-9 h-9 rounded-xl overflow-hidden bg-emerald-950/20 border border-gray-200/70 dark:border-slate-700 flex-shrink-0 shadow-sm">
-                  <img src={user.logo} alt="Logo" className="w-full h-full object-cover" />
+              {logoSrc ? (
+                <div className="h-10 w-[min(46vw,180px)] rounded-xl overflow-hidden bg-white dark:bg-slate-950 border border-gray-200/70 dark:border-slate-700 flex-shrink-0 shadow-sm px-2">
+                  <img src={logoSrc} alt="Logo" className="w-full h-full object-contain" />
                 </div>
               ) : (
                 <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
                   <Scissors className="w-4 h-4 text-white" />
                 </div>
               )}
-              <span className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate">{user?.businessName || t('common.appName')}</span>
+              {!logoSrc && <span className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate">{user?.businessName || t('common.appName')}</span>}
             </div>
 
             {/* Desktop: hamburger (hidden on lg) */}
@@ -414,6 +439,18 @@ const UserLayout = () => {
             </button>
 
             <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className={`lg:hidden flex items-center justify-center px-2.5 sm:px-3 py-2 rounded-xl transition-all border shadow-sm hover:shadow ${
+                  headerStyle === 'colored' || headerStyle === 'gradient'
+                    ? 'bg-white/15 hover:bg-white/25 border-white/20 text-white'
+                    : 'bg-white/70 hover:bg-white dark:bg-slate-900/60 dark:hover:bg-slate-900 border-gray-200/70 dark:border-slate-700/70 text-gray-700 dark:text-slate-200'
+                }`}
+                title={t('auth.logout')}
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
               <button
                 type="button"
                 onClick={() => {

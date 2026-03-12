@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
 const User = require('../models/User');
 const Worker = require('../models/Worker');
+const Finisher = require('../models/Finisher');
 
 const generateToken = (id, role, extraClaims = {}) => {
   const extra = extraClaims && typeof extraClaims === 'object' ? extraClaims : {};
@@ -106,6 +107,33 @@ const isWorker = async (req, res, next) => {
   }
 };
 
+const isFinisher = async (req, res, next) => {
+  try {
+    if (req.userRole !== 'finisher') {
+      return res.status(403).json({ error: 'Access denied. Finisher only.' });
+    }
+
+    const finisher = await Finisher.findById(req.userId).populate('userId');
+    if (!finisher) {
+      return res.status(404).json({ error: 'Finisher not found.' });
+    }
+
+    if (!finisher.isActive) {
+      return res.status(403).json({ error: 'Account is inactive.' });
+    }
+
+    if (!finisher.userId?.isSubscriptionActive || !finisher.userId.isSubscriptionActive()) {
+      return res.status(403).json({ error: 'Shop subscription expired.' });
+    }
+
+    req.finisher = finisher;
+    req.user = finisher.userId;
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: 'Server error.' });
+  }
+};
+
 const isUserOrWorker = async (req, res, next) => {
   try {
     if (req.userRole === 'user' || req.userRole === 'admin') {
@@ -125,5 +153,6 @@ module.exports = {
   isAdmin,
   isUser,
   isWorker,
+  isFinisher,
   isUserOrWorker
 };
