@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
@@ -52,12 +51,7 @@ const AdminUsers = () => {
   };
 
   const handleCreateFinisher = async (userId) => {
-    const result = await loginAsUser(userId);
-    if (result.success) {
-      navigate('/user/finishers/new');
-    } else {
-      toast.error(result.error || 'Failed to open finisher creation');
-    }
+    navigate(`/admin/users/${userId}/finishers`);
   };
 
   const requestDelete = (u) => {
@@ -177,7 +171,7 @@ const AdminUsers = () => {
                       <button
                         onClick={() => handleCreateFinisher(user._id)}
                         className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg"
-                        title={t('finishers.createFinisher', { defaultValue: 'Create Finisher' })}
+                        title={t('finishers.title', { defaultValue: 'Finishers' })}
                       >
                         <Store className="w-4 h-4" />
                       </button>

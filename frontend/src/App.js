@@ -61,6 +61,8 @@ class ChunkErrorBoundary extends Component {
 const AdminDashboard = lazyRetry(() => import('./pages/admin/Dashboard'));
 const AdminUsers = lazyRetry(() => import('./pages/admin/Users'));
 const AdminUserForm = lazyRetry(() => import('./pages/admin/UserForm'));
+const AdminFinishers = lazyRetry(() => import('./pages/admin/Finishers'));
+const AdminFinisherForm = lazyRetry(() => import('./pages/admin/FinisherForm'));
 const AdminGeminiSettings = lazyRetry(() => import('./pages/admin/GeminiSettings'));
 const AdminSettings = lazyRetry(() => import('./pages/admin/Settings'));
 
@@ -82,8 +84,6 @@ const Loyalty = lazyRetry(() => import('./pages/user/Loyalty'));
 const WhatsApp = lazyRetry(() => import('./pages/user/WhatsApp'));
 const Zatca = lazyRetry(() => import('./pages/user/Zatca'));
 const Settings = lazyRetry(() => import('./pages/user/Settings'));
-const Finishers = lazyRetry(() => import('./pages/user/Finishers'));
-const FinisherForm = lazyRetry(() => import('./pages/user/FinisherForm'));
 
 const WorkerDashboard = lazyRetry(() => import('./pages/worker/Dashboard'));
 const WorkerStitchings = lazyRetry(() => import('./pages/worker/Stitchings'));
@@ -185,6 +185,9 @@ const AppRoutes = () => {
           <Route path="users" element={<LazyPage><AdminUsers /></LazyPage>} />
           <Route path="users/new" element={<LazyPage skeleton="form"><AdminUserForm /></LazyPage>} />
           <Route path="users/:id/edit" element={<LazyPage skeleton="form"><AdminUserForm /></LazyPage>} />
+          <Route path="users/:userId/finishers" element={<LazyPage><AdminFinishers /></LazyPage>} />
+          <Route path="users/:userId/finishers/new" element={<LazyPage skeleton="form"><AdminFinisherForm /></LazyPage>} />
+          <Route path="users/:userId/finishers/:finisherId/edit" element={<LazyPage skeleton="form"><AdminFinisherForm /></LazyPage>} />
           <Route path="gemini" element={<LazyPage><AdminGeminiSettings /></LazyPage>} />
           <Route path="settings" element={<LazyPage skeleton="form"><AdminSettings /></LazyPage>} />
         </Route>
@@ -201,9 +204,6 @@ const AppRoutes = () => {
           <Route path="workers/new" element={<LazyPage skeleton="form"><WorkerForm /></LazyPage>} />
           <Route path="workers/:id" element={<LazyPage><WorkerProfile /></LazyPage>} />
           <Route path="workers/:id/edit" element={<LazyPage skeleton="form"><WorkerForm /></LazyPage>} />
-          <Route path="finishers" element={<LazyPage><Finishers /></LazyPage>} />
-          <Route path="finishers/new" element={<LazyPage skeleton="form"><FinisherForm /></LazyPage>} />
-          <Route path="finishers/:id/edit" element={<LazyPage skeleton="form"><FinisherForm /></LazyPage>} />
           <Route path="worker-amounts" element={<LazyPage><WorkerAmounts /></LazyPage>} />
           <Route path="customers" element={<LazyPage><Customers /></LazyPage>} />
           <Route path="customers/new" element={<LazyPage skeleton="form"><CustomerForm /></LazyPage>} />

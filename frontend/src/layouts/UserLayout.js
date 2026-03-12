@@ -24,8 +24,7 @@ import {
   FileText,
   Image,
   Droplets,
-  Layers,
-  Store
+  Layers
 } from 'lucide-react';
 
 const UserLayout = () => {
@@ -65,11 +64,9 @@ const UserLayout = () => {
       import('../pages/user/Customers');
       import('../pages/user/Stitchings');
       import('../pages/user/Workers');
-      import('../pages/user/Finishers');
       import('../pages/user/CustomerForm');
       import('../pages/user/StitchingForm');
       import('../pages/user/WorkerForm');
-      import('../pages/user/FinisherForm');
     };
 
     if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
@@ -233,7 +230,6 @@ const UserLayout = () => {
   const allNavItems = [
     { key: 'dashboard', to: '/user/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
     { key: 'workers', to: '/user/workers', icon: Users, label: t('nav.workers') },
-    { key: 'finishers', to: '/user/finishers', icon: Store, label: t('nav.finishers', { defaultValue: 'Finishers' }) },
     { key: 'workerAmounts', to: '/user/worker-amounts', icon: Wallet, label: t('nav.workerAmounts') },
     { key: 'customers', to: '/user/customers', icon: UserPlus, label: t('nav.customers') },
     { key: 'stitchings', to: '/user/stitchings', icon: Scissors, label: t('nav.stitchings') },
