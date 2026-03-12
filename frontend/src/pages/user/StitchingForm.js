@@ -1419,8 +1419,8 @@ const StitchingForm = () => {
         }))
     }));
 
-  const workspaceStyleGroups = styleGroups.filter((group) => ['collar', 'pocket'].includes(group.key));
-  const advancedStyleGroups = styleGroups.filter((group) => !['collar', 'pocket'].includes(group.key));
+  const workspaceStyleGroups = styleGroups;
+  const advancedStyleGroups = [];
 
   const fallbackFabricColors = [
     { key: 'white', name: 'White', nameAr: 'أبيض', hex: '#FFFFFF' },
@@ -1482,6 +1482,15 @@ const StitchingForm = () => {
         showStyleControls={showDesignControls}
         thawbTypes={thawbTypeChoices}
         onThawbTypeChange={(value) => setFormData((prev) => ({ ...prev, thawbType: value }))}
+        fabricOptions={Array.isArray(fabrics) ? fabrics : []}
+        selectedFabricId={formData.fabricId || ''}
+        onFabricChange={(value) => setFormData((prev) => ({ ...prev, fabricId: value }))}
+        rollsUsed={formData.rollsUsed}
+        onRollsUsedChange={(value) => setFormData((prev) => ({ ...prev, rollsUsed: value }))}
+        fabricColors={fabricColors}
+        selectedFabricColor={formData.fabricColor || ''}
+        onFabricColorChange={(value) => setFormData((prev) => ({ ...prev, fabricColor: value }))}
+        materialsLoading={fabricsLoading || fabricColorsCatalogLoading}
       />
     </div>
   );

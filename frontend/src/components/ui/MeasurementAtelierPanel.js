@@ -72,39 +72,48 @@ const BrandBlock = ({ logoSrc, businessName, businessPhone }) => (
 );
 
 const OptionArtwork = ({ groupKey, optionKey }) => {
+  const svgClass = 'w-12 h-12 text-slate-700 dark:text-slate-200';
+
   if (groupKey === 'collar') {
     if (optionKey === 'classic') {
       return (
-        <svg viewBox="0 0 64 64" className="w-11 h-11 text-slate-700 dark:text-slate-200" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 18L32 28L46 18" />
-          <path d="M12 18C18 16 25 16 32 16C39 16 46 16 52 18" />
-          <path d="M24 38C27 33 29 31 32 31C35 31 37 33 40 38" />
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 20H50" />
+          <path d="M20 20L31 31" />
+          <path d="M44 20L33 31" />
+          <path d="M25 20L32 26L39 20" />
+          <path d="M30 31H34" />
         </svg>
       );
     }
     if (optionKey === 'round') {
       return (
-        <svg viewBox="0 0 64 64" className="w-11 h-11 text-slate-700 dark:text-slate-200" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M15 22C18 17 24 14 32 14C40 14 46 17 49 22" />
-          <path d="M18 22C20 29 24 33 32 33C40 33 44 29 46 22" />
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 25C20 18 25 15 32 15C39 15 44 18 46 25" />
+          <path d="M18 25C20 32 25 36 32 36C39 36 44 32 46 25" />
+          <path d="M22 22C24 20 27 19 32 19C37 19 40 20 42 22" />
         </svg>
       );
     }
     if (optionKey === 'mandarin') {
       return (
-        <svg viewBox="0 0 64 64" className="w-11 h-11 text-slate-700 dark:text-slate-200" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 18H44" />
-          <path d="M18 18C18 12 23 10 32 10C41 10 46 12 46 18" />
-          <path d="M22 18V28" />
-          <path d="M42 18V28" />
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 18H42" />
+          <path d="M20 18C20 13 24 10 32 10C40 10 44 13 44 18" />
+          <path d="M22 18V31" />
+          <path d="M42 18V31" />
+          <path d="M24 31H40" />
         </svg>
       );
     }
     if (optionKey === 'open') {
       return (
-        <svg viewBox="0 0 64 64" className="w-11 h-11 text-slate-700 dark:text-slate-200" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 18L32 34L44 18" />
-          <path d="M14 18C18 15 24 14 32 14C40 14 46 15 50 18" />
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M16 20H48" />
+          <path d="M21 20L31 34" />
+          <path d="M43 20L33 34" />
+          <path d="M31 34V39" />
+          <path d="M33 34V39" />
         </svg>
       );
     }
@@ -113,36 +122,208 @@ const OptionArtwork = ({ groupKey, optionKey }) => {
   if (groupKey === 'pocket') {
     if (optionKey === 'none') {
       return (
-        <svg viewBox="0 0 64 64" className="w-11 h-11 text-slate-700 dark:text-slate-200" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="18" y="18" width="28" height="28" rx="8" />
-          <path d="M22 42L42 22" />
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="18" y="16" width="28" height="32" rx="8" />
+          <path d="M23 41L41 23" />
         </svg>
       );
     }
     if (optionKey === 'chest') {
       return (
-        <svg viewBox="0 0 64 64" className="w-11 h-11 text-slate-700 dark:text-slate-200" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="16" y="14" width="32" height="36" rx="10" />
-          <path d="M24 22H40V32H24Z" />
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="18" y="14" width="28" height="36" rx="8" />
+          <path d="M24 22H40" />
+          <path d="M24 22V32H40V22" />
         </svg>
       );
     }
     if (optionKey === 'side') {
       return (
-        <svg viewBox="0 0 64 64" className="w-11 h-11 text-slate-700 dark:text-slate-200" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="16" y="14" width="32" height="36" rx="10" />
-          <path d="M20 36H30" />
-          <path d="M34 36H44" />
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="18" y="14" width="28" height="36" rx="8" />
+          <path d="M22 35H31" />
+          <path d="M33 35H42" />
+          <path d="M23 39H41" />
         </svg>
       );
     }
     if (optionKey === 'both') {
       return (
-        <svg viewBox="0 0 64 64" className="w-11 h-11 text-slate-700 dark:text-slate-200" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="16" y="14" width="32" height="36" rx="10" />
-          <path d="M24 22H40V31H24Z" />
-          <path d="M20 38H30" />
-          <path d="M34 38H44" />
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="18" y="14" width="28" height="36" rx="8" />
+          <path d="M24 22H40" />
+          <path d="M24 22V30H40V22" />
+          <path d="M22 38H31" />
+          <path d="M33 38H42" />
+        </svg>
+      );
+    }
+  }
+
+  if (groupKey === 'bain') {
+    if (optionKey === 'hidden') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 18H50" />
+          <path d="M18 18V46" />
+          <path d="M32 18V46" />
+          <path d="M46 18V46" />
+        </svg>
+      );
+    }
+    if (optionKey === 'visible') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 18H50" />
+          <path d="M24 18V46" />
+          <path d="M32 18V46" />
+          <path d="M28 24H36" />
+          <path d="M28 32H36" />
+          <path d="M28 40H36" />
+        </svg>
+      );
+    }
+    if (optionKey === 'zip') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 18H50" />
+          <path d="M32 18V46" />
+          <path d="M28 22H36" />
+          <path d="M28 27H36" />
+          <path d="M28 32H36" />
+          <path d="M28 37H36" />
+          <path d="M28 42H36" />
+        </svg>
+      );
+    }
+    if (optionKey === 'half') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 18H50" />
+          <path d="M32 18V34" />
+          <path d="M28 22H36" />
+          <path d="M28 27H36" />
+          <path d="M28 32H36" />
+        </svg>
+      );
+    }
+  }
+
+  if (groupKey === 'cuff') {
+    if (optionKey === 'single') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 16V44" />
+          <path d="M46 16V44" />
+          <path d="M18 44H46" />
+        </svg>
+      );
+    }
+    if (optionKey === 'double') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 16V42" />
+          <path d="M46 16V42" />
+          <path d="M18 36H46" />
+          <path d="M18 42H46" />
+        </svg>
+      );
+    }
+    if (optionKey === 'round') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 16V34" />
+          <path d="M46 16V34" />
+          <path d="M18 34C22 42 42 42 46 34" />
+        </svg>
+      );
+    }
+    if (optionKey === 'angled') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 16V42" />
+          <path d="M46 16V34" />
+          <path d="M18 42L46 34" />
+        </svg>
+      );
+    }
+  }
+
+  if (groupKey === 'buttons') {
+    if (optionKey === 'classic') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M32 14V50" />
+          <circle cx="32" cy="22" r="2.5" />
+          <circle cx="32" cy="32" r="2.5" />
+          <circle cx="32" cy="42" r="2.5" />
+        </svg>
+      );
+    }
+    if (optionKey === 'hidden') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M28 14V50" />
+          <path d="M36 14V50" />
+        </svg>
+      );
+    }
+    if (optionKey === 'snap') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M32 14V50" />
+          <circle cx="32" cy="22" r="3.5" />
+          <circle cx="32" cy="32" r="3.5" />
+          <circle cx="32" cy="42" r="3.5" />
+        </svg>
+      );
+    }
+    if (optionKey === 'premium') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M32 14V50" />
+          <circle cx="32" cy="22" r="2.5" />
+          <circle cx="32" cy="32" r="2.5" />
+          <circle cx="32" cy="42" r="2.5" />
+          <path d="M24 18H40" />
+        </svg>
+      );
+    }
+  }
+
+  if (groupKey === 'embroidery') {
+    if (optionKey === 'none') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="18" y="16" width="28" height="32" rx="8" />
+          <path d="M24 40L40 24" />
+        </svg>
+      );
+    }
+    if (optionKey === 'name') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="18" y="16" width="28" height="32" rx="8" />
+          <path d="M24 35L29 26L34 35" />
+          <path d="M26 31H32" />
+        </svg>
+      );
+    }
+    if (optionKey === 'logo') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="18" y="16" width="28" height="32" rx="8" />
+          <path d="M32 24L35 30L42 31L37 36L38 43L32 40L26 43L27 36L22 31L29 30Z" />
+        </svg>
+      );
+    }
+    if (optionKey === 'premium') {
+      return (
+        <svg viewBox="0 0 64 64" className={svgClass} fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="18" y="16" width="28" height="32" rx="8" />
+          <path d="M24 35L29 26L34 35" />
+          <path d="M26 31H32" />
+          <path d="M36 26L40 30L36 34" />
         </svg>
       );
     }
@@ -274,6 +455,110 @@ const ThawbTypeSelector = ({ options = [], value, onChange, disabled = false, ve
   );
 };
 
+const MaterialsPanel = ({
+  fabricOptions = [],
+  selectedFabricId = '',
+  onFabricChange,
+  rollsUsed = '',
+  onRollsUsedChange,
+  fabricColors = [],
+  selectedFabricColor = '',
+  onFabricColorChange,
+  disabled = false,
+  loading = false,
+  palette
+}) => {
+  const fabricChoices = [
+    { value: '', label: 'Not specified' },
+    ...(fabricOptions || []).map((fabric) => ({
+      value: fabric?._id || '',
+      label: `${fabric?.name || '—'} · Stock: ${Number(fabric?.rollsInStock) || 0}`
+    }))
+  ];
+
+  return (
+    <div className={`rounded-[1.6rem] border ${palette.tile} p-4 shadow-sm`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Fabric & Materials</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Optional</div>
+      </div>
+      {loading ? <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">Loading…</div> : null}
+      <div className="mt-4 space-y-4">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Fabric</div>
+          <select
+            value={selectedFabricId}
+            onChange={(e) => onFabricChange?.(e.target.value)}
+            disabled={disabled}
+            className={`mt-2 w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-stone-50/90 dark:bg-slate-950/80 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none transition-all ${palette.focus} ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            {fabricChoices.map((choice) => (
+              <option key={`fabric-${choice.value || 'none'}`} value={choice.value}>{choice.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Rolls Used</div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {['0.25', '0.50', '0.75', '1'].map((preset) => {
+              const isSelected = String(rollsUsed || '') === preset;
+              return (
+                <button
+                  key={`roll-${preset}`}
+                  type="button"
+                  onClick={() => onRollsUsedChange?.(preset)}
+                  disabled={disabled}
+                  className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${isSelected ? `${palette.selected} bg-white dark:bg-slate-950/70` : `${palette.tile} hover:border-slate-300 dark:hover:border-slate-600`} ${disabled ? 'cursor-not-allowed opacity-70' : ''}`}
+                >
+                  {preset}
+                </button>
+              );
+            })}
+          </div>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={rollsUsed}
+            onChange={(e) => onRollsUsedChange?.(e.target.value)}
+            disabled={disabled}
+            placeholder="0"
+            className={`mt-3 w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-stone-50/90 dark:bg-slate-950/80 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none transition-all ${palette.focus} ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
+          />
+        </div>
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Fabric Color</div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onFabricColorChange?.('')}
+              disabled={disabled}
+              className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-all ${!selectedFabricColor ? `${palette.selected} bg-white dark:bg-slate-950/70` : `${palette.tile} hover:border-slate-300 dark:hover:border-slate-600`} ${disabled ? 'cursor-not-allowed opacity-70' : ''}`}
+            >
+              Not specified
+            </button>
+            {(fabricColors || []).map((color) => {
+              const isSelected = selectedFabricColor === color.key;
+              return (
+                <button
+                  key={`fabric-color-${color.key}`}
+                  type="button"
+                  onClick={() => onFabricColorChange?.(color.key)}
+                  disabled={disabled}
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-all ${isSelected ? `${palette.selected} bg-white dark:bg-slate-950/70` : `${palette.tile} hover:border-slate-300 dark:hover:border-slate-600`} ${disabled ? 'cursor-not-allowed opacity-70' : ''}`}
+                >
+                  <span className="h-4 w-4 rounded-full border border-black/10 dark:border-white/10" style={{ backgroundColor: color.hex }} />
+                  <span>{color.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const SnapshotPanel = ({ fields, values, palette }) => {
   const spotlight = useMemo(() => {
     return (fields || [])
@@ -323,7 +608,16 @@ const MeasurementAtelierPanel = ({
   onStyleChange,
   showStyleControls = false,
   thawbTypes = [],
-  onThawbTypeChange
+  onThawbTypeChange,
+  fabricOptions = [],
+  selectedFabricId = '',
+  onFabricChange,
+  rollsUsed = '',
+  onRollsUsedChange,
+  fabricColors = [],
+  selectedFabricColor = '',
+  onFabricColorChange,
+  materialsLoading = false
 }) => {
   const palette = toneMap[tone] || defaultTone;
 
@@ -350,8 +644,17 @@ const MeasurementAtelierPanel = ({
 
   const collarGroup = styleGroups.find((group) => group.key === 'collar');
   const pocketGroup = styleGroups.find((group) => group.key === 'pocket');
+  const primaryStyleGroups = [collarGroup, pocketGroup].filter(Boolean);
+  const secondaryStyleGroups = (styleGroups || []).filter((group) => !['collar', 'pocket'].includes(group.key));
   const selectedCollar = collarGroup?.options?.find((option) => option.value === styleValues?.collar)?.label || '';
   const selectedPocket = pocketGroup?.options?.find((option) => option.value === styleValues?.pocket)?.label || '';
+  const selectedStyleEntries = (styleGroups || [])
+    .map((group) => {
+      const selectedValue = styleValues?.[group.key];
+      const option = (group.options || []).find((item) => item.value === selectedValue);
+      return option ? `${group.label}: ${option.label}` : null;
+    })
+    .filter(Boolean);
   const currentDate = new Date().toLocaleDateString();
   const headerChips = badges.slice(0, 3);
 
@@ -419,26 +722,57 @@ const MeasurementAtelierPanel = ({
               />
             </div>
 
-            <div className="mt-5 grid gap-4 xl:grid-cols-2">
-              <DesignOptionsRow
-                title={collarGroup?.label || 'Collar'}
-                groupKey="collar"
-                options={collarGroup?.options || []}
-                value={styleValues?.collar || ''}
-                onChange={onStyleChange}
-                disabled={disabled || !showStyleControls}
-                palette={palette}
-              />
-              <DesignOptionsRow
-                title={pocketGroup?.label || 'Pocket'}
-                groupKey="pocket"
-                options={pocketGroup?.options || []}
-                value={styleValues?.pocket || ''}
-                onChange={onStyleChange}
-                disabled={disabled || !showStyleControls}
-                palette={palette}
-              />
-            </div>
+            {primaryStyleGroups.length ? (
+              <div className="mt-5 grid gap-4 xl:grid-cols-2">
+                {primaryStyleGroups.map((group) => (
+                  <DesignOptionsRow
+                    key={`primary-board-${group.key}`}
+                    title={group.label}
+                    groupKey={group.key}
+                    options={group.options || []}
+                    value={styleValues?.[group.key] || ''}
+                    onChange={onStyleChange}
+                    disabled={disabled || !showStyleControls}
+                    palette={palette}
+                  />
+                ))}
+              </div>
+            ) : null}
+
+            {secondaryStyleGroups.length ? (
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                {secondaryStyleGroups.map((group) => (
+                  <DesignOptionsRow
+                    key={`secondary-board-${group.key}`}
+                    title={group.label}
+                    groupKey={group.key}
+                    options={group.options || []}
+                    value={styleValues?.[group.key] || ''}
+                    onChange={onStyleChange}
+                    disabled={disabled || !showStyleControls}
+                    palette={palette}
+                  />
+                ))}
+              </div>
+            ) : null}
+
+            {showStyleControls ? (
+              <div className="mt-5">
+                <MaterialsPanel
+                  fabricOptions={fabricOptions}
+                  selectedFabricId={selectedFabricId}
+                  onFabricChange={onFabricChange}
+                  rollsUsed={rollsUsed}
+                  onRollsUsedChange={onRollsUsedChange}
+                  fabricColors={fabricColors}
+                  selectedFabricColor={selectedFabricColor}
+                  onFabricColorChange={onFabricColorChange}
+                  disabled={disabled}
+                  loading={materialsLoading}
+                  palette={palette}
+                />
+              </div>
+            ) : null}
           </div>
 
           <div className={`rounded-[1.85rem] border ${palette.tile} p-5 shadow-sm`}>
@@ -455,16 +789,19 @@ const MeasurementAtelierPanel = ({
               </div>
               <div className="rounded-2xl bg-stone-50/90 dark:bg-slate-950/70 px-4 py-3">
                 <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Selected Style</div>
-                <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {selectedCollar || 'Collar not selected'}
-                </div>
-                <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {selectedPocket || 'Pocket not selected'}
-                </div>
+                {selectedStyleEntries.length ? selectedStyleEntries.slice(0, 4).map((entry) => (
+                  <div key={entry} className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {entry}
+                  </div>
+                )) : (
+                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    No design options selected
+                  </div>
+                )}
               </div>
               <div className="rounded-2xl bg-stone-50/90 dark:bg-slate-950/70 px-4 py-3">
                 <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Status</div>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   {headerChips.map((badge) => (
                     <div key={badge} className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>
                       {badge}
@@ -557,26 +894,56 @@ const MeasurementAtelierPanel = ({
           </div>
 
           <div className="space-y-4">
-            <DesignOptionsRow
-              title={collarGroup?.label || 'Collar'}
-              groupKey="collar"
-              options={collarGroup?.options || []}
-              value={styleValues?.collar || ''}
-              onChange={onStyleChange}
-              disabled={disabled || !showStyleControls}
-              palette={palette}
-            />
-            <DesignOptionsRow
-              title={pocketGroup?.label || 'Pocket'}
-              groupKey="pocket"
-              options={pocketGroup?.options || []}
-              value={styleValues?.pocket || ''}
-              onChange={onStyleChange}
-              disabled={disabled || !showStyleControls}
-              palette={palette}
-            />
+            {primaryStyleGroups.map((group) => (
+              <DesignOptionsRow
+                key={`primary-sheet-${group.key}`}
+                title={group.label}
+                groupKey={group.key}
+                options={group.options || []}
+                value={styleValues?.[group.key] || ''}
+                onChange={onStyleChange}
+                disabled={disabled || !showStyleControls}
+                palette={palette}
+              />
+            ))}
+            {secondaryStyleGroups.map((group) => (
+              <DesignOptionsRow
+                key={`secondary-sheet-${group.key}`}
+                title={group.label}
+                groupKey={group.key}
+                options={group.options || []}
+                value={styleValues?.[group.key] || ''}
+                onChange={onStyleChange}
+                disabled={disabled || !showStyleControls}
+                palette={palette}
+              />
+            ))}
+            {showStyleControls ? (
+              <MaterialsPanel
+                fabricOptions={fabricOptions}
+                selectedFabricId={selectedFabricId}
+                onFabricChange={onFabricChange}
+                rollsUsed={rollsUsed}
+                onRollsUsedChange={onRollsUsedChange}
+                fabricColors={fabricColors}
+                selectedFabricColor={selectedFabricColor}
+                onFabricColorChange={onFabricColorChange}
+                disabled={disabled}
+                loading={materialsLoading}
+                palette={palette}
+              />
+            ) : null}
             <div className={`rounded-[1.6rem] border ${palette.tile} p-4 shadow-sm`}>
               <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Sheet details</div>
+              {selectedStyleEntries.length ? (
+                <div className="mt-3 space-y-1">
+                  {selectedStyleEntries.slice(0, 4).map((entry) => (
+                    <div key={entry} className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                      {entry}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
               <div className="mt-3 flex flex-wrap gap-2">
                 {headerChips.map((badge) => (
                   <div key={badge} className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>
