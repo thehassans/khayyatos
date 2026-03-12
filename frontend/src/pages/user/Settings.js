@@ -23,6 +23,7 @@ const Settings = () => {
   const [settings, setSettings] = useState({
     language: user?.language || 'en',
     theme: user?.theme || 'light',
+    measurementUi: user?.measurementUi || 'cards',
     receiptPrefix: '',
     receiptCounter: 0,
     logo: null,
@@ -145,6 +146,7 @@ const Settings = () => {
         ...prev,
         language: response.data.settings.language,
         theme: response.data.settings.theme || prev.theme || user?.theme || 'light',
+        measurementUi: response.data.settings.measurementUi || prev.measurementUi || user?.measurementUi || 'cards',
         receiptPrefix: response.data.settings.receiptPrefix,
         receiptCounter: response.data.settings.receiptCounter,
         businessName: response.data.settings.businessName || user?.businessName || ''
@@ -300,6 +302,7 @@ const Settings = () => {
       const data = new FormData();
       data.append('language', settings.language);
       data.append('theme', settings.theme);
+      data.append('measurementUi', settings.measurementUi);
       data.append('receiptPrefix', autoReceiptPrefix);
       data.append('businessName', settings.businessName);
       if (settings.logo) data.append('logo', settings.logo);
@@ -311,6 +314,7 @@ const Settings = () => {
       updateUser({ 
         language: settings.language, 
         theme: settings.theme, 
+        measurementUi: settings.measurementUi,
         businessName: settings.businessName, 
         logo: logoPreview,
         primaryColor: settings.primaryColor
@@ -348,6 +352,16 @@ const Settings = () => {
     setMeasurementsCatalogSaving(false);
   };
 
+  const handleSaveMeasurementUi = async () => {
+    try {
+      await api.put('/settings/preferences', { measurementUi: settings.measurementUi });
+      updateUser({ measurementUi: settings.measurementUi });
+    } catch (error) {
+      toast.error('Failed to save measurement UI');
+      throw error;
+    }
+  };
+
   const handleSaveThawbTypesCatalog = async () => {
     if (!thawbTypesCatalog) return;
     setThawbTypesCatalogSaving(true);
@@ -380,6 +394,7 @@ const Settings = () => {
       return;
     }
     if (activeSection === 'measurements') {
+      await handleSaveMeasurementUi();
       await handleSaveMeasurementsCatalog();
       return;
     }
@@ -851,6 +866,75 @@ const Settings = () => {
                 </div>
 
                 <div className="p-6">
+                  <div className="mb-6 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-stone-50 via-white to-slate-50 dark:from-slate-900/60 dark:via-slate-900/40 dark:to-slate-800/40 p-5">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div>
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white">Measurement UI</div>
+                        <div className="mt-1 text-sm text-gray-500 dark:text-slate-400">Choose how measurements appear inside stitchings. Both modes save the same measurement data.</div>
+                      </div>
+                      <div className="inline-flex items-center rounded-full bg-gray-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-gray-600 dark:text-slate-300">
+                        Active: {settings.measurementUi === 'atelier' ? 'Atelier Workspace' : 'Classic Cards'}
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-1 xl:grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setSettings((prev) => ({ ...prev, measurementUi: 'cards' }))}
+                        className={`rounded-[1.75rem] border p-4 text-left transition-all ${settings.measurementUi === 'cards' ? 'border-gray-900 dark:border-white ring-2 ring-gray-900/10 dark:ring-white/10 bg-white dark:bg-slate-900 shadow-lg' : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 hover:border-gray-300 dark:hover:border-slate-600'}`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white">Classic Cards</div>
+                            <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">Fast, compact measurement cards with visual icons.</div>
+                          </div>
+                          <div className={`rounded-full px-3 py-1 text-[11px] font-bold ${settings.measurementUi === 'cards' ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-300'}`}>Standard</div>
+                        </div>
+                        <div className="mt-4 grid grid-cols-2 gap-3">
+                          {['Length', 'Chest', 'Sleeve', 'Neck'].map((label, idx) => (
+                            <div key={label} className={`rounded-2xl border px-3 py-3 ${idx % 2 === 0 ? 'bg-indigo-50/80 border-indigo-100 dark:bg-indigo-950/20 dark:border-indigo-900/30' : 'bg-emerald-50/80 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900/30'}`}>
+                              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-slate-500">{label}</div>
+                              <div className="mt-2 h-10 rounded-xl bg-white/90 dark:bg-slate-900/70 border border-white/70 dark:border-slate-700" />
+                            </div>
+                          ))}
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSettings((prev) => ({ ...prev, measurementUi: 'atelier' }))}
+                        className={`rounded-[1.75rem] border p-4 text-left transition-all ${settings.measurementUi === 'atelier' ? 'border-amber-500 dark:border-amber-400 ring-2 ring-amber-400/20 bg-white dark:bg-slate-900 shadow-lg' : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 hover:border-amber-300 dark:hover:border-amber-700/60'}`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900 dark:text-white">Atelier Workspace</div>
+                            <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">Premium tailoring layout inspired by traditional measurement sheets.</div>
+                          </div>
+                          <div className={`rounded-full px-3 py-1 text-[11px] font-bold ${settings.measurementUi === 'atelier' ? 'bg-amber-500 text-white' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200'}`}>Premium</div>
+                        </div>
+                        <div className="mt-4 grid grid-cols-[1fr_120px_1fr] gap-3 items-stretch">
+                          <div className="space-y-2">
+                            {[0, 1, 2, 3].map((idx) => (
+                              <div key={idx} className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/90 dark:bg-slate-950/60 px-3 py-3">
+                                <div className="h-2.5 w-16 rounded-full bg-gray-200 dark:bg-slate-700" />
+                                <div className="mt-3 h-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-900" />
+                              </div>
+                            ))}
+                          </div>
+                          <div className="rounded-[1.75rem] border border-gray-200 dark:border-slate-700 bg-gradient-to-b from-white to-stone-100 dark:from-slate-800 dark:to-slate-900" />
+                          <div className="space-y-2">
+                            {[0, 1, 2, 3].map((idx) => (
+                              <div key={idx} className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/90 dark:bg-slate-950/60 px-3 py-3">
+                                <div className="h-2.5 w-20 rounded-full bg-gray-200 dark:bg-slate-700" />
+                                <div className="mt-3 h-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-900" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
                   {measurementsCatalogLoading ? (
                     <div className="text-sm text-gray-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div>
                   ) : !measurementsCatalog?.fields?.length ? (

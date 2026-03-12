@@ -9,6 +9,7 @@ import { Modal } from '../../components/ui/Modal';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import { ArrowLeft, ChevronDown, Calendar, Printer, Users, Image as ImageIcon, Plus, UserPlus, Search, User, X } from 'lucide-react';
 import MeasurementCard from '../../components/ui/MeasurementCard';
+import MeasurementAtelierPanel from '../../components/ui/MeasurementAtelierPanel';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
@@ -1415,6 +1416,50 @@ const StitchingForm = () => {
   const totalPaidOverride = String(formData.paidAmount || '').trim() === '' ? null : (Number(formData.paidAmount) || 0);
   const batchTotalPrice = batchItemsPrice;
   const batchTotalPaid = totalPaidOverride === null ? 0 : totalPaidOverride;
+  const measurementUi = user?.measurementUi || 'cards';
+  const isAtelierMeasurementUi = measurementUi === 'atelier';
+
+  const renderMeasurementInputs = ({ title, subtitle, values, onChange, disabled = false, loading = false, badges = [], tone = 'slate' }) => {
+    if (isAtelierMeasurementUi) {
+      return (
+        <div className="mt-4">
+          <MeasurementAtelierPanel
+            title={title}
+            subtitle={subtitle}
+            fields={measurementFields}
+            values={values}
+            onChange={onChange}
+            disabled={disabled}
+            loading={loading}
+            thawbType={formData.thawbType}
+            badges={badges}
+            tone={tone}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {loading ? (
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-4">Loading…</div>
+        ) : null}
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {measurementFields.map((field) => (
+            <MeasurementCard
+              key={`${title}-${field.key}`}
+              measurementKey={field.key}
+              label={field.label}
+              value={values?.[field.key]}
+              onChange={(value) => onChange(field.key, value)}
+              disabled={disabled}
+              imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
+            />
+          ))}
+        </div>
+      </>
+    );
+  };
 
   // If order created, show print option
   if (createdOrder) {
@@ -1481,7 +1526,7 @@ const StitchingForm = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
+    <div className={`${isAtelierMeasurementUi ? 'max-w-[1400px]' : 'max-w-2xl'} mx-auto space-y-6 animate-fadeIn`}>
       <div className="flex items-center gap-4">
         <button onClick={() => navigate('/user/stitchings')} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800/50 dark:text-slate-300 rounded-lg">
           <ArrowLeft className="w-5 h-5" />
@@ -1861,27 +1906,22 @@ const StitchingForm = () => {
                   </div>
 
                   {customerMeasurementsOpen ? (
-                    <>
-                      {measurementsCatalogLoading && (
-                        <div className="text-sm text-gray-500 dark:text-slate-400 mt-4">Loading…</div>
-                      )}
-                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {measurementFields.map((field) => (
-                          <MeasurementCard
-                            key={field.key}
-                            measurementKey={field.key}
-                            label={field.label}
-                            value={(selectedRelation ? (selectedCustomer?.measurements || {}) : (formData.measurements || {}))[field.key]}
-                            onChange={(value) => {
-                              if (selectedRelation) return;
-                              handleMeasurementChange(field.key, value);
-                            }}
-                            disabled={!!selectedRelation}
-                            imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
-                          />
-                        ))}
-                      </div>
-                    </>
+                    renderMeasurementInputs({
+                      title: `${t('customers.measurements')} (${selectedCustomer?.nameI18n?.[langKey] || selectedCustomer?.name || ''})`,
+                      subtitle: selectedRelation ? 'Customer measurements are shown for reference while editing the selected order-for measurements.' : 'Capture a complete set of body measurements with a tailoring-focused workspace.',
+                      values: selectedRelation ? (selectedCustomer?.measurements || {}) : (formData.measurements || {}),
+                      onChange: (key, value) => {
+                        if (selectedRelation) return;
+                        handleMeasurementChange(key, value);
+                      },
+                      disabled: !!selectedRelation,
+                      loading: measurementsCatalogLoading,
+                      badges: [
+                        selectedCustomer?.measurements && Object.keys(selectedCustomer.measurements).length > 0 ? 'Auto-filled from customer' : null,
+                        selectedRelation ? 'Read-only reference' : null
+                      ].filter(Boolean),
+                      tone: 'slate'
+                    })
                   ) : null}
                 </div>
 
@@ -1908,23 +1948,17 @@ const StitchingForm = () => {
                     </div>
 
                     {orderForMeasurementsOpen ? (
-                      <>
-                        {measurementsCatalogLoading && (
-                          <div className="text-sm text-gray-500 dark:text-slate-400 mt-4">Loading…</div>
-                        )}
-                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                          {measurementFields.map((field) => (
-                            <MeasurementCard
-                              key={field.key}
-                              measurementKey={field.key}
-                              label={field.label}
-                              value={formData.measurements[field.key]}
-                              onChange={(value) => handleMeasurementChange(field.key, value)}
-                              imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
-                            />
-                          ))}
-                        </div>
-                      </>
+                      renderMeasurementInputs({
+                        title: `${t('customers.measurements')} (${selectedRelation?.name || ''})`,
+                        subtitle: 'Use the atelier layout to review fit balance, body proportions, and sleeve details in one place.',
+                        values: formData.measurements || {},
+                        onChange: (key, value) => handleMeasurementChange(key, value),
+                        loading: measurementsCatalogLoading,
+                        badges: [
+                          selectedRelation?.measurements && Object.keys(selectedRelation.measurements).length > 0 ? `Auto-filled from ${selectedRelation.name}` : null
+                        ].filter(Boolean),
+                        tone: 'amber'
+                      })
                     ) : null}
                   </div>
                 ) : null}
@@ -2097,24 +2131,39 @@ const StitchingForm = () => {
                                 </div>
                               </div>
 
-                              <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 p-4">
-                                <div className="text-xs font-semibold text-amber-900/80 dark:text-amber-100/80">Measurements</div>
-                                {measurementsCatalogLoading ? (
-                                  <div className="mt-2 text-xs text-amber-900/60 dark:text-amber-100/60">Loading…</div>
-                                ) : null}
-                                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                                  {measurementFields.map((field) => (
-                                    <MeasurementCard
-                                      key={`${it.id}-${field.key}`}
-                                      measurementKey={field.key}
-                                      label={field.label}
-                                      value={(it.measurements || {})[field.key]}
-                                      onChange={(value) => updateOrderItemMeasurement(it.id, field.key, value)}
-                                      imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
-                                    />
-                                  ))}
+                              {isAtelierMeasurementUi ? (
+                                renderMeasurementInputs({
+                                  title: `${it.orderFor || 'Order'} Measurements`,
+                                  subtitle: 'Review each family member with the same atelier-style fitting workspace.',
+                                  values: it.measurements || {},
+                                  onChange: (key, value) => updateOrderItemMeasurement(it.id, key, value),
+                                  loading: measurementsCatalogLoading,
+                                  badges: [
+                                    it.relationType || 'Self',
+                                    `Qty ${it.quantity || 1}`
+                                  ].filter(Boolean),
+                                  tone: 'amber'
+                                })
+                              ) : (
+                                <div className="rounded-2xl border border-amber-200/70 dark:border-amber-800/40 bg-white/70 dark:bg-slate-900/20 p-4">
+                                  <div className="text-xs font-semibold text-amber-900/80 dark:text-amber-100/80">Measurements</div>
+                                  {measurementsCatalogLoading ? (
+                                    <div className="mt-2 text-xs text-amber-900/60 dark:text-amber-100/60">Loading…</div>
+                                  ) : null}
+                                  <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                                    {measurementFields.map((field) => (
+                                      <MeasurementCard
+                                        key={`${it.id}-${field.key}`}
+                                        measurementKey={field.key}
+                                        label={field.label}
+                                        value={(it.measurements || {})[field.key]}
+                                        onChange={(value) => updateOrderItemMeasurement(it.id, field.key, value)}
+                                        imageSrc={field.image ? `${resolveUploadsUrl(field.image)}${field.imageUpdatedAt ? `?v=${field.imageUpdatedAt}` : ''}` : undefined}
+                                      />
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
+                              )}
                             </div>
                           ) : null}
                         </div>

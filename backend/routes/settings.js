@@ -293,6 +293,7 @@ router.get('/', async (req, res) => {
         onboardingCompleted: !!req.user.onboardingCompleted,
         onboardingStep: Number(req.user.onboardingStep) || 0,
         theme: req.user.theme,
+        measurementUi: req.user.measurementUi || 'cards',
         receiptPrefix: req.user.receiptPrefix,
         receiptCounter: req.user.receiptCounter,
         whatsappEnabled: req.user.whatsappEnabled
@@ -305,10 +306,11 @@ router.get('/', async (req, res) => {
 
 router.put('/preferences', async (req, res) => {
   try {
-    const { language, onboardingCompleted, onboardingStep, theme } = req.body || {};
+    const { language, onboardingCompleted, onboardingStep, theme, measurementUi } = req.body || {};
 
     if (language) req.user.language = language;
     if (theme) req.user.theme = theme;
+    if (measurementUi && ['cards', 'atelier'].includes(measurementUi)) req.user.measurementUi = measurementUi;
 
     if (onboardingCompleted !== undefined) {
       req.user.onboardingCompleted = !!onboardingCompleted;
@@ -324,6 +326,7 @@ router.put('/preferences', async (req, res) => {
       settings: {
         language: req.user.language,
         theme: req.user.theme,
+        measurementUi: req.user.measurementUi || 'cards',
         onboardingCompleted: !!req.user.onboardingCompleted,
         onboardingStep: Number(req.user.onboardingStep) || 0
       }
@@ -879,7 +882,7 @@ router.delete('/style-options/option', async (req, res) => {
 // Update settings
 router.put('/', upload.single('logo'), async (req, res) => {
   try {
-    const { language, businessName, theme } = req.body;
+    const { language, businessName, theme, measurementUi } = req.body;
     
     if (language) req.user.language = language;
     if (businessName) {
@@ -902,6 +905,7 @@ router.put('/', upload.single('logo'), async (req, res) => {
       }
     }
     if (theme) req.user.theme = theme;
+    if (measurementUi && ['cards', 'atelier'].includes(measurementUi)) req.user.measurementUi = measurementUi;
     if (req.file) req.user.logo = `/uploads/${req.file.filename}`;
     
     await req.user.save();
@@ -913,6 +917,7 @@ router.put('/', upload.single('logo'), async (req, res) => {
         logo: req.user.logo,
         language: req.user.language,
         theme: req.user.theme,
+        measurementUi: req.user.measurementUi || 'cards',
         receiptPrefix: req.user.receiptPrefix,
         receiptCounter: req.user.receiptCounter,
         whatsappEnabled: req.user.whatsappEnabled

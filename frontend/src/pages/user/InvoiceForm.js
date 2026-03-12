@@ -144,7 +144,7 @@ const InvoiceForm = () => {
 
     setLoading(true);
     try {
-      const customerResponse = await api.post('/customer', {
+      const customerResponse = await api.post('/customers', {
         name: customerName,
         phone
       });

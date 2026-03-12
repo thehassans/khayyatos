@@ -155,6 +155,11 @@ const userSchema = new mongoose.Schema({
     enum: ['light', 'dark'],
     default: 'light'
   },
+  measurementUi: {
+    type: String,
+    enum: ['cards', 'atelier'],
+    default: 'cards'
+  },
   styleOptionsCatalog: {
     type: styleOptionsCatalogSchema,
     default: () => ({ groups: [] })
