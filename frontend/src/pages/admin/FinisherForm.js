@@ -29,12 +29,6 @@ const AdminFinisherForm = () => {
     fetchData();
   }, [userId, finisherId]);
 
-  const scopedConfig = {
-    headers: {
-      'x-login-as-user': userId
-    }
-  };
-
   const fetchData = async () => {
     try {
       setFetching(true);
@@ -42,7 +36,7 @@ const AdminFinisherForm = () => {
       setTargetUser(userResponse.data?.user || null);
 
       if (isEdit) {
-        const finisherResponse = await api.get(`/finisher/${finisherId}`, scopedConfig);
+        const finisherResponse = await api.get(`/admin/users/${userId}/finishers/${finisherId}`);
         const finisher = finisherResponse.data?.finisher;
         setFormData({
           name: finisher?.name || '',
@@ -66,10 +60,10 @@ const AdminFinisherForm = () => {
       const data = { ...formData };
       if (!data.password) delete data.password;
       if (isEdit) {
-        await api.put(`/finisher/${finisherId}`, data, scopedConfig);
+        await api.put(`/admin/users/${userId}/finishers/${finisherId}`, data);
         toast.success('Finisher updated');
       } else {
-        await api.post('/finisher', data, scopedConfig);
+        await api.post(`/admin/users/${userId}/finishers`, data);
         toast.success('Finisher created');
       }
       navigate(`/admin/users/${userId}/finishers`);

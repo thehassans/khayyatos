@@ -407,15 +407,28 @@ const PreviewGarment = ({ thawbType, thawbTypeLabel, selectedCollar, selectedPoc
 const DesignOptionsRow = ({ title, groupKey, options = [], value, onChange, disabled = false, palette, columns = 'grid-cols-2 sm:grid-cols-4' }) => {
   const { t } = useTranslation();
   if (!options.length) return null;
+  const selectedOption = options.find((option) => option.value === value);
 
   return (
     <div className={`rounded-[1.6rem] border ${palette.tile} p-4 shadow-sm`}>
       <div className="flex items-center justify-between gap-3">
         <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</div>
         <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
-          {options.find((option) => option.value === value)?.label || t('measurementWorkspace.notSelected', { defaultValue: 'Not selected' })}
+          {selectedOption?.label || t('measurementWorkspace.notSelected', { defaultValue: 'Not selected' })}
         </div>
       </div>
+      {selectedOption ? (
+        <div className={`mt-3 flex items-center gap-3 rounded-[1.15rem] border ${palette.selected} bg-white/70 dark:bg-slate-950/50 px-3 py-2`}>
+          <div className="shrink-0 h-16 w-16 flex items-center justify-center">
+            {selectedOption.imageSrc ? (
+              <img src={selectedOption.imageSrc} alt={selectedOption.label} className="h-16 w-16 object-contain" />
+            ) : (
+              <OptionArtwork groupKey={groupKey} optionKey={selectedOption.value} />
+            )}
+          </div>
+          <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{selectedOption.label}</div>
+        </div>
+      ) : null}
       <div className={`mt-4 grid ${columns} gap-3`}>
         {options.map((option) => {
           const isSelected = option.value === value;
@@ -427,9 +440,9 @@ const DesignOptionsRow = ({ title, groupKey, options = [], value, onChange, disa
               disabled={disabled}
               className={`rounded-[1.35rem] border p-3 text-center transition-all ${isSelected ? `${palette.selected} bg-white dark:bg-slate-950/70` : `${palette.tile} hover:border-slate-300 dark:hover:border-slate-600`} ${disabled ? 'cursor-not-allowed opacity-70' : ''}`}
             >
-              <div className="h-14 flex items-center justify-center text-slate-700 dark:text-slate-200">
+              <div className="h-20 flex items-center justify-center text-slate-700 dark:text-slate-200">
                 {option.imageSrc ? (
-                  <img src={option.imageSrc} alt={option.label} className="h-11 w-11 object-contain" />
+                  <img src={option.imageSrc} alt={option.label} className="h-16 w-16 object-contain" />
                 ) : (
                   <OptionArtwork groupKey={groupKey} optionKey={option.value} />
                 )}

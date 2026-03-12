@@ -25,18 +25,12 @@ const AdminFinishers = () => {
     fetchData();
   }, [userId]);
 
-  const scopedConfig = {
-    headers: {
-      'x-login-as-user': userId
-    }
-  };
-
   const fetchData = async () => {
     try {
       setLoading(true);
       const [userResponse, finishersResponse] = await Promise.all([
         api.get(`/admin/users/${userId}`),
-        api.get('/finisher', scopedConfig)
+        api.get(`/admin/users/${userId}/finishers`)
       ]);
       setTargetUser(userResponse.data?.user || null);
       setFinishers(finishersResponse.data?.finishers || []);
@@ -50,7 +44,7 @@ const AdminFinishers = () => {
 
   const handleLoginAsFinisher = async (finisherId) => {
     setLoginFinisherId(finisherId);
-    const result = await loginAsFinisher(finisherId, userId);
+    const result = await loginAsFinisher(finisherId, userId, true);
     setLoginFinisherId('');
     if (result?.success) {
       toast.success(t('finishers.loginAsFinisherSuccess', { defaultValue: 'Logged in as finisher' }));
@@ -65,7 +59,7 @@ const AdminFinishers = () => {
     if (!finisherId) return;
     setDeleteModal((prev) => ({ ...prev, loading: true }));
     try {
-      await api.delete(`/finisher/${finisherId}`, scopedConfig);
+      await api.delete(`/admin/users/${userId}/finishers/${finisherId}`);
       toast.success('Finisher deleted');
       setDeleteModal({ open: false, finisher: null, loading: false });
       fetchData();
