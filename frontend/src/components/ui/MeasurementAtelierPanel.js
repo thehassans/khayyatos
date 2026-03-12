@@ -17,6 +17,17 @@ const groupedKeys = {
   sleeve: ['sleeveLength', 'armhole', 'bicep', 'forearm', 'wrist', 'cuffWidth', 'neck', 'expansion']
 };
 
+const styleGroupOrder = ['collar', 'bain', 'cuff', 'pocket', 'buttons', 'embroidery'];
+
+const styleOptionOrder = {
+  collar: ['classic', 'round', 'mandarin', 'open'],
+  bain: ['hidden', 'visible', 'zip', 'half'],
+  cuff: ['single', 'double', 'round', 'angled'],
+  pocket: ['none', 'chest', 'side', 'both'],
+  buttons: ['classic', 'hidden', 'snap', 'premium'],
+  embroidery: ['none', 'name', 'logo', 'premium']
+};
+
 const toneMap = {
   slate: {
     shell: 'border-slate-300/70 dark:border-slate-700',
@@ -629,6 +640,31 @@ const MeasurementAtelierPanel = ({
 }) => {
   const { t } = useTranslation();
   const palette = toneMap[tone] || defaultTone;
+  const normalizedStyleGroups = useMemo(() => (
+    (styleGroups || [])
+      .map((group, groupIndex) => {
+        const groupKey = group?.key || styleGroupOrder[groupIndex];
+        if (!groupKey) return null;
+        const fallbackOptions = styleOptionOrder[groupKey] || [];
+        return {
+          ...group,
+          key: groupKey,
+          label: group?.label || group?.name || t(`styleOptions.${groupKey}`, { defaultValue: groupKey }),
+          options: (group?.options || [])
+            .map((option, optionIndex) => {
+              const optionValue = option?.value || option?.key || fallbackOptions[optionIndex];
+              if (!optionValue) return null;
+              return {
+                ...option,
+                value: optionValue,
+                label: option?.label || option?.name || t(`styleOptions.options.${groupKey}.${optionValue}`, { defaultValue: optionValue })
+              };
+            })
+            .filter(Boolean)
+        };
+      })
+      .filter(Boolean)
+  ), [styleGroups, t]);
 
   const orderedFields = useMemo(() => {
     const map = new Map((fields || []).map((field) => [field.key, field]));
@@ -651,14 +687,14 @@ const MeasurementAtelierPanel = ({
     return Math.round((filled / total) * 100);
   }, [fields, values]);
 
-  const collarGroup = styleGroups.find((group) => group.key === 'collar');
-  const pocketGroup = styleGroups.find((group) => group.key === 'pocket');
+  const collarGroup = normalizedStyleGroups.find((group) => group.key === 'collar');
+  const pocketGroup = normalizedStyleGroups.find((group) => group.key === 'pocket');
   const primaryStyleGroups = [collarGroup, pocketGroup].filter(Boolean);
-  const secondaryStyleGroups = (styleGroups || []).filter((group) => !['collar', 'pocket'].includes(group.key));
+  const secondaryStyleGroups = normalizedStyleGroups.filter((group) => !['collar', 'pocket'].includes(group.key));
   const selectedCollar = collarGroup?.options?.find((option) => option.value === styleValues?.collar)?.label || '';
   const selectedPocket = pocketGroup?.options?.find((option) => option.value === styleValues?.pocket)?.label || '';
   const selectedThawbTypeLabel = thawbTypes.find((option) => option.key === thawbType)?.label || formatTypeLabel(thawbType);
-  const selectedStyleItems = (styleGroups || [])
+  const selectedStyleItems = normalizedStyleGroups
     .map((group) => {
       const selectedValue = styleValues?.[group.key];
       const option = (group.options || []).find((item) => item.value === selectedValue);
@@ -844,10 +880,321 @@ const MeasurementAtelierPanel = ({
     );
   }
 
+  if (variant === 'board-minimal') {
+    return (
+      <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-black p-5 sm:p-6 shadow-[0_28px_80px_rgba(2,6,23,0.45)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.08),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(245,158,11,0.08),_transparent_24%)]" />
+        <div className="relative flex flex-col gap-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div className="min-w-0">
+              <BrandBlock logoSrc={logoSrc} businessName={businessName} businessPhone={businessPhone} />
+              <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-300">
+                <Sparkles className="w-3.5 h-3.5" />
+                Noir Atelier
+              </div>
+              <div className="mt-4 text-2xl font-semibold tracking-tight text-white">{title}</div>
+              {subtitle ? <div className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{subtitle}</div> : null}
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{t('common.date', { defaultValue: 'Date' })}</div>
+                <div className="mt-2 text-sm font-semibold text-white">{currentDate}</div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{t('measurementWorkspace.thawbType', { defaultValue: 'Thawb Type' })}</div>
+                <div className="mt-2 text-sm font-semibold text-white">{selectedThawbTypeLabel}</div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{t('measurementWorkspace.complete', { defaultValue: 'Complete' })}</div>
+                <div className="mt-2 text-sm font-semibold text-white">{completion}%</div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{t('measurementWorkspace.selectedStyle', { defaultValue: 'Selected Style' })}</div>
+                <div className="mt-2 text-sm font-semibold text-white">{selectedStyleItems.length || 0}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,340px)_minmax(0,1fr)_300px]">
+            <div className="rounded-[1.85rem] border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+              <div className="text-sm font-semibold text-white">{t('measurementWorkspace.fitMarkers', { defaultValue: 'Fit markers' })}</div>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                {(fields || []).map((field) => (
+                  <MeasurementCell
+                    key={`board-minimal-${field.key}`}
+                    field={field}
+                    value={values?.[field.key]}
+                    onChange={onChange}
+                    disabled={disabled}
+                    palette={palette}
+                    compact
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <div className="rounded-[1.95rem] border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+                <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} variant="board" />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-[1.7rem] border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <BadgeInfo className="w-4 h-4 text-slate-300" />
+                    {t('measurementWorkspace.selectedStyle', { defaultValue: 'Selected Style' })}
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {selectedStyleEntries.length ? selectedStyleEntries.slice(0, 5).map((entry) => (
+                      <div key={entry} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-100">
+                        {entry}
+                      </div>
+                    )) : (
+                      <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-slate-400">
+                        {t('measurementWorkspace.noStyleSelected', { defaultValue: 'No design options selected' })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="rounded-[1.7rem] border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <Ruler className="w-4 h-4 text-slate-300" />
+                    {t('measurementWorkspace.workspaceNote', { defaultValue: 'Workspace note' })}
+                  </div>
+                  <div className="mt-3 text-sm leading-6 text-slate-400">
+                    A darker, quieter board for premium orders with every control kept inside a single minimal workspace.
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {headerChips.map((badge) => (
+                      <div key={badge} className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>
+                        {badge}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <ThawbTypeSelector
+                options={thawbTypes}
+                value={thawbType}
+                onChange={onThawbTypeChange}
+                disabled={disabled || !showStyleControls}
+                vertical
+                palette={palette}
+              />
+              <SnapshotPanel items={snapshotItems} palette={palette} />
+              {showStyleControls ? (
+                <MaterialsPanel
+                  fabricOptions={fabricOptions}
+                  selectedFabricId={selectedFabricId}
+                  onFabricChange={onFabricChange}
+                  rollsUsed={rollsUsed}
+                  onRollsUsedChange={onRollsUsedChange}
+                  fabricColors={fabricColors}
+                  selectedFabricColor={selectedFabricColor}
+                  onFabricColorChange={onFabricColorChange}
+                  disabled={disabled}
+                  loading={materialsLoading}
+                  palette={palette}
+                />
+              ) : null}
+            </div>
+          </div>
+
+          {(primaryStyleGroups.length || secondaryStyleGroups.length) ? (
+            <div className="space-y-4">
+              {primaryStyleGroups.length ? (
+                <div className="grid gap-4 xl:grid-cols-2">
+                  {primaryStyleGroups.map((group) => (
+                    <DesignOptionsRow
+                      key={`primary-board-minimal-${group.key}`}
+                      title={group.label}
+                      groupKey={group.key}
+                      options={group.options || []}
+                      value={styleValues?.[group.key] || ''}
+                      onChange={onStyleChange}
+                      disabled={disabled || !showStyleControls}
+                      palette={palette}
+                    />
+                  ))}
+                </div>
+              ) : null}
+              {secondaryStyleGroups.length ? (
+                <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                  {secondaryStyleGroups.map((group) => (
+                    <DesignOptionsRow
+                      key={`secondary-board-minimal-${group.key}`}
+                      title={group.label}
+                      groupKey={group.key}
+                      options={group.options || []}
+                      value={styleValues?.[group.key] || ''}
+                      onChange={onStyleChange}
+                      disabled={disabled || !showStyleControls}
+                      palette={palette}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {loading ? <div className="text-sm text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div> : null}
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === 'sheet-minimal') {
+    return (
+      <div className="relative overflow-hidden rounded-[2rem] border border-violet-100/80 dark:border-violet-900/30 bg-gradient-to-br from-white via-violet-50/60 to-stone-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-5 sm:p-7 shadow-[0_24px_70px_rgba(76,29,149,0.12)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(139,92,246,0.1),_transparent_26%),radial-gradient(circle_at_bottom_right,_rgba(245,158,11,0.08),_transparent_22%)]" />
+        <div className="relative flex flex-col gap-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <BrandBlock logoSrc={logoSrc} businessName={businessName} businessPhone={businessPhone} />
+              <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-violet-200/70 dark:border-violet-800/40 bg-white/85 dark:bg-slate-900/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200 shadow-sm">
+                <Sparkles className="w-3.5 h-3.5" />
+                Monarch Minimal
+              </div>
+              <div className="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{title}</div>
+              {subtitle ? <div className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">{subtitle}</div> : null}
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-2xl border border-violet-100 dark:border-violet-900/30 bg-white/90 dark:bg-slate-900/70 px-4 py-3 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('common.date', { defaultValue: 'Date' })}</div>
+                <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{currentDate}</div>
+              </div>
+              <div className="rounded-2xl border border-violet-100 dark:border-violet-900/30 bg-white/90 dark:bg-slate-900/70 px-4 py-3 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.thawbType', { defaultValue: 'Thawb Type' })}</div>
+                <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{selectedThawbTypeLabel}</div>
+              </div>
+              <div className="rounded-2xl border border-violet-100 dark:border-violet-900/30 bg-white/90 dark:bg-slate-900/70 px-4 py-3 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.complete', { defaultValue: 'Complete' })}</div>
+                <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{completion}%</div>
+              </div>
+              <div className="rounded-2xl border border-violet-100 dark:border-violet-900/30 bg-white/90 dark:bg-slate-900/70 px-4 py-3 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.badges', { defaultValue: 'Badges' })}</div>
+                <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{headerChips.length}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_360px]">
+            <div className="rounded-[1.9rem] border border-violet-100 dark:border-violet-900/30 bg-white/85 dark:bg-slate-900/60 p-5 shadow-sm">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                {(fields || []).map((field) => (
+                  <MeasurementCell
+                    key={`sheet-minimal-${field.key}`}
+                    field={field}
+                    value={values?.[field.key]}
+                    onChange={onChange}
+                    disabled={disabled}
+                    palette={palette}
+                    compact
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-[1.9rem] border border-violet-100 dark:border-violet-900/30 bg-white/85 dark:bg-slate-900/60 p-5 shadow-sm">
+                <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} />
+              </div>
+              <ThawbTypeSelector
+                options={thawbTypes}
+                value={thawbType}
+                onChange={onThawbTypeChange}
+                disabled={disabled || !showStyleControls}
+                palette={palette}
+              />
+              <SnapshotPanel items={snapshotItems} palette={palette} />
+              <div className="rounded-[1.7rem] border border-violet-100 dark:border-violet-900/30 bg-white/85 dark:bg-slate-900/60 p-4 shadow-sm">
+                <div className="text-sm font-semibold text-slate-900 dark:text-white">{t('measurementWorkspace.sheetDetails', { defaultValue: 'Sheet details' })}</div>
+                <div className="mt-3 space-y-2">
+                  {selectedStyleEntries.length ? selectedStyleEntries.slice(0, 4).map((entry) => (
+                    <div key={entry} className="text-xs font-semibold text-slate-800 dark:text-slate-100">
+                      {entry}
+                    </div>
+                  )) : (
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      {t('measurementWorkspace.readyForTailoring', { defaultValue: 'Ready for tailoring' })}
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {headerChips.map((badge) => (
+                    <div key={badge} className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>
+                      {badge}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {(primaryStyleGroups.length || secondaryStyleGroups.length || showStyleControls) ? (
+            <div className="space-y-4">
+              {primaryStyleGroups.length ? (
+                <div className="grid gap-4 xl:grid-cols-2">
+                  {primaryStyleGroups.map((group) => (
+                    <DesignOptionsRow
+                      key={`primary-sheet-minimal-${group.key}`}
+                      title={group.label}
+                      groupKey={group.key}
+                      options={group.options || []}
+                      value={styleValues?.[group.key] || ''}
+                      onChange={onStyleChange}
+                      disabled={disabled || !showStyleControls}
+                      palette={palette}
+                    />
+                  ))}
+                </div>
+              ) : null}
+              {secondaryStyleGroups.length ? (
+                <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                  {secondaryStyleGroups.map((group) => (
+                    <DesignOptionsRow
+                      key={`secondary-sheet-minimal-${group.key}`}
+                      title={group.label}
+                      groupKey={group.key}
+                      options={group.options || []}
+                      value={styleValues?.[group.key] || ''}
+                      onChange={onStyleChange}
+                      disabled={disabled || !showStyleControls}
+                      palette={palette}
+                    />
+                  ))}
+                </div>
+              ) : null}
+              {showStyleControls ? (
+                <MaterialsPanel
+                  fabricOptions={fabricOptions}
+                  selectedFabricId={selectedFabricId}
+                  onFabricChange={onFabricChange}
+                  rollsUsed={rollsUsed}
+                  onRollsUsedChange={onRollsUsedChange}
+                  fabricColors={fabricColors}
+                  selectedFabricColor={selectedFabricColor}
+                  onFabricColorChange={onFabricColorChange}
+                  disabled={disabled}
+                  loading={materialsLoading}
+                  palette={palette}
+                />
+              ) : null}
+            </div>
+          ) : null}
+
+          {loading ? <div className="text-sm text-slate-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div> : null}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`relative overflow-hidden rounded-[2rem] border ${palette.shell} bg-gradient-to-br from-[#f7f1e8] via-stone-50 to-white dark:from-slate-900 dark:via-slate-900/95 dark:to-slate-800 p-5 sm:p-6 shadow-[0_22px_60px_rgba(15,23,42,0.12)]`}>
       <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div>
           <div>
             <BrandBlock logoSrc={logoSrc} businessName={businessName} businessPhone={businessPhone} />
             <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/88 dark:bg-slate-900/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300 shadow-sm">
@@ -856,25 +1203,6 @@ const MeasurementAtelierPanel = ({
             </div>
             <div className="mt-3 text-xl font-bold text-slate-900 dark:text-slate-100">{title}</div>
             {subtitle ? <div className={`mt-1 max-w-2xl text-sm leading-6 ${palette.muted}`}>{subtitle}</div> : null}
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="rounded-2xl bg-white/88 dark:bg-slate-900/80 px-4 py-3 shadow-sm">
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('common.date', { defaultValue: 'Date' })}</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{currentDate}</div>
-            </div>
-            <div className="rounded-2xl bg-white/88 dark:bg-slate-900/80 px-4 py-3 shadow-sm">
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.thawbType', { defaultValue: 'Thawb Type' })}</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{selectedThawbTypeLabel}</div>
-            </div>
-            <div className="rounded-2xl bg-white/88 dark:bg-slate-900/80 px-4 py-3 shadow-sm">
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.complete', { defaultValue: 'Complete' })}</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{completion}%</div>
-            </div>
-            <div className="rounded-2xl bg-white/88 dark:bg-slate-900/80 px-4 py-3 shadow-sm">
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.badges', { defaultValue: 'Badges' })}</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{headerChips.length}</div>
-            </div>
           </div>
         </div>
 
@@ -960,6 +1288,24 @@ const MeasurementAtelierPanel = ({
                 palette={palette}
               />
             ) : null}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-2xl bg-white/88 dark:bg-slate-900/80 px-4 py-3 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('common.date', { defaultValue: 'Date' })}</div>
+                <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{currentDate}</div>
+              </div>
+              <div className="rounded-2xl bg-white/88 dark:bg-slate-900/80 px-4 py-3 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.thawbType', { defaultValue: 'Thawb Type' })}</div>
+                <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{selectedThawbTypeLabel}</div>
+              </div>
+              <div className="rounded-2xl bg-white/88 dark:bg-slate-900/80 px-4 py-3 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.complete', { defaultValue: 'Complete' })}</div>
+                <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{completion}%</div>
+              </div>
+              <div className="rounded-2xl bg-white/88 dark:bg-slate-900/80 px-4 py-3 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.badges', { defaultValue: 'Badges' })}</div>
+                <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{headerChips.length}</div>
+              </div>
+            </div>
             <div className={`rounded-[1.6rem] border ${palette.tile} p-4 shadow-sm`}>
               <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('measurementWorkspace.sheetDetails', { defaultValue: 'Sheet details' })}</div>
               {selectedStyleEntries.length ? (

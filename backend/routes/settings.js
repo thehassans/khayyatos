@@ -336,10 +336,11 @@ router.get('/', async (req, res) => {
 router.put('/preferences', async (req, res) => {
   try {
     const { language, onboardingCompleted, onboardingStep, theme, measurementUi } = req.body || {};
+    const allowedMeasurementUis = ['cards', 'atelier', 'monarch', 'noir'];
 
     if (language) req.user.language = language;
     if (theme) req.user.theme = theme;
-    if (measurementUi && ['cards', 'atelier'].includes(measurementUi)) req.user.measurementUi = measurementUi;
+    if (measurementUi && allowedMeasurementUis.includes(measurementUi)) req.user.measurementUi = measurementUi;
 
     if (onboardingCompleted !== undefined) {
       req.user.onboardingCompleted = !!onboardingCompleted;
@@ -913,6 +914,7 @@ router.delete('/style-options/option', async (req, res) => {
 router.put('/', upload.single('logo'), async (req, res) => {
   try {
     const { language, businessName, theme, measurementUi } = req.body;
+    const allowedMeasurementUis = ['cards', 'atelier', 'monarch', 'noir'];
     
     if (language) req.user.language = language;
     if (businessName) {
@@ -935,7 +937,7 @@ router.put('/', upload.single('logo'), async (req, res) => {
       }
     }
     if (theme) req.user.theme = theme;
-    if (measurementUi && ['cards', 'atelier'].includes(measurementUi)) req.user.measurementUi = measurementUi;
+    if (measurementUi && allowedMeasurementUis.includes(measurementUi)) req.user.measurementUi = measurementUi;
     if (req.file) req.user.logo = `/uploads/${req.file.filename}`;
     
     await req.user.save();

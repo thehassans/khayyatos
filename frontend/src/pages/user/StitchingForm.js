@@ -1405,19 +1405,29 @@ const StitchingForm = () => {
     .filter((group) => group && group.enabled !== false)
     .slice()
     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-    .map((group) => ({
-      key: group.key,
-      label: group.nameI18n?.[langKey] || t(`styleOptions.${group.key}`, { defaultValue: group.name || group.key }),
-      options: (group.options || [])
-        .filter((option) => option && option.enabled !== false)
-        .slice()
-        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-        .map((option) => ({
-          value: option.key,
-          label: option.nameI18n?.[langKey] || t(`styleOptions.options.${group.key}.${option.key}`, { defaultValue: option.name || option.key }),
-          imageSrc: option.image ? `${resolveUploadsUrl(option.image)}${option.imageUpdatedAt ? `?v=${option.imageUpdatedAt}` : ''}` : undefined
-        }))
-    }));
+    .map((group, groupIdx) => {
+      const fallbackGroup = fallbackStyleGroups[groupIdx] || {};
+      const groupKey = group.key || fallbackGroup.key;
+      return {
+        key: groupKey,
+        label: group.nameI18n?.[langKey] || t(`styleOptions.${groupKey}`, { defaultValue: group.name || groupKey }),
+        options: (group.options || [])
+          .filter((option) => option && option.enabled !== false)
+          .slice()
+          .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+          .map((option, optionIdx) => {
+            const fallbackOptionKey = fallbackGroup.options?.[optionIdx]?.key;
+            const optionKey = option.key || fallbackOptionKey;
+            return {
+              value: optionKey,
+              label: option.nameI18n?.[langKey] || t(`styleOptions.options.${groupKey}.${optionKey}`, { defaultValue: option.name || optionKey }),
+              imageSrc: option.image ? `${resolveUploadsUrl(option.image)}${option.imageUpdatedAt ? `?v=${option.imageUpdatedAt}` : ''}` : undefined
+            };
+          })
+          .filter((option) => option.value)
+      };
+    })
+    .filter((group) => group.key);
 
   const workspaceStyleGroups = styleGroups;
   const advancedStyleGroups = [];
@@ -1457,7 +1467,13 @@ const StitchingForm = () => {
   const batchTotalPrice = batchItemsPrice;
   const batchTotalPaid = totalPaidOverride === null ? 0 : totalPaidOverride;
   const measurementUi = user?.measurementUi || 'cards';
-  const measurementVariant = measurementUi === 'atelier' ? 'board' : 'sheet';
+  const measurementVariantMap = {
+    cards: 'sheet',
+    atelier: 'board',
+    monarch: 'sheet-minimal',
+    noir: 'board-minimal'
+  };
+  const measurementVariant = measurementVariantMap[measurementUi] || 'sheet';
   const measurementLogoSrc = user?.logo ? resolveUploadsUrl(user.logo) : null;
 
   const renderMeasurementInputs = ({ title, subtitle, values, onChange, disabled = false, loading = false, badges = [], tone = 'slate', showDesignControls = false }) => (
@@ -1645,38 +1661,6 @@ const StitchingForm = () => {
               </div>
             </div>
 
-            {selectedEmbroideryDesign ? (
-              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('embroideryDesigns.title', { defaultValue: 'Embroidery Designs' })}</h3>
-                    <p className="text-sm text-gray-500 dark:text-slate-400">{t('embroideryDesigns.preview', { defaultValue: 'Preview' })}</p>
-                  </div>
-                  <Button variant="outline" onClick={() => navigate('/user/embroidery-designs')}>
-                    {t('embroideryDesigns.title', { defaultValue: 'Embroidery Designs' })}
-                  </Button>
-                </div>
-
-                <div className="flex items-center gap-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 p-4">
-                  <div className="w-20 h-20 rounded-2xl overflow-hidden border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
-                    {selectedEmbroideryDesign?.image ? (
-                      <img
-                        src={`${resolveUploadsUrl(selectedEmbroideryDesign.image)}${selectedEmbroideryDesign.imageUpdatedAt ? `?v=${selectedEmbroideryDesign.imageUpdatedAt}` : ''}`}
-                        alt={selectedEmbroideryDesign?.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-gray-300 dark:text-slate-600" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{selectedEmbroideryDesign?.name || '—'}</div>
-                    <div className="text-xs text-gray-500 dark:text-slate-400 truncate">{t('embroideryDesigns.designName', { defaultValue: 'Design Name' })}</div>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
             {advancedStyleGroups.length > 0 ? (
              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-gray-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
               <button
@@ -1716,160 +1700,6 @@ const StitchingForm = () => {
                 </div>
               ) : null}
             </div>
-            ) : null}
-
-            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-5">
-              {/* Fabric (Roll) Selector (Optional) */}
-              <div className="flex items-center justify-between mb-4">
-                <label className="block text-sm font-semibold text-gray-800 dark:text-slate-100">
-                  Fabric / القماش
-                </label>
-                <span className="text-xs text-gray-400 dark:text-slate-500">(Optional)</span>
-              </div>
-              {fabricsLoading ? (
-                <div className="text-sm text-gray-500 dark:text-slate-400 mb-4">Loading…</div>
-              ) : null}
-              <Select
-                value={formData.fabricId}
-                onChange={(e) => setFormData((p) => ({ ...p, fabricId: e.target.value }))}
-                options={[
-                  { value: '', label: 'Not specified' },
-                  ...(Array.isArray(fabrics) ? fabrics : []).map((f) => {
-                    const stock = Number(f?.rollsInStock) || 0;
-                    const label = `${f?.name || '—'} · Stock: ${stock}`;
-                    return { value: f._id, label };
-                  })
-                ]}
-                className="rounded-2xl bg-white/70 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700"
-              />
-
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Rolls Used / رول مستخدم</label>
-
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {['0.25', '0.50', '0.75', '1'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setFormData((p) => ({ ...p, rollsUsed: preset }))}
-                        className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors ${
-                          String(formData.rollsUsed || '') === preset
-                            ? 'bg-primary-600 border-primary-600 text-white'
-                            : 'bg-white/70 dark:bg-slate-900/40 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 hover:bg-white'
-                        }`}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
-
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.rollsUsed}
-                    onChange={(e) => setFormData((p) => ({ ...p, rollsUsed: e.target.value }))}
-                    placeholder="0"
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-                <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/60 dark:bg-slate-900/30 p-4">
-                  <div className="text-xs text-gray-500 dark:text-slate-400">Tip</div>
-                  <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-slate-100">Stock auto-updates</div>
-                  <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">On create/update/delete, fabric stock will be adjusted automatically.</div>
-                </div>
-              </div>
-
-              {/* Fabric Color Selector (Optional) */}
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <label className="block text-sm font-semibold text-gray-800 dark:text-slate-100">
-                    Fabric Color / لون القماش
-                  </label>
-                  <span className="text-xs text-gray-400 dark:text-slate-500">(Optional)</span>
-                </div>
-                {fabricColorsCatalogLoading && (
-                  <div className="text-sm text-gray-500 dark:text-slate-400 mb-4">Loading…</div>
-                )}
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, fabricColor: '' })}
-                    className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                      !formData.fabricColor
-                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                        : 'border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:border-gray-300'
-                    }`}
-                  >
-                    Not specified
-                  </button>
-                  {fabricColors.map((color) => {
-                    const isSelected = formData.fabricColor === color.key;
-                    return (
-                      <button
-                        key={color.key}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, fabricColor: color.key })}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
-                          isSelected
-                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 ring-1 ring-primary-500'
-                            : 'border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
-                        }`}
-                      >
-                        <span
-                          className="w-5 h-5 rounded-full border border-gray-300 dark:border-slate-500"
-                          style={{ backgroundColor: color.hex }}
-                        />
-                        <span className={`text-sm font-medium ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-slate-200'}`}>
-                          {color.name}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Price and Quantity */}
-            {!batchMode ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">{t('stitchings.quantity')}</label>
-                  <input
-                    type="number"
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
-                    min="1"
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2 flex items-center gap-1">{t('stitchings.price')} <SARIcon className="w-4 h-4" /></label>
-                  <input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    min="0"
-                    step="0.01"
-                    placeholder="0"
-                    className="no-spinner w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2 flex items-center gap-1">{t('stitchings.paidAmount')} <SARIcon className="w-4 h-4" /></label>
-                  <input
-                    type="number"
-                    value={formData.paidAmount}
-                    onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
-                    min="0"
-                    step="0.01"
-                    placeholder="0"
-                    className="no-spinner w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
             ) : null}
 
             {/* Measurements - Premium Visual UI */}
@@ -1957,6 +1787,78 @@ const StitchingForm = () => {
                     ) : null}
                   </div>
                 ) : null}
+              </div>
+            ) : null}
+
+            {selectedEmbroideryDesign ? (
+              <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-900/50 p-6">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('embroideryDesigns.title', { defaultValue: 'Embroidery Designs' })}</h3>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">{t('embroideryDesigns.preview', { defaultValue: 'Preview' })}</p>
+                  </div>
+                  <Button variant="outline" onClick={() => navigate('/user/embroidery-designs')}>
+                    {t('embroideryDesigns.title', { defaultValue: 'Embroidery Designs' })}
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-4 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 p-4">
+                  <div className="w-20 h-20 rounded-2xl overflow-hidden border border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
+                    {selectedEmbroideryDesign?.image ? (
+                      <img
+                        src={`${resolveUploadsUrl(selectedEmbroideryDesign.image)}${selectedEmbroideryDesign.imageUpdatedAt ? `?v=${selectedEmbroideryDesign.imageUpdatedAt}` : ''}`}
+                        alt={selectedEmbroideryDesign?.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-gray-300 dark:text-slate-600" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{selectedEmbroideryDesign?.name || '—'}</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400 truncate">{t('embroideryDesigns.designName', { defaultValue: 'Design Name' })}</div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {!batchMode ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">{t('stitchings.quantity')}</label>
+                  <input
+                    type="number"
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
+                    min="1"
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2 flex items-center gap-1">{t('stitchings.price')} <SARIcon className="w-4 h-4" /></label>
+                  <input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    min="0"
+                    step="0.01"
+                    placeholder="0"
+                    className="no-spinner w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2 flex items-center gap-1">{t('stitchings.paidAmount')} <SARIcon className="w-4 h-4" /></label>
+                  <input
+                    type="number"
+                    value={formData.paidAmount}
+                    onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
+                    min="0"
+                    step="0.01"
+                    placeholder="0"
+                    className="no-spinner w-full px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
               </div>
             ) : null}
 

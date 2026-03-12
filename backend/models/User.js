@@ -157,7 +157,7 @@ const userSchema = new mongoose.Schema({
   },
   measurementUi: {
     type: String,
-    enum: ['cards', 'atelier'],
+    enum: ['cards', 'atelier', 'monarch', 'noir'],
     default: 'cards'
   },
   styleOptionsCatalog: {

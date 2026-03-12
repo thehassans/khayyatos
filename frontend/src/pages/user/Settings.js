@@ -78,6 +78,132 @@ const Settings = () => {
     { code: 'bn', label: 'বাংলা', flag: '🇧🇩' }
   ];
 
+  const measurementUiOptions = [
+    {
+      value: 'cards',
+      title: 'Tailor Sheet',
+      description: 'Balanced sheet layout with the logo header, measurement table, thawb preview, and integrated style controls.',
+      badge: 'Image 1',
+      activeClasses: 'border-gray-900 dark:border-white ring-2 ring-gray-900/10 dark:ring-white/10 bg-white dark:bg-slate-900 shadow-lg',
+      inactiveClasses: 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 hover:border-gray-300 dark:hover:border-slate-600',
+      badgeActiveClasses: 'bg-gray-900 text-white dark:bg-white dark:text-gray-900',
+      badgeInactiveClasses: 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-300',
+      preview: (
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="col-span-2 rounded-2xl border border-gray-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-950/40 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700" />
+              <div className="grid grid-cols-3 gap-2 flex-1">
+                {[0, 1, 2].map((idx) => (
+                  <div key={idx} className="h-8 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/70" />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/70 p-3">
+            <div className="h-20 rounded-xl border border-dashed border-gray-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-950/40" />
+          </div>
+          <div className="space-y-2">
+            {[0, 1].map((idx) => (
+              <div key={idx} className="h-[54px] rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/70" />
+            ))}
+          </div>
+        </div>
+      )
+    },
+    {
+      value: 'atelier',
+      title: 'Order Board',
+      description: 'Board-style workspace with the top measurement strip, central garment board, and right detail rail.',
+      badge: 'Image 2',
+      activeClasses: 'border-amber-500 dark:border-amber-400 ring-2 ring-amber-400/20 bg-white dark:bg-slate-900 shadow-lg',
+      inactiveClasses: 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 hover:border-amber-300 dark:hover:border-amber-700/60',
+      badgeActiveClasses: 'bg-amber-500 text-white',
+      badgeInactiveClasses: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200',
+      preview: (
+        <div className="mt-4 grid grid-cols-[1fr_120px_1fr] gap-3 items-stretch">
+          <div className="space-y-2">
+            {[0, 1, 2, 3].map((idx) => (
+              <div key={idx} className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/90 dark:bg-slate-950/60 px-3 py-3">
+                <div className="h-2.5 w-16 rounded-full bg-gray-200 dark:bg-slate-700" />
+                <div className="mt-3 h-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-900" />
+              </div>
+            ))}
+          </div>
+          <div className="rounded-[1.75rem] border border-gray-200 dark:border-slate-700 bg-gradient-to-b from-white to-stone-100 dark:from-slate-800 dark:to-slate-900" />
+          <div className="space-y-2">
+            {[0, 1, 2, 3].map((idx) => (
+              <div key={idx} className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/90 dark:bg-slate-950/60 px-3 py-3">
+                <div className="h-2.5 w-20 rounded-full bg-gray-200 dark:bg-slate-700" />
+                <div className="mt-3 h-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-900" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    },
+    {
+      value: 'monarch',
+      title: 'Monarch Minimal',
+      description: 'Ultra-premium minimalist sheet with large whitespace, restrained details, and a luxury editorial feel.',
+      badge: 'Ultra',
+      activeClasses: 'border-violet-500 dark:border-violet-400 ring-2 ring-violet-400/20 bg-white dark:bg-slate-900 shadow-lg',
+      inactiveClasses: 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 hover:border-violet-300 dark:hover:border-violet-700/60',
+      badgeActiveClasses: 'bg-violet-500 text-white',
+      badgeInactiveClasses: 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-200',
+      preview: (
+        <div className="mt-4 rounded-[1.9rem] border border-violet-100 dark:border-violet-900/30 bg-gradient-to-br from-white via-violet-50/70 to-stone-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="h-10 w-10 rounded-full border border-violet-200/70 dark:border-violet-800/40 bg-white/90 dark:bg-slate-900/70" />
+            <div className="h-2.5 w-24 rounded-full bg-violet-100 dark:bg-violet-900/30" />
+          </div>
+          <div className="mt-4 grid grid-cols-[1.15fr_0.85fr] gap-4">
+            <div className="grid grid-cols-2 gap-2">
+              {[0, 1, 2, 3].map((idx) => (
+                <div key={idx} className="h-16 rounded-2xl border border-violet-100 dark:border-violet-900/30 bg-white/85 dark:bg-slate-900/60" />
+              ))}
+            </div>
+            <div className="rounded-[1.75rem] border border-violet-100 dark:border-violet-900/30 bg-gradient-to-b from-white to-violet-50 dark:from-slate-900 dark:to-slate-950" />
+          </div>
+        </div>
+      )
+    },
+    {
+      value: 'noir',
+      title: 'Noir Atelier',
+      description: 'Ultra-premium dark workspace with a restrained luxury board, glass panels, and minimal visual noise.',
+      badge: 'Noir',
+      activeClasses: 'border-slate-900 dark:border-white ring-2 ring-slate-900/10 dark:ring-white/10 bg-slate-950 text-white shadow-lg',
+      inactiveClasses: 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 hover:border-slate-400 dark:hover:border-slate-500',
+      badgeActiveClasses: 'bg-white text-slate-950',
+      badgeInactiveClasses: 'bg-slate-900 text-slate-100 dark:bg-slate-800 dark:text-slate-200',
+      preview: (
+        <div className="mt-4 rounded-[1.9rem] border border-slate-800 dark:border-slate-700 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4">
+          <div className="grid grid-cols-[0.8fr_1.2fr] gap-4 items-stretch">
+            <div className="space-y-2">
+              {[0, 1, 2].map((idx) => (
+                <div key={idx} className="rounded-2xl border border-slate-800 dark:border-slate-700 bg-white/5 px-3 py-3">
+                  <div className="h-2.5 w-12 rounded-full bg-slate-700" />
+                  <div className="mt-3 h-10 rounded-xl border border-slate-800 dark:border-slate-700 bg-white/5" />
+                </div>
+              ))}
+            </div>
+            <div className="space-y-3">
+              <div className="h-24 rounded-[1.75rem] border border-slate-800 dark:border-slate-700 bg-white/5" />
+              <div className="grid grid-cols-2 gap-3">
+                {[0, 1].map((idx) => (
+                  <div key={idx} className="h-20 rounded-2xl border border-slate-800 dark:border-slate-700 bg-white/5" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+  ];
+
+  const activeMeasurementUiLabel = measurementUiOptions.find((option) => option.value === settings.measurementUi)?.title || 'Tailor Sheet';
+
   const sections = [
     { id: 'general', label: t('settings.sections.general', { defaultValue: 'General' }), icon: SettingsIcon },
     { id: 'styleOptions', label: t('settings.sections.styleOptions', { defaultValue: 'Style Options' }), icon: FileText },
@@ -835,80 +961,34 @@ const Settings = () => {
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div>
                         <div className="text-sm font-semibold text-gray-900 dark:text-white">Measurement UI</div>
-                        <div className="mt-1 text-sm text-gray-500 dark:text-slate-400">Choose between the two image-inspired measurement workspaces. Both modes save the same measurements, thawb type, collar, and pocket selections.</div>
+                        <div className="mt-1 text-sm text-gray-500 dark:text-slate-400">Choose between four premium measurement workspaces. All modes save the same measurements, thawb type, and style selections.</div>
                       </div>
                       <div className="inline-flex items-center rounded-full bg-gray-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-gray-600 dark:text-slate-300">
-                        Active: {settings.measurementUi === 'atelier' ? 'Order Board' : 'Tailor Sheet'}
+                        Active: {activeMeasurementUiLabel}
                       </div>
                     </div>
 
                     <div className="mt-5 grid grid-cols-1 xl:grid-cols-2 gap-4">
-                      <button
-                        type="button"
-                        onClick={() => setSettings((prev) => ({ ...prev, measurementUi: 'cards' }))}
-                        className={`rounded-[1.75rem] border p-4 text-left transition-all ${settings.measurementUi === 'cards' ? 'border-gray-900 dark:border-white ring-2 ring-gray-900/10 dark:ring-white/10 bg-white dark:bg-slate-900 shadow-lg' : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 hover:border-gray-300 dark:hover:border-slate-600'}`}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <div className="text-sm font-semibold text-gray-900 dark:text-white">Tailor Sheet</div>
-                            <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">Inspired by your first image with the logo header, measurement table, thawb preview, and collar/pocket choices inside the sheet.</div>
-                          </div>
-                          <div className={`rounded-full px-3 py-1 text-[11px] font-bold ${settings.measurementUi === 'cards' ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-300'}`}>Image 1</div>
-                        </div>
-                        <div className="mt-4 grid grid-cols-2 gap-3">
-                          <div className="col-span-2 rounded-2xl border border-gray-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-950/40 p-3">
+                      {measurementUiOptions.map((option) => {
+                        const isActive = settings.measurementUi === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setSettings((prev) => ({ ...prev, measurementUi: option.value }))}
+                            className={`rounded-[1.75rem] border p-4 text-left transition-all ${isActive ? option.activeClasses : option.inactiveClasses}`}
+                          >
                             <div className="flex items-center justify-between gap-3">
-                              <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700" />
-                              <div className="grid grid-cols-3 gap-2 flex-1">
-                                {[0, 1, 2].map((idx) => (
-                                  <div key={idx} className="h-8 rounded-lg border border-gray-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/70" />
-                                ))}
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900 dark:text-white">{option.title}</div>
+                                <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">{option.description}</div>
                               </div>
+                              <div className={`rounded-full px-3 py-1 text-[11px] font-bold ${isActive ? option.badgeActiveClasses : option.badgeInactiveClasses}`}>{option.badge}</div>
                             </div>
-                          </div>
-                          <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/70 p-3">
-                            <div className="h-20 rounded-xl border border-dashed border-gray-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-950/40" />
-                          </div>
-                          <div className="space-y-2">
-                            {[0, 1].map((idx) => (
-                              <div key={idx} className="h-[54px] rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/70" />
-                            ))}
-                          </div>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setSettings((prev) => ({ ...prev, measurementUi: 'atelier' }))}
-                        className={`rounded-[1.75rem] border p-4 text-left transition-all ${settings.measurementUi === 'atelier' ? 'border-amber-500 dark:border-amber-400 ring-2 ring-amber-400/20 bg-white dark:bg-slate-900 shadow-lg' : 'border-gray-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/30 hover:border-amber-300 dark:hover:border-amber-700/60'}`}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <div className="text-sm font-semibold text-gray-900 dark:text-white">Order Board</div>
-                            <div className="mt-1 text-xs text-gray-500 dark:text-slate-400">Inspired by your second image with the top measurement strip, central garment board, right detail rail, and in-workspace design pickers.</div>
-                          </div>
-                          <div className={`rounded-full px-3 py-1 text-[11px] font-bold ${settings.measurementUi === 'atelier' ? 'bg-amber-500 text-white' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200'}`}>Image 2</div>
-                        </div>
-                        <div className="mt-4 grid grid-cols-[1fr_120px_1fr] gap-3 items-stretch">
-                          <div className="space-y-2">
-                            {[0, 1, 2, 3].map((idx) => (
-                              <div key={idx} className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/90 dark:bg-slate-950/60 px-3 py-3">
-                                <div className="h-2.5 w-16 rounded-full bg-gray-200 dark:bg-slate-700" />
-                                <div className="mt-3 h-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-900" />
-                              </div>
-                            ))}
-                          </div>
-                          <div className="rounded-[1.75rem] border border-gray-200 dark:border-slate-700 bg-gradient-to-b from-white to-stone-100 dark:from-slate-800 dark:to-slate-900" />
-                          <div className="space-y-2">
-                            {[0, 1, 2, 3].map((idx) => (
-                              <div key={idx} className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white/90 dark:bg-slate-950/60 px-3 py-3">
-                                <div className="h-2.5 w-20 rounded-full bg-gray-200 dark:bg-slate-700" />
-                                <div className="mt-3 h-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-900" />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </button>
+                            {option.preview}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
