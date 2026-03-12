@@ -14,6 +14,7 @@ const Worker = require('../models/Worker');
 const Customer = require('../models/Customer');
 const Stitching = require('../models/Stitching');
 const Payment = require('../models/Payment');
+const SystemSettings = require('../models/SystemSettings');
 const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 const { verifyToken, isUser } = require('../middleware/auth');
 const upload = require('../middleware/upload');
@@ -267,6 +268,34 @@ const moveFile = (from, to) => {
     fs.copyFileSync(from, to);
     safeUnlink(from);
   }
+};
+
+const getSystemStyleOptionImagesMap = async () => {
+  const doc = await SystemSettings.findOne({}).lean();
+  const items = Array.isArray(doc?.styleOptionImages) ? doc.styleOptionImages : [];
+  return new Map(
+    items
+      .filter((item) => item?.groupKey && item?.optionKey && item?.image)
+      .map((item) => [`${item.groupKey}:${item.optionKey}`, item])
+  );
+};
+
+const applySystemStyleImagesToCatalog = async (catalog) => {
+  const imageMap = await getSystemStyleOptionImagesMap();
+  const groups = (catalog?.groups || []).map((group) => ({
+    ...group,
+    options: (group.options || []).map((option) => {
+      if (option?.image) return option;
+      const systemImage = imageMap.get(`${group.key}:${option.key}`);
+      if (!systemImage) return option;
+      return {
+        ...option,
+        image: systemImage.image,
+        imageUpdatedAt: systemImage.imageUpdatedAt || null
+      };
+    })
+  }));
+  return { groups };
 };
 
 const isWebpUpload = (file) => {
@@ -651,7 +680,8 @@ router.put('/fabric-colors-catalog', async (req, res) => {
 router.get('/style-options', async (req, res) => {
   try {
     const catalog = await ensureUserStyleOptionsCatalog(req.user);
-    res.json({ catalog });
+    const mergedCatalog = await applySystemStyleImagesToCatalog(catalog);
+    res.json({ catalog: mergedCatalog });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }

@@ -1344,7 +1344,7 @@ const StitchingForm = () => {
         .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
         .map((f) => ({
           key: f.key,
-          label: f.nameI18n?.[langKey] || f.name || t(`measurements.${f.key}`, { defaultValue: f.key }),
+          label: f.nameI18n?.[langKey] || t(`measurements.${f.key}`, { defaultValue: f.name || f.key }),
           image: f.image,
           imageUpdatedAt: f.imageUpdatedAt
         }))
@@ -1383,7 +1383,7 @@ const StitchingForm = () => {
     : fallbackThawbTypes;
 
   const thawbTypeChoices = thawbTypes.map((thawb) => {
-    const label = thawb.name || t(`thawbTypes.${thawb.key}`, { defaultValue: thawb.fallbackLabel || thawb.key });
+    const label = thawb.nameI18n?.[langKey] || t(`thawbTypes.${thawb.key}`, { defaultValue: thawb.name || thawb.fallbackLabel || thawb.key });
     return {
       key: thawb.key,
       label,
@@ -1407,14 +1407,14 @@ const StitchingForm = () => {
     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
     .map((group) => ({
       key: group.key,
-      label: group.nameI18n?.[langKey] || group.name || t(`styleOptions.${group.key}`, { defaultValue: group.key }),
+      label: group.nameI18n?.[langKey] || t(`styleOptions.${group.key}`, { defaultValue: group.name || group.key }),
       options: (group.options || [])
         .filter((option) => option && option.enabled !== false)
         .slice()
         .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
         .map((option) => ({
           value: option.key,
-          label: option.nameI18n?.[langKey] || option.name || t(`styleOptions.options.${group.key}.${option.key}`, { defaultValue: option.key }),
+          label: option.nameI18n?.[langKey] || t(`styleOptions.options.${group.key}.${option.key}`, { defaultValue: option.name || option.key }),
           imageSrc: option.image ? `${resolveUploadsUrl(option.image)}${option.imageUpdatedAt ? `?v=${option.imageUpdatedAt}` : ''}` : undefined
         }))
     }));
@@ -1440,9 +1440,10 @@ const StitchingForm = () => {
         .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
         .map((c) => {
           const fallback = fallbackFabricColors.find((x) => x.key === c.key);
+          const fallbackName = langKey === 'ar' ? (fallback?.nameAr || fallback?.name) : fallback?.name;
           return {
             key: c.key,
-            name: c.nameI18n?.[langKey] || c.name || fallback?.name || c.key,
+            name: c.nameI18n?.[langKey] || c.name || fallbackName || c.key,
             nameAr: fallback?.nameAr || '',
             hex: c.hex || fallback?.hex || '#e5e7eb'
           };

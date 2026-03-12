@@ -10,7 +10,8 @@ import {
   X,
   Scissors,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  Settings
 } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -28,7 +29,8 @@ const AdminLayout = () => {
   const navItems = [
     { to: '/admin/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
     { to: '/admin/users', icon: Users, label: t('nav.users') },
-    { to: '/admin/gemini', icon: Sparkles, label: t('nav.gemini', { defaultValue: 'Gemini AI' }) }
+    { to: '/admin/gemini', icon: Sparkles, label: t('nav.gemini', { defaultValue: 'Gemini AI' }) },
+    { to: '/admin/settings', icon: Settings, label: t('nav.settings', { defaultValue: 'Settings' }) }
   ];
 
   const languages = [

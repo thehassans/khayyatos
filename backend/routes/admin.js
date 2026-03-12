@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
+const path = require('path');
 const User = require('../models/User');
 const Worker = require('../models/Worker');
 const Customer = require('../models/Customer');
@@ -10,8 +12,82 @@ const { generateToken } = require('../middleware/auth');
 const { calculateEndDate } = require('../utils/subscriptionChecker');
 const upload = require('../middleware/upload');
 const { translateMany, buildFallbackI18n, getGeminiConfig, invalidateGeminiConfigCache } = require('../utils/geminiTranslate');
+let sharp = null;
+try {
+  sharp = require('sharp');
+} catch (e) {
+  sharp = null;
+}
 
 router.use(verifyToken, isAdmin);
+
+const uploadsBaseDir = path.join(__dirname, '..', 'uploads');
+const STYLE_OPTION_GROUPS = [
+  { key: 'collar', options: ['classic', 'round', 'mandarin', 'open'] },
+  { key: 'bain', options: ['hidden', 'visible', 'zip', 'half'] },
+  { key: 'cuff', options: ['single', 'double', 'round', 'angled'] },
+  { key: 'pocket', options: ['none', 'chest', 'side', 'both'] },
+  { key: 'buttons', options: ['classic', 'hidden', 'snap', 'premium'] },
+  { key: 'embroidery', options: ['none', 'name', 'logo', 'premium'] }
+];
+
+const sanitizeKey = (value) => {
+  if (!value) return '';
+  return String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9_-]/g, '');
+};
+
+const ensureDir = (dirPath) => {
+  fs.mkdirSync(dirPath, { recursive: true });
+};
+
+const safeUnlink = (absPath) => {
+  try {
+    if (fs.existsSync(absPath)) fs.unlinkSync(absPath);
+  } catch (e) {
+    null;
+  }
+};
+
+const moveFile = (from, to) => {
+  try {
+    fs.renameSync(from, to);
+  } catch (e) {
+    fs.copyFileSync(from, to);
+    safeUnlink(from);
+  }
+};
+
+const isWebpUpload = (file) => {
+  const mime = (file?.mimetype || '').toLowerCase();
+  const ext = path.extname(file?.originalname || '').toLowerCase();
+  return mime === 'image/webp' || ext === '.webp';
+};
+
+const isAllowedStyleOption = (groupKey, optionKey) => {
+  const group = STYLE_OPTION_GROUPS.find((item) => item.key === groupKey);
+  return !!group && group.options.includes(optionKey);
+};
+
+const buildAdminStyleOptionImagesCatalog = (doc) => {
+  const existing = Array.isArray(doc?.styleOptionImages) ? doc.styleOptionImages : [];
+  return {
+    groups: STYLE_OPTION_GROUPS.map((group) => ({
+      key: group.key,
+      options: group.options.map((optionKey) => {
+        const match = existing.find((item) => item.groupKey === group.key && item.optionKey === optionKey);
+        return {
+          key: optionKey,
+          image: match?.image || null,
+          imageUpdatedAt: match?.imageUpdatedAt || null
+        };
+      })
+    }))
+  };
+};
 
 router.get('/gemini', async (req, res) => {
   try {
@@ -71,6 +147,112 @@ router.post('/gemini/translate', async (req, res) => {
     }
     const translations = await translateMany({ entries: list, targetLangs });
     res.json({ translations });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.get('/style-option-images', async (req, res) => {
+  try {
+    const doc = await SystemSettings.findOne({});
+    res.json({
+      catalog: buildAdminStyleOptionImagesCatalog(doc)
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/style-option-images/image', upload.single('image'), async (req, res) => {
+  try {
+    const groupKey = sanitizeKey(req.body.groupKey);
+    const optionKey = sanitizeKey(req.body.optionKey);
+
+    if (!groupKey || !optionKey) {
+      return res.status(400).json({ error: 'groupKey and optionKey are required' });
+    }
+    if (!isAllowedStyleOption(groupKey, optionKey)) {
+      return res.status(400).json({ error: 'Unsupported style option' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'image file is required' });
+    }
+
+    const doc = (await SystemSettings.findOne({})) || new SystemSettings({});
+    doc.styleOptionImages = Array.isArray(doc.styleOptionImages) ? doc.styleOptionImages : [];
+
+    const relPath = path.join('system-style-options', groupKey);
+    const dirPath = path.join(uploadsBaseDir, relPath);
+    ensureDir(dirPath);
+    const fileName = `${optionKey}.webp`;
+    const absTarget = path.join(dirPath, fileName);
+
+    if (sharp) {
+      await sharp(req.file.path)
+        .rotate()
+        .resize({ width: 720, withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .toFile(absTarget);
+      safeUnlink(req.file.path);
+    } else {
+      if (!isWebpUpload(req.file)) {
+        safeUnlink(req.file.path);
+        return res.status(500).json({ error: 'Image processing is not available on this server' });
+      }
+      moveFile(req.file.path, absTarget);
+    }
+
+    const imagePath = `/uploads/${path.join(relPath, fileName).replace(/\\/g, '/')}`;
+    const imageUpdatedAt = Date.now();
+    const existingIndex = doc.styleOptionImages.findIndex((item) => item.groupKey === groupKey && item.optionKey === optionKey);
+
+    if (existingIndex >= 0) {
+      doc.styleOptionImages[existingIndex].image = imagePath;
+      doc.styleOptionImages[existingIndex].imageUpdatedAt = imageUpdatedAt;
+    } else {
+      doc.styleOptionImages.push({ groupKey, optionKey, image: imagePath, imageUpdatedAt });
+    }
+
+    await doc.save();
+
+    res.json({
+      message: 'Style option image updated',
+      catalog: buildAdminStyleOptionImagesCatalog(doc)
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.delete('/style-option-images/image', async (req, res) => {
+  try {
+    const groupKey = sanitizeKey(req.query.groupKey);
+    const optionKey = sanitizeKey(req.query.optionKey);
+
+    if (!groupKey || !optionKey) {
+      return res.status(400).json({ error: 'groupKey and optionKey are required' });
+    }
+    if (!isAllowedStyleOption(groupKey, optionKey)) {
+      return res.status(400).json({ error: 'Unsupported style option' });
+    }
+
+    const doc = (await SystemSettings.findOne({})) || new SystemSettings({});
+    doc.styleOptionImages = Array.isArray(doc.styleOptionImages) ? doc.styleOptionImages : [];
+
+    const existingIndex = doc.styleOptionImages.findIndex((item) => item.groupKey === groupKey && item.optionKey === optionKey);
+    if (existingIndex >= 0) {
+      doc.styleOptionImages[existingIndex].image = null;
+      doc.styleOptionImages[existingIndex].imageUpdatedAt = Date.now();
+    } else {
+      doc.styleOptionImages.push({ groupKey, optionKey, image: null, imageUpdatedAt: Date.now() });
+    }
+
+    await doc.save();
+
+    res.json({
+      message: 'Style option image deleted',
+      catalog: buildAdminStyleOptionImagesCatalog(doc)
+    });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }

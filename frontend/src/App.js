@@ -61,6 +61,7 @@ const AdminDashboard = lazyRetry(() => import('./pages/admin/Dashboard'));
 const AdminUsers = lazyRetry(() => import('./pages/admin/Users'));
 const AdminUserForm = lazyRetry(() => import('./pages/admin/UserForm'));
 const AdminGeminiSettings = lazyRetry(() => import('./pages/admin/GeminiSettings'));
+const AdminSettings = lazyRetry(() => import('./pages/admin/Settings'));
 
 const UserDashboard = lazyRetry(() => import('./pages/user/Dashboard'));
 const Workers = lazyRetry(() => import('./pages/user/Workers'));
@@ -178,6 +179,7 @@ const AppRoutes = () => {
           <Route path="users/new" element={<LazyPage skeleton="form"><AdminUserForm /></LazyPage>} />
           <Route path="users/:id/edit" element={<LazyPage skeleton="form"><AdminUserForm /></LazyPage>} />
           <Route path="gemini" element={<LazyPage><AdminGeminiSettings /></LazyPage>} />
+          <Route path="settings" element={<LazyPage skeleton="form"><AdminSettings /></LazyPage>} />
         </Route>
 
         {/* User Routes */}

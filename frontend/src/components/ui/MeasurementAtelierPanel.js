@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BadgeInfo, Building2, CalendarDays, PencilRuler, Phone, Ruler, Shirt, Sparkles } from 'lucide-react';
 
 const thawbImageMap = {
@@ -336,26 +337,33 @@ const OptionArtwork = ({ groupKey, optionKey }) => {
   );
 };
 
-const MeasurementCell = ({ field, value, onChange, disabled, palette, compact = false }) => (
-  <div className={`rounded-2xl border ${palette.tile} px-3 py-3 shadow-sm`}>
-    <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Measurement</div>
-    <div className={`mt-1 font-semibold text-slate-900 dark:text-slate-100 ${compact ? 'text-xs' : 'text-sm'}`}>{field.label}</div>
-    <div className="relative mt-2">
-      <input
-        type="number"
-        step="0.1"
-        value={value ?? ''}
-        onChange={(e) => onChange(field.key, e.target.value)}
-        disabled={disabled}
-        placeholder="0"
-        className={`no-spinner w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-stone-50/90 dark:bg-slate-950/80 px-3 py-2.5 pr-10 text-center font-semibold text-slate-900 dark:text-slate-100 outline-none transition-all ${palette.focus} ${compact ? 'text-sm' : 'text-base'} ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
-      />
-      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">cm</span>
-    </div>
-  </div>
-);
+const MeasurementCell = ({ field, value, onChange, disabled, palette, compact = false }) => {
+  const { t } = useTranslation();
 
-const PreviewGarment = ({ thawbType, selectedCollar, selectedPocket, variant = 'sheet' }) => {
+  return (
+    <div className={`rounded-2xl border ${palette.tile} px-3 py-3 shadow-sm`}>
+      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+        {t('measurementWorkspace.measurement', { defaultValue: 'Measurement' })}
+      </div>
+      <div className={`mt-1 font-semibold text-slate-900 dark:text-slate-100 ${compact ? 'text-xs' : 'text-sm'}`}>{field.label}</div>
+      <div className="relative mt-2">
+        <input
+          type="number"
+          step="0.1"
+          value={value ?? ''}
+          onChange={(e) => onChange(field.key, e.target.value)}
+          disabled={disabled}
+          placeholder="0"
+          className={`no-spinner w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-stone-50/90 dark:bg-slate-950/80 px-3 py-2.5 pr-10 text-center font-semibold text-slate-900 dark:text-slate-100 outline-none transition-all ${palette.focus} ${compact ? 'text-sm' : 'text-base'} ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
+        />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">cm</span>
+      </div>
+    </div>
+  );
+};
+
+const PreviewGarment = ({ thawbType, thawbTypeLabel, selectedCollar, selectedPocket, variant = 'sheet' }) => {
+  const { t } = useTranslation();
   const imageSrc = thawbImageMap[thawbType] || thawbImageMap.saudi;
   return (
     <div className={`relative mx-auto overflow-hidden rounded-[2rem] border border-black/5 dark:border-white/10 bg-gradient-to-b from-white to-stone-100 dark:from-slate-800 dark:to-slate-900 shadow-inner ${variant === 'board' ? 'w-full max-w-[300px] aspect-[4/5]' : 'w-full max-w-[240px] aspect-[4/5]'}`}>
@@ -365,18 +373,18 @@ const PreviewGarment = ({ thawbType, selectedCollar, selectedPocket, variant = '
       </div>
       <div className="absolute top-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/90 dark:bg-slate-900/85 px-3 py-1.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
         <Shirt className="w-3.5 h-3.5" />
-        {formatTypeLabel(thawbType)}
+        {thawbTypeLabel || formatTypeLabel(thawbType)}
       </div>
       {(selectedCollar || selectedPocket) ? (
         <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
           {selectedCollar ? (
             <div className="rounded-full bg-white/88 dark:bg-slate-900/85 px-3 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
-              Collar: {selectedCollar}
+              {t('styleOptions.collar', { defaultValue: 'Collar' })}: {selectedCollar}
             </div>
           ) : null}
           {selectedPocket ? (
             <div className="rounded-full bg-white/88 dark:bg-slate-900/85 px-3 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
-              Pocket: {selectedPocket}
+              {t('styleOptions.pocket', { defaultValue: 'Pocket' })}: {selectedPocket}
             </div>
           ) : null}
         </div>
@@ -386,6 +394,7 @@ const PreviewGarment = ({ thawbType, selectedCollar, selectedPocket, variant = '
 };
 
 const DesignOptionsRow = ({ title, groupKey, options = [], value, onChange, disabled = false, palette, columns = 'grid-cols-2 sm:grid-cols-4' }) => {
+  const { t } = useTranslation();
   if (!options.length) return null;
 
   return (
@@ -393,7 +402,7 @@ const DesignOptionsRow = ({ title, groupKey, options = [], value, onChange, disa
       <div className="flex items-center justify-between gap-3">
         <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</div>
         <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
-          {options.find((option) => option.value === value)?.label || 'Not selected'}
+          {options.find((option) => option.value === value)?.label || t('measurementWorkspace.notSelected', { defaultValue: 'Not selected' })}
         </div>
       </div>
       <div className={`mt-4 grid ${columns} gap-3`}>
@@ -424,11 +433,12 @@ const DesignOptionsRow = ({ title, groupKey, options = [], value, onChange, disa
 };
 
 const ThawbTypeSelector = ({ options = [], value, onChange, disabled = false, vertical = false, palette }) => {
+  const { t } = useTranslation();
   if (!options.length) return null;
 
   return (
     <div className={`rounded-[1.6rem] border ${palette.tile} p-4 shadow-sm`}>
-      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">نوع الثوب / Thawb Type</div>
+      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('measurementWorkspace.thawbType', { defaultValue: 'Thawb Type' })}</div>
       <div className={`mt-4 grid gap-3 ${vertical ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-1'}`}>
         {options.map((option) => {
           const isSelected = option.key === value;
@@ -468,24 +478,25 @@ const MaterialsPanel = ({
   loading = false,
   palette
 }) => {
+  const { t } = useTranslation();
   const fabricChoices = [
-    { value: '', label: 'Not specified' },
+    { value: '', label: t('measurementWorkspace.notSpecified', { defaultValue: 'Not specified' }) },
     ...(fabricOptions || []).map((fabric) => ({
       value: fabric?._id || '',
-      label: `${fabric?.name || '—'} · Stock: ${Number(fabric?.rollsInStock) || 0}`
+      label: `${fabric?.name || '—'} · ${t('measurementWorkspace.stock', { defaultValue: 'Stock' })}: ${Number(fabric?.rollsInStock) || 0}`
     }))
   ];
 
   return (
     <div className={`rounded-[1.6rem] border ${palette.tile} p-4 shadow-sm`}>
       <div className="flex items-center justify-between gap-3">
-        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Fabric & Materials</div>
-        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Optional</div>
+        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('measurementWorkspace.fabricMaterials', { defaultValue: 'Fabric & Materials' })}</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.optional', { defaultValue: 'Optional' })}</div>
       </div>
-      {loading ? <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">Loading…</div> : null}
+      {loading ? <div className="mt-3 text-sm text-slate-500 dark:text-slate-400">{t('common.loading', { defaultValue: 'Loading...' })}</div> : null}
       <div className="mt-4 space-y-4">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Fabric</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.fabric', { defaultValue: 'Fabric' })}</div>
           <select
             value={selectedFabricId}
             onChange={(e) => onFabricChange?.(e.target.value)}
@@ -498,7 +509,7 @@ const MaterialsPanel = ({
           </select>
         </div>
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Rolls Used</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.rollsUsed', { defaultValue: 'Rolls Used' })}</div>
           <div className="mt-2 flex flex-wrap gap-2">
             {['0.25', '0.50', '0.75', '1'].map((preset) => {
               const isSelected = String(rollsUsed || '') === preset;
@@ -527,7 +538,7 @@ const MaterialsPanel = ({
           />
         </div>
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Fabric Color</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.fabricColor', { defaultValue: 'Fabric Color' })}</div>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
@@ -535,7 +546,7 @@ const MaterialsPanel = ({
               disabled={disabled}
               className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-all ${!selectedFabricColor ? `${palette.selected} bg-white dark:bg-slate-950/70` : `${palette.tile} hover:border-slate-300 dark:hover:border-slate-600`} ${disabled ? 'cursor-not-allowed opacity-70' : ''}`}
             >
-              Not specified
+              {t('measurementWorkspace.notSpecified', { defaultValue: 'Not specified' })}
             </button>
             {(fabricColors || []).map((color) => {
               const isSelected = selectedFabricColor === color.key;
@@ -559,28 +570,25 @@ const MaterialsPanel = ({
   );
 };
 
-const SnapshotPanel = ({ fields, values, palette }) => {
-  const spotlight = useMemo(() => {
-    return (fields || [])
-      .filter((field) => values?.[field.key] !== undefined && values?.[field.key] !== null && String(values?.[field.key]).trim() !== '')
-      .slice(0, 4);
-  }, [fields, values]);
+const SnapshotPanel = ({ items = [], palette }) => {
+  const { t } = useTranslation();
+  const spotlight = useMemo(() => (items || []).filter((item) => item && item.value !== undefined && item.value !== null && String(item.value).trim() !== ''), [items]);
 
   return (
     <div className={`rounded-[1.6rem] border ${palette.tile} p-4 shadow-sm`}>
       <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
         <Ruler className="w-4 h-4" />
-        Fit snapshot
+        {t('measurementWorkspace.fitSnapshot', { defaultValue: 'Fit snapshot' })}
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3">
-        {spotlight.length > 0 ? spotlight.map((field) => (
-          <div key={field.key} className="rounded-2xl bg-stone-50/90 dark:bg-slate-950/70 px-3 py-3">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500 truncate">{field.label}</div>
-            <div className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">{formatValue(values?.[field.key])}</div>
+        {spotlight.length > 0 ? spotlight.map((item) => (
+          <div key={`${item.label}-${item.value}`} className="rounded-2xl bg-stone-50/90 dark:bg-slate-950/70 px-3 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500 truncate">{item.label}</div>
+            <div className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">{item.value}</div>
           </div>
         )) : (
           <div className="col-span-2 rounded-2xl bg-stone-50/90 dark:bg-slate-950/70 px-4 py-4 text-sm text-slate-500 dark:text-slate-400">
-            Start entering measurements to build the fit summary.
+            {t('measurementWorkspace.snapshotEmpty', { defaultValue: 'Start entering measurements to build the fit summary.' })}
           </div>
         )}
       </div>
@@ -619,6 +627,7 @@ const MeasurementAtelierPanel = ({
   onFabricColorChange,
   materialsLoading = false
 }) => {
+  const { t } = useTranslation();
   const palette = toneMap[tone] || defaultTone;
 
   const orderedFields = useMemo(() => {
@@ -648,13 +657,19 @@ const MeasurementAtelierPanel = ({
   const secondaryStyleGroups = (styleGroups || []).filter((group) => !['collar', 'pocket'].includes(group.key));
   const selectedCollar = collarGroup?.options?.find((option) => option.value === styleValues?.collar)?.label || '';
   const selectedPocket = pocketGroup?.options?.find((option) => option.value === styleValues?.pocket)?.label || '';
-  const selectedStyleEntries = (styleGroups || [])
+  const selectedThawbTypeLabel = thawbTypes.find((option) => option.key === thawbType)?.label || formatTypeLabel(thawbType);
+  const selectedStyleItems = (styleGroups || [])
     .map((group) => {
       const selectedValue = styleValues?.[group.key];
       const option = (group.options || []).find((item) => item.value === selectedValue);
-      return option ? `${group.label}: ${option.label}` : null;
+      return option ? { label: group.label, value: option.label } : null;
     })
     .filter(Boolean);
+  const selectedStyleEntries = selectedStyleItems.map((item) => `${item.label}: ${item.value}`);
+  const measurementSnapshotItems = (fields || [])
+    .filter((field) => values?.[field.key] !== undefined && values?.[field.key] !== null && String(values?.[field.key]).trim() !== '')
+    .map((field) => ({ label: field.label, value: formatValue(values?.[field.key]) }));
+  const snapshotItems = [...selectedStyleItems, ...measurementSnapshotItems].slice(0, 4);
   const currentDate = new Date().toLocaleDateString();
   const headerChips = badges.slice(0, 3);
 
@@ -666,11 +681,11 @@ const MeasurementAtelierPanel = ({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="inline-flex items-center gap-2 rounded-full bg-white/85 dark:bg-slate-900/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300 shadow-sm">
                 <PencilRuler className="w-3.5 h-3.5" />
-                Measurement Board
+                {t('measurementWorkspace.boardTitle', { defaultValue: 'Measurement Board' })}
               </div>
               <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold shadow-sm bg-white/85 dark:bg-slate-900/80 text-slate-700 dark:text-slate-200">
                 <Sparkles className="w-4 h-4" />
-                {completion}% complete
+                {completion}% {t('measurementWorkspace.complete', { defaultValue: 'complete' })}
               </div>
             </div>
 
@@ -688,10 +703,10 @@ const MeasurementAtelierPanel = ({
               ))}
             </div>
 
-            <div className="mt-5 grid gap-4 xl:grid-cols-[180px_minmax(0,1fr)_270px] items-start">
+            <div className="mt-5 grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)_320px] items-start">
               <div className="space-y-4">
                 <div className={`rounded-[1.6rem] border ${palette.tile} p-4 shadow-sm`}>
-                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Fit markers</div>
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('measurementWorkspace.fitMarkers', { defaultValue: 'Fit markers' })}</div>
                   <div className="mt-4 space-y-3">
                     {orderedFields.core.slice(0, 4).map((field, index) => (
                       <div key={`marker-${field.key}`} className="grid grid-cols-[14px_minmax(0,1fr)] items-center gap-3">
@@ -705,72 +720,74 @@ const MeasurementAtelierPanel = ({
                     ))}
                   </div>
                 </div>
-                <SnapshotPanel fields={fields} values={values} palette={palette} />
               </div>
 
               <div className="rounded-[1.8rem] border border-black/5 dark:border-white/10 bg-white/55 dark:bg-slate-900/50 p-4 shadow-sm">
-                <PreviewGarment thawbType={thawbType} selectedCollar={selectedCollar} selectedPocket={selectedPocket} variant="board" />
+                <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} variant="board" />
               </div>
 
-              <ThawbTypeSelector
-                options={thawbTypes}
-                value={thawbType}
-                onChange={onThawbTypeChange}
-                disabled={disabled || !showStyleControls}
-                vertical
-                palette={palette}
-              />
-            </div>
-
-            {primaryStyleGroups.length ? (
-              <div className="mt-5 grid gap-4 xl:grid-cols-2">
-                {primaryStyleGroups.map((group) => (
-                  <DesignOptionsRow
-                    key={`primary-board-${group.key}`}
-                    title={group.label}
-                    groupKey={group.key}
-                    options={group.options || []}
-                    value={styleValues?.[group.key] || ''}
-                    onChange={onStyleChange}
-                    disabled={disabled || !showStyleControls}
-                    palette={palette}
-                  />
-                ))}
-              </div>
-            ) : null}
-
-            {secondaryStyleGroups.length ? (
-              <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                {secondaryStyleGroups.map((group) => (
-                  <DesignOptionsRow
-                    key={`secondary-board-${group.key}`}
-                    title={group.label}
-                    groupKey={group.key}
-                    options={group.options || []}
-                    value={styleValues?.[group.key] || ''}
-                    onChange={onStyleChange}
-                    disabled={disabled || !showStyleControls}
-                    palette={palette}
-                  />
-                ))}
-              </div>
-            ) : null}
-
-            {showStyleControls ? (
-              <div className="mt-5">
-                <MaterialsPanel
-                  fabricOptions={fabricOptions}
-                  selectedFabricId={selectedFabricId}
-                  onFabricChange={onFabricChange}
-                  rollsUsed={rollsUsed}
-                  onRollsUsedChange={onRollsUsedChange}
-                  fabricColors={fabricColors}
-                  selectedFabricColor={selectedFabricColor}
-                  onFabricColorChange={onFabricColorChange}
-                  disabled={disabled}
-                  loading={materialsLoading}
+              <div className="space-y-4">
+                <ThawbTypeSelector
+                  options={thawbTypes}
+                  value={thawbType}
+                  onChange={onThawbTypeChange}
+                  disabled={disabled || !showStyleControls}
+                  vertical
                   palette={palette}
                 />
+                <SnapshotPanel items={snapshotItems} palette={palette} />
+              </div>
+            </div>
+
+            {(primaryStyleGroups.length || secondaryStyleGroups.length || showStyleControls) ? (
+              <div className="mt-5 space-y-4">
+                {primaryStyleGroups.length ? (
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    {primaryStyleGroups.map((group) => (
+                      <DesignOptionsRow
+                        key={`primary-board-${group.key}`}
+                        title={group.label}
+                        groupKey={group.key}
+                        options={group.options || []}
+                        value={styleValues?.[group.key] || ''}
+                        onChange={onStyleChange}
+                        disabled={disabled || !showStyleControls}
+                        palette={palette}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+                {secondaryStyleGroups.length ? (
+                  <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                    {secondaryStyleGroups.map((group) => (
+                      <DesignOptionsRow
+                        key={`secondary-board-${group.key}`}
+                        title={group.label}
+                        groupKey={group.key}
+                        options={group.options || []}
+                        value={styleValues?.[group.key] || ''}
+                        onChange={onStyleChange}
+                        disabled={disabled || !showStyleControls}
+                        palette={palette}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+                {showStyleControls ? (
+                  <MaterialsPanel
+                    fabricOptions={fabricOptions}
+                    selectedFabricId={selectedFabricId}
+                    onFabricChange={onFabricChange}
+                    rollsUsed={rollsUsed}
+                    onRollsUsedChange={onRollsUsedChange}
+                    fabricColors={fabricColors}
+                    selectedFabricColor={selectedFabricColor}
+                    onFabricColorChange={onFabricColorChange}
+                    disabled={disabled}
+                    loading={materialsLoading}
+                    palette={palette}
+                  />
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -781,48 +798,48 @@ const MeasurementAtelierPanel = ({
             {subtitle ? <div className={`mt-2 text-sm leading-6 ${palette.muted}`}>{subtitle}</div> : null}
             <div className="mt-5 grid gap-3">
               <div className="rounded-2xl bg-stone-50/90 dark:bg-slate-950/70 px-4 py-3">
-                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Date</div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('common.date', { defaultValue: 'Date' })}</div>
                 <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
                   <CalendarDays className="w-4 h-4" />
                   {currentDate}
                 </div>
               </div>
               <div className="rounded-2xl bg-stone-50/90 dark:bg-slate-950/70 px-4 py-3">
-                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Selected Style</div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.selectedStyle', { defaultValue: 'Selected Style' })}</div>
                 {selectedStyleEntries.length ? selectedStyleEntries.slice(0, 4).map((entry) => (
                   <div key={entry} className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {entry}
                   </div>
                 )) : (
                   <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    No design options selected
+                    {t('measurementWorkspace.noStyleSelected', { defaultValue: 'No design options selected' })}
                   </div>
                 )}
               </div>
               <div className="rounded-2xl bg-stone-50/90 dark:bg-slate-950/70 px-4 py-3">
-                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Status</div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('common.status', { defaultValue: 'Status' })}</div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {headerChips.map((badge) => (
                     <div key={badge} className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>
                       {badge}
                     </div>
                   ))}
-                  <div className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>{completion}% complete</div>
+                  <div className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>{completion}% {t('measurementWorkspace.complete', { defaultValue: 'complete' })}</div>
                 </div>
               </div>
               <div className="rounded-2xl bg-stone-50/90 dark:bg-slate-950/70 px-4 py-3">
                 <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
                   <BadgeInfo className="w-4 h-4" />
-                  Workspace note
+                  {t('measurementWorkspace.workspaceNote', { defaultValue: 'Workspace note' })}
                 </div>
                 <div className={`mt-2 text-sm leading-6 ${palette.muted}`}>
-                  Use this board-style layout to match the visual flow of the sample: measurements on top, garment in the middle, and collar/pocket selection inside the workspace.
+                  {t('measurementWorkspace.boardNote', { defaultValue: 'Use this board-style layout to match the visual flow of the sample: measurements on top, garment in the middle, and design selection below.' })}
                 </div>
               </div>
             </div>
           </div>
         </div>
-        {loading ? <div className={`mt-4 text-sm ${palette.muted}`}>Loading…</div> : null}
+        {loading ? <div className={`mt-4 text-sm ${palette.muted}`}>{t('common.loading', { defaultValue: 'Loading...' })}</div> : null}
       </div>
     );
   }
@@ -835,7 +852,7 @@ const MeasurementAtelierPanel = ({
             <BrandBlock logoSrc={logoSrc} businessName={businessName} businessPhone={businessPhone} />
             <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/88 dark:bg-slate-900/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300 shadow-sm">
               <PencilRuler className="w-3.5 h-3.5" />
-              Tailor Measurement Sheet
+              {t('measurementWorkspace.sheetTitle', { defaultValue: 'Tailor Measurement Sheet' })}
             </div>
             <div className="mt-3 text-xl font-bold text-slate-900 dark:text-slate-100">{title}</div>
             {subtitle ? <div className={`mt-1 max-w-2xl text-sm leading-6 ${palette.muted}`}>{subtitle}</div> : null}
@@ -843,19 +860,19 @@ const MeasurementAtelierPanel = ({
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="rounded-2xl bg-white/88 dark:bg-slate-900/80 px-4 py-3 shadow-sm">
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Date</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('common.date', { defaultValue: 'Date' })}</div>
               <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{currentDate}</div>
             </div>
             <div className="rounded-2xl bg-white/88 dark:bg-slate-900/80 px-4 py-3 shadow-sm">
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Type</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{formatTypeLabel(thawbType)}</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.thawbType', { defaultValue: 'Thawb Type' })}</div>
+              <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{selectedThawbTypeLabel}</div>
             </div>
             <div className="rounded-2xl bg-white/88 dark:bg-slate-900/80 px-4 py-3 shadow-sm">
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Complete</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.complete', { defaultValue: 'Complete' })}</div>
               <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{completion}%</div>
             </div>
             <div className="rounded-2xl bg-white/88 dark:bg-slate-900/80 px-4 py-3 shadow-sm">
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Badges</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.badges', { defaultValue: 'Badges' })}</div>
               <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{headerChips.length}</div>
             </div>
           </div>
@@ -877,7 +894,7 @@ const MeasurementAtelierPanel = ({
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)_300px] items-start">
+        <div className="grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)] items-start">
           <ThawbTypeSelector
             options={thawbTypes}
             value={thawbType}
@@ -888,36 +905,46 @@ const MeasurementAtelierPanel = ({
 
           <div className="space-y-4">
             <div className="rounded-[1.8rem] border border-black/5 dark:border-white/10 bg-white/60 dark:bg-slate-900/40 p-4 shadow-sm">
-              <PreviewGarment thawbType={thawbType} selectedCollar={selectedCollar} selectedPocket={selectedPocket} />
+              <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} />
             </div>
-            <SnapshotPanel fields={fields} values={values} palette={palette} />
+            <SnapshotPanel items={snapshotItems} palette={palette} />
           </div>
+        </div>
 
+        {(primaryStyleGroups.length || secondaryStyleGroups.length || showStyleControls) ? (
           <div className="space-y-4">
-            {primaryStyleGroups.map((group) => (
-              <DesignOptionsRow
-                key={`primary-sheet-${group.key}`}
-                title={group.label}
-                groupKey={group.key}
-                options={group.options || []}
-                value={styleValues?.[group.key] || ''}
-                onChange={onStyleChange}
-                disabled={disabled || !showStyleControls}
-                palette={palette}
-              />
-            ))}
-            {secondaryStyleGroups.map((group) => (
-              <DesignOptionsRow
-                key={`secondary-sheet-${group.key}`}
-                title={group.label}
-                groupKey={group.key}
-                options={group.options || []}
-                value={styleValues?.[group.key] || ''}
-                onChange={onStyleChange}
-                disabled={disabled || !showStyleControls}
-                palette={palette}
-              />
-            ))}
+            {primaryStyleGroups.length ? (
+              <div className="grid gap-4 xl:grid-cols-2">
+                {primaryStyleGroups.map((group) => (
+                  <DesignOptionsRow
+                    key={`primary-sheet-${group.key}`}
+                    title={group.label}
+                    groupKey={group.key}
+                    options={group.options || []}
+                    value={styleValues?.[group.key] || ''}
+                    onChange={onStyleChange}
+                    disabled={disabled || !showStyleControls}
+                    palette={palette}
+                  />
+                ))}
+              </div>
+            ) : null}
+            {secondaryStyleGroups.length ? (
+              <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                {secondaryStyleGroups.map((group) => (
+                  <DesignOptionsRow
+                    key={`secondary-sheet-${group.key}`}
+                    title={group.label}
+                    groupKey={group.key}
+                    options={group.options || []}
+                    value={styleValues?.[group.key] || ''}
+                    onChange={onStyleChange}
+                    disabled={disabled || !showStyleControls}
+                    palette={palette}
+                  />
+                ))}
+              </div>
+            ) : null}
             {showStyleControls ? (
               <MaterialsPanel
                 fabricOptions={fabricOptions}
@@ -934,7 +961,7 @@ const MeasurementAtelierPanel = ({
               />
             ) : null}
             <div className={`rounded-[1.6rem] border ${palette.tile} p-4 shadow-sm`}>
-              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Sheet details</div>
+              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('measurementWorkspace.sheetDetails', { defaultValue: 'Sheet details' })}</div>
               {selectedStyleEntries.length ? (
                 <div className="mt-3 space-y-1">
                   {selectedStyleEntries.slice(0, 4).map((entry) => (
@@ -951,14 +978,14 @@ const MeasurementAtelierPanel = ({
                   </div>
                 ))}
                 {!headerChips.length ? (
-                  <div className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>Ready for tailoring</div>
+                  <div className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>{t('measurementWorkspace.readyForTailoring', { defaultValue: 'Ready for tailoring' })}</div>
                 ) : null}
               </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
-        {loading ? <div className={`text-sm ${palette.muted}`}>Loading…</div> : null}
+        {loading ? <div className={`text-sm ${palette.muted}`}>{t('common.loading', { defaultValue: 'Loading...' })}</div> : null}
       </div>
     </div>
   );

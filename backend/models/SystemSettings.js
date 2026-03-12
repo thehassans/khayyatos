@@ -8,6 +8,14 @@ const systemSettingsSchema = new mongoose.Schema(
       model: { type: String, default: 'gemini-3-flash-preview' },
       updatedAt: { type: Date, default: Date.now }
     },
+    styleOptionImages: [
+      {
+        groupKey: { type: String, required: true },
+        optionKey: { type: String, required: true },
+        image: { type: String, default: null },
+        imageUpdatedAt: { type: Number, default: null }
+      }
+    ],
     addons: {
       whatsapp: {
         price: { type: Number, default: 0 },

@@ -577,41 +577,6 @@ const Settings = () => {
     });
   };
 
-  const uploadOptionImage = async (groupKey, optionKey, file) => {
-    if (!file) return;
-    setStyleCatalogSaving(true);
-    try {
-      const webp = await convertImageToWebp(file, 720, 0.85);
-      const data = new FormData();
-      data.append('groupKey', groupKey);
-      data.append('optionKey', optionKey);
-      data.append('image', webp || file);
-
-      const response = await api.post('/settings/style-options/image', data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setStyleCatalog(response.data?.catalog || styleCatalog);
-      toast.success('Image updated');
-    } catch (error) {
-      toast.error('Failed to upload image');
-    }
-    setStyleCatalogSaving(false);
-  };
-
-  const deleteOptionImage = async (groupKey, optionKey) => {
-    setStyleCatalogSaving(true);
-    try {
-      const response = await api.delete('/settings/style-options/image', {
-        params: { groupKey, optionKey }
-      });
-      setStyleCatalog(response.data?.catalog || styleCatalog);
-      toast.success('Image deleted');
-    } catch (error) {
-      toast.error('Failed to delete image');
-    }
-    setStyleCatalogSaving(false);
-  };
-
   const deleteOption = async (groupKey, optionKey) => {
     setStyleCatalogSaving(true);
     try {
@@ -1257,7 +1222,7 @@ const Settings = () => {
                                 return (
                                   <div key={opt.key} className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-slate-900/40 border border-gray-100 dark:border-slate-700">
                                     <div className="w-16">
-                                      <div className="relative w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 overflow-hidden">
+                                      <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 overflow-hidden flex items-center justify-center">
                                         {imageSrc ? (
                                           <img src={imageSrc} alt={opt.key} className="w-full h-full object-cover" />
                                         ) : (
@@ -1265,15 +1230,6 @@ const Settings = () => {
                                             <Upload className="w-6 h-6" />
                                           </div>
                                         )}
-                                        <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
-                                          <Upload className="w-5 h-5 text-white" />
-                                          <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => uploadOptionImage(group.key, opt.key, e.target.files?.[0])}
-                                            className="hidden"
-                                          />
-                                        </label>
                                       </div>
                                     </div>
 
@@ -1304,14 +1260,6 @@ const Settings = () => {
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => deleteOptionImage(group.key, opt.key)}
-                                        className="p-2 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors"
-                                        title={t('settings.deleteImage', { defaultValue: 'Delete image' })}
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
                                       <button
                                         type="button"
                                         onClick={() => deleteOption(group.key, opt.key)}

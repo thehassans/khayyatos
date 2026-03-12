@@ -314,7 +314,7 @@ const CustomerForm = () => {
         .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
         .map((f) => ({
           key: f.key,
-          label: f.nameI18n?.[langKey] || f.name || t(`measurements.${f.key}`, { defaultValue: f.key }),
+          label: f.nameI18n?.[langKey] || t(`measurements.${f.key}`, { defaultValue: f.name || f.key }),
           image: f.image,
           imageUpdatedAt: f.imageUpdatedAt
         }))
