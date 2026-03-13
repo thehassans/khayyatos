@@ -10,11 +10,6 @@ const i18nTextSchema = new mongoose.Schema({
 }, { _id: false });
 
 const finisherSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
   name: {
     type: String,
     required: true,
@@ -58,7 +53,7 @@ const finisherSchema = new mongoose.Schema({
   }
 });
 
-finisherSchema.index({ userId: 1, phone: 1 }, { unique: true });
+finisherSchema.index({ phone: 1 }, { unique: true });
 
 finisherSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();

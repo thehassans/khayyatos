@@ -113,7 +113,7 @@ const isFinisher = async (req, res, next) => {
       return res.status(403).json({ error: 'Access denied. Finisher only.' });
     }
 
-    const finisher = await Finisher.findById(req.userId).populate('userId');
+    const finisher = await Finisher.findById(req.userId);
     if (!finisher) {
       return res.status(404).json({ error: 'Finisher not found.' });
     }
@@ -122,12 +122,7 @@ const isFinisher = async (req, res, next) => {
       return res.status(403).json({ error: 'Account is inactive.' });
     }
 
-    if (!finisher.userId?.isSubscriptionActive || !finisher.userId.isSubscriptionActive()) {
-      return res.status(403).json({ error: 'Shop subscription expired.' });
-    }
-
     req.finisher = finisher;
-    req.user = finisher.userId;
     next();
   } catch (error) {
     return res.status(500).json({ error: 'Server error.' });

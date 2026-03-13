@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
-import { Plus, Search, LogIn, Edit, Trash2, Store } from 'lucide-react';
+import { Plus, Search, LogIn, Edit, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminUsers = () => {
@@ -48,10 +48,6 @@ const AdminUsers = () => {
     } else {
       toast.error(result.error);
     }
-  };
-
-  const handleCreateFinisher = async (userId) => {
-    navigate(`/admin/users/${userId}/finishers`);
   };
 
   const requestDelete = (u) => {
@@ -168,13 +164,6 @@ const AdminUsers = () => {
                   <Td><StatusBadge status={user.isActive ? 'active' : 'inactive'} /></Td>
                   <Td>
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleCreateFinisher(user._id)}
-                        className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg"
-                        title={t('finishers.title', { defaultValue: 'Finishers' })}
-                      >
-                        <Store className="w-4 h-4" />
-                      </button>
                       <button
                         onClick={() => handleLoginAs(user._id)}
                         className="p-2 hover:bg-primary-50 text-primary-600 rounded-lg"

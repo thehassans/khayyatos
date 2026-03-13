@@ -1,11 +1,6 @@
 const mongoose = require('mongoose');
 
 const finisherShopSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
   finisherId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Finisher',
@@ -45,7 +40,7 @@ const finisherShopSchema = new mongoose.Schema({
   }
 });
 
-finisherShopSchema.index({ userId: 1, finisherId: 1, phone: 1 }, { unique: true, sparse: true });
+finisherShopSchema.index({ finisherId: 1, phone: 1 }, { unique: true, sparse: true });
 
 finisherShopSchema.pre('save', function(next) {
   this.updatedAt = Date.now();

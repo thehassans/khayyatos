@@ -12,9 +12,8 @@ const AdminFinisherForm = () => {
   const { t } = useTranslation();
   const { api } = useAuth();
   const navigate = useNavigate();
-  const { userId, finisherId } = useParams();
+  const { finisherId } = useParams();
   const isEdit = !!finisherId;
-  const [targetUser, setTargetUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [formData, setFormData] = useState({
@@ -26,29 +25,25 @@ const AdminFinisherForm = () => {
   });
 
   useEffect(() => {
-    fetchData();
-  }, [userId, finisherId]);
+    if (isEdit) fetchData();
+    else setFetching(false);
+  }, [finisherId]);
 
   const fetchData = async () => {
     try {
       setFetching(true);
-      const userResponse = await api.get(`/admin/users/${userId}`);
-      setTargetUser(userResponse.data?.user || null);
-
-      if (isEdit) {
-        const finisherResponse = await api.get(`/admin/users/${userId}/finishers/${finisherId}`);
-        const finisher = finisherResponse.data?.finisher;
-        setFormData({
-          name: finisher?.name || '',
-          phone: finisher?.phone || '',
-          password: '',
-          language: finisher?.language || 'en',
-          isActive: finisher?.isActive !== false
-        });
-      }
+      const finisherResponse = await api.get(`/admin/finishers/${finisherId}`);
+      const finisher = finisherResponse.data?.finisher;
+      setFormData({
+        name: finisher?.name || '',
+        phone: finisher?.phone || '',
+        password: '',
+        language: finisher?.language || 'en',
+        isActive: finisher?.isActive !== false
+      });
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to load finisher');
-      navigate(`/admin/users/${userId}/finishers`);
+      navigate('/admin/finishers');
     }
     setFetching(false);
   };
@@ -60,13 +55,13 @@ const AdminFinisherForm = () => {
       const data = { ...formData };
       if (!data.password) delete data.password;
       if (isEdit) {
-        await api.put(`/admin/users/${userId}/finishers/${finisherId}`, data);
+        await api.put(`/admin/finishers/${finisherId}`, data);
         toast.success('Finisher updated');
       } else {
-        await api.post(`/admin/users/${userId}/finishers`, data);
+        await api.post('/admin/finishers', data);
         toast.success('Finisher created');
       }
-      navigate(`/admin/users/${userId}/finishers`);
+      navigate('/admin/finishers');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Operation failed');
     }
@@ -80,7 +75,7 @@ const AdminFinisherForm = () => {
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn">
       <div className="flex items-start gap-4">
-        <button onClick={() => navigate(`/admin/users/${userId}/finishers`)} className="p-2 hover:bg-gray-100 rounded-lg">
+        <button onClick={() => navigate('/admin/finishers')} className="p-2 hover:bg-gray-100 rounded-lg">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="space-y-1">
@@ -90,11 +85,7 @@ const AdminFinisherForm = () => {
             </div>
             <h1 className="text-2xl font-bold text-gray-900">{isEdit ? t('finishers.editFinisher', { defaultValue: 'Edit Finisher' }) : t('finishers.createFinisher', { defaultValue: 'Create Finisher' })}</h1>
           </div>
-          <p className="text-sm text-gray-500">
-            {targetUser?.businessName
-              ? `Manage finisher account for ${targetUser.businessName}`
-              : 'Manage finisher account'}
-          </p>
+          <p className="text-sm text-gray-500">{t('finishers.standaloneDesc', { defaultValue: 'Standalone finisher account — not linked to any shop' })}</p>
         </div>
       </div>
 
@@ -133,7 +124,7 @@ const AdminFinisherForm = () => {
               <Button type="submit" loading={loading} className="flex-1">
                 {isEdit ? t('common.save') : t('finishers.createFinisher', { defaultValue: 'Create Finisher' })}
               </Button>
-              <Button type="button" variant="secondary" onClick={() => navigate(`/admin/users/${userId}/finishers`)}>
+              <Button type="button" variant="secondary" onClick={() => navigate('/admin/finishers')}>
                 {t('common.cancel')}
               </Button>
             </div>

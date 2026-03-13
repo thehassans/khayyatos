@@ -798,25 +798,18 @@ router.put('/users/:id/whatsapp-addon', async (req, res) => {
   }
 });
 
-// ─── Admin Finisher Management ────────────────────────────────────────────────
+// ─── Admin Finisher Management (standalone — no user dependency) ──────────────
 
 router.get('/finishers', async (req, res) => {
   try {
-    const { search, userId } = req.query;
-    const query = {};
-    if (userId) query.userId = userId;
-    const finishers = await Finisher.find(query)
+    const { search } = req.query;
+    const finishers = await Finisher.find()
       .sort({ createdAt: -1 })
-      .select('-password')
-      .populate('userId', 'businessName name phone');
+      .select('-password');
     const result = search
       ? finishers.filter((f) => {
           const q = search.toLowerCase();
-          return (
-            f.name?.toLowerCase().includes(q) ||
-            f.phone?.includes(q) ||
-            f.userId?.businessName?.toLowerCase().includes(q)
-          );
+          return f.name?.toLowerCase().includes(q) || f.phone?.includes(q);
         })
       : finishers;
     res.json({ finishers: result });
@@ -825,34 +818,17 @@ router.get('/finishers', async (req, res) => {
   }
 });
 
-router.get('/users/:userId/finishers', async (req, res) => {
-  try {
-    const finishers = await Finisher.find({ userId: req.params.userId })
-      .sort({ createdAt: -1 })
-      .select('-password');
-    res.json({ finishers });
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-router.post('/users/:userId/finishers', async (req, res) => {
+router.post('/finishers', async (req, res) => {
   try {
     const { name, phone, password, language } = req.body || {};
     if (!name || !phone || !password) {
       return res.status(400).json({ error: 'Name, phone, and password are required' });
     }
-    const existing = await Finisher.findOne({ userId: req.params.userId, phone });
+    const existing = await Finisher.findOne({ phone });
     if (existing) {
       return res.status(400).json({ error: 'Finisher with this phone already exists' });
     }
-    const finisher = new Finisher({
-      userId: req.params.userId,
-      name,
-      phone,
-      password,
-      language: language || 'en'
-    });
+    const finisher = new Finisher({ name, phone, password, language: language || 'en' });
     if (typeof name === 'string' && name.trim()) {
       const translations = await translateMany({ entries: [{ id: 'name', text: name.trim() }] });
       finisher.nameI18n = translations.name || buildFallbackI18n(name.trim());
@@ -867,9 +843,9 @@ router.post('/users/:userId/finishers', async (req, res) => {
   }
 });
 
-router.get('/users/:userId/finishers/:finisherId([0-9a-fA-F]{24})', async (req, res) => {
+router.get('/finishers/:id([0-9a-fA-F]{24})', async (req, res) => {
   try {
-    const finisher = await Finisher.findOne({ _id: req.params.finisherId, userId: req.params.userId }).select('-password');
+    const finisher = await Finisher.findById(req.params.id).select('-password');
     if (!finisher) return res.status(404).json({ error: 'Finisher not found' });
     res.json({ finisher });
   } catch (error) {
@@ -877,10 +853,10 @@ router.get('/users/:userId/finishers/:finisherId([0-9a-fA-F]{24})', async (req, 
   }
 });
 
-router.put('/users/:userId/finishers/:finisherId([0-9a-fA-F]{24})', async (req, res) => {
+router.put('/finishers/:id([0-9a-fA-F]{24})', async (req, res) => {
   try {
     const { name, phone, password, language, isActive } = req.body || {};
-    const finisher = await Finisher.findOne({ _id: req.params.finisherId, userId: req.params.userId });
+    const finisher = await Finisher.findById(req.params.id);
     if (!finisher) return res.status(404).json({ error: 'Finisher not found' });
     if (name) {
       finisher.name = name;
@@ -903,13 +879,13 @@ router.put('/users/:userId/finishers/:finisherId([0-9a-fA-F]{24})', async (req, 
   }
 });
 
-router.delete('/users/:userId/finishers/:finisherId([0-9a-fA-F]{24})', async (req, res) => {
+router.delete('/finishers/:id([0-9a-fA-F]{24})', async (req, res) => {
   try {
-    const finisher = await Finisher.findOne({ _id: req.params.finisherId, userId: req.params.userId });
+    const finisher = await Finisher.findById(req.params.id);
     if (!finisher) return res.status(404).json({ error: 'Finisher not found' });
     await Promise.all([
-      FinisherAssignment.deleteMany({ userId: req.params.userId, finisherId: finisher._id }),
-      FinisherShop.deleteMany({ userId: req.params.userId, finisherId: finisher._id }),
+      FinisherAssignment.deleteMany({ finisherId: finisher._id }),
+      FinisherShop.deleteMany({ finisherId: finisher._id }),
       Finisher.findByIdAndDelete(finisher._id)
     ]);
     res.json({ message: 'Finisher deleted successfully' });
@@ -918,22 +894,15 @@ router.delete('/users/:userId/finishers/:finisherId([0-9a-fA-F]{24})', async (re
   }
 });
 
-router.post('/users/:userId/finishers/:finisherId([0-9a-fA-F]{24})/login-as', async (req, res) => {
+router.post('/finishers/:id([0-9a-fA-F]{24})/login-as', async (req, res) => {
   try {
-    const finisher = await Finisher.findOne({ _id: req.params.finisherId, userId: req.params.userId }).select('-password');
+    const finisher = await Finisher.findById(req.params.id).select('-password');
     if (!finisher) return res.status(404).json({ error: 'Finisher not found' });
     const token = generateToken(finisher._id, 'finisher');
     res.json({
       token,
       role: 'finisher',
-      user: {
-        id: finisher._id,
-        userId: finisher.userId,
-        name: finisher.name,
-        phone: finisher.phone,
-        language: finisher.language,
-        role: 'finisher'
-      }
+      user: { id: finisher._id, name: finisher.name, phone: finisher.phone, language: finisher.language, role: 'finisher' }
     });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });

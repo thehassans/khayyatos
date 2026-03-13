@@ -28,25 +28,23 @@ const summarizeAssignments = (assignments) => {
 
 const buildFinisherAuthUser = (finisher) => ({
   id: finisher._id,
-  userId: finisher.userId,
   name: finisher.name,
   phone: finisher.phone,
   language: finisher.language,
   role: 'finisher'
 });
 
-const ensureShopOwnership = async ({ userId, finisherId, shopId }) => {
-  return await FinisherShop.findOne({ _id: shopId, userId, finisherId });
+const ensureShopOwnership = async ({ finisherId, shopId }) => {
+  return await FinisherShop.findOne({ _id: shopId, finisherId });
 };
 
 router.get('/panel/dashboard', verifyToken, isFinisher, async (req, res) => {
   try {
     const finisherId = req.finisher._id;
-    const userId = req.finisher.userId;
 
     const [shops, assignments] = await Promise.all([
-      FinisherShop.find({ userId, finisherId }).sort({ createdAt: -1 }).lean(),
-      FinisherAssignment.find({ userId, finisherId })
+      FinisherShop.find({ finisherId }).sort({ createdAt: -1 }).lean(),
+      FinisherAssignment.find({ finisherId })
         .sort({ createdAt: -1 })
         .limit(20)
         .populate('shopId', 'shopName ownerName phone perPieceFinishing')
@@ -69,11 +67,11 @@ router.get('/panel/dashboard', verifyToken, isFinisher, async (req, res) => {
 
 router.get('/panel/shops', verifyToken, isFinisher, async (req, res) => {
   try {
-    const shops = await FinisherShop.find({ userId: req.finisher.userId, finisherId: req.finisher._id })
+    const shops = await FinisherShop.find({ finisherId: req.finisher._id })
       .sort({ createdAt: -1 })
       .lean();
 
-    const assignments = await FinisherAssignment.find({ userId: req.finisher.userId, finisherId: req.finisher._id }).lean();
+    const assignments = await FinisherAssignment.find({ finisherId: req.finisher._id }).lean();
     const assignmentMap = assignments.reduce((acc, item) => {
       const key = String(item.shopId);
       if (!acc.has(key)) acc.set(key, []);
@@ -100,7 +98,6 @@ router.post('/panel/shops', verifyToken, isFinisher, blockDemoWrites, async (req
     }
 
     const shop = new FinisherShop({
-      userId: req.finisher.userId,
       finisherId: req.finisher._id,
       shopName,
       ownerName: ownerName || '',
@@ -121,7 +118,7 @@ router.post('/panel/shops', verifyToken, isFinisher, blockDemoWrites, async (req
 
 router.put('/panel/shops/:shopId', verifyToken, isFinisher, blockDemoWrites, async (req, res) => {
   try {
-    const shop = await ensureShopOwnership({ userId: req.finisher.userId, finisherId: req.finisher._id, shopId: req.params.shopId });
+    const shop = await ensureShopOwnership({ finisherId: req.finisher._id, shopId: req.params.shopId });
     if (!shop) {
       return res.status(404).json({ error: 'Shop not found' });
     }
@@ -146,7 +143,7 @@ router.put('/panel/shops/:shopId', verifyToken, isFinisher, blockDemoWrites, asy
 router.get('/panel/assignments', verifyToken, isFinisher, async (req, res) => {
   try {
     const { shopId, status } = req.query || {};
-    const query = { userId: req.finisher.userId, finisherId: req.finisher._id };
+    const query = { finisherId: req.finisher._id };
     if (shopId) query.shopId = shopId;
     if (status) query.status = status;
 
@@ -168,13 +165,12 @@ router.post('/panel/assignments', verifyToken, isFinisher, blockDemoWrites, asyn
       return res.status(400).json({ error: 'shopId and pieces are required' });
     }
 
-    const shop = await ensureShopOwnership({ userId: req.finisher.userId, finisherId: req.finisher._id, shopId });
+    const shop = await ensureShopOwnership({ finisherId: req.finisher._id, shopId });
     if (!shop) {
       return res.status(404).json({ error: 'Shop not found' });
     }
 
     const assignment = new FinisherAssignment({
-      userId: req.finisher.userId,
       finisherId: req.finisher._id,
       shopId: shop._id,
       description: description || '',
@@ -196,7 +192,6 @@ router.put('/panel/assignments/:id', verifyToken, isFinisher, blockDemoWrites, a
   try {
     const assignment = await FinisherAssignment.findOne({
       _id: req.params.id,
-      userId: req.finisher.userId,
       finisherId: req.finisher._id
     });
     if (!assignment) {
@@ -205,7 +200,7 @@ router.put('/panel/assignments/:id', verifyToken, isFinisher, blockDemoWrites, a
 
     const { shopId, description, pieces, ratePerPiece, amountReceived, status } = req.body || {};
     if (shopId && String(shopId) !== String(assignment.shopId)) {
-      const shop = await ensureShopOwnership({ userId: req.finisher.userId, finisherId: req.finisher._id, shopId });
+      const shop = await ensureShopOwnership({ finisherId: req.finisher._id, shopId });
       if (!shop) {
         return res.status(404).json({ error: 'Shop not found' });
       }

@@ -153,12 +153,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const loginAsFinisher = async (finisherId, userId, adminMode = false) => {
+  const loginAsFinisher = async (finisherId) => {
     try {
-      const url = (adminMode && userId)
-        ? `/admin/users/${userId}/finishers/${finisherId}/login-as`
-        : `/finisher/login-as/${finisherId}`;
-      const response = await api.post(url, {});
+      const response = await api.post(`/admin/finishers/${finisherId}/login-as`, {});
       const { token: newToken, user: userData, role } = response.data;
       localStorage.setItem('token', newToken);
       setToken(newToken);

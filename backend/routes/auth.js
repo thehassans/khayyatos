@@ -130,15 +130,12 @@ router.post('/login', async (req, res) => {
       }
 
       // Try finisher login
-      const finisher = await Finisher.findOne({ phone: identifier }).populate('userId');
+      const finisher = await Finisher.findOne({ phone: identifier });
       if (finisher) {
         const isMatch = await finisher.comparePassword(password);
         if (isMatch) {
           if (!finisher.isActive) {
             return res.status(403).json({ error: 'Account is inactive' });
-          }
-          if (!finisher.userId?.isSubscriptionActive || !finisher.userId.isSubscriptionActive()) {
-            return res.status(403).json({ error: 'Shop subscription expired' });
           }
           const token = generateToken(finisher._id, 'finisher');
           return res.json({
@@ -317,7 +314,7 @@ router.get('/verify', verifyToken, async (req, res) => {
     } else if (req.userRole === 'worker') {
       user = await Worker.findById(req.userId).select('-password').populate('userId', 'businessName logo');
     } else if (req.userRole === 'finisher') {
-      user = await Finisher.findById(req.userId).select('-password').populate('userId', 'businessName logo');
+      user = await Finisher.findById(req.userId).select('-password');
     }
     
     if (!user) {
