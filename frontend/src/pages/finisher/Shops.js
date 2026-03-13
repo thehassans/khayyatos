@@ -28,6 +28,24 @@ const StatusPill = ({ status }) => (
   </span>
 );
 
+const summarizeShopAssignments = (items = []) => items.reduce((acc, item) => {
+  acc.totalPieces += Number(item?.pieces) || 0;
+  acc.amountReceived += Number(item?.amountReceived) || 0;
+  acc.pendingAmount += Number(item?.pendingAmount) || 0;
+  return acc;
+}, {
+  totalPieces: 0,
+  amountReceived: 0,
+  pendingAmount: 0
+});
+
+const getErrorMessage = (error, fallback) => {
+  if (error?.response?.status === 429) {
+    return 'Too many requests right now. Please wait a few seconds and try again.';
+  }
+  return error?.response?.data?.error || fallback;
+};
+
 // ─── main component ───────────────────────────────────────────────────────────
 const FinisherShops = () => {
   const { t } = useTranslation();
@@ -46,6 +64,19 @@ const FinisherShops = () => {
   const [assignShopId, setAssignShopId]   = useState(null);
   const [assignForm, setAssignForm]       = useState({ description: '', pieces: '', ratePerPiece: '', amountReceived: '' });
   const [assignLoading, setAssignLoading] = useState(false);
+
+  // quick assign for new customer/shop
+  const [quickAssignOpen, setQuickAssignOpen] = useState(false);
+  const [quickAssignForm, setQuickAssignForm] = useState({
+    shopName: '',
+    customerName: '',
+    customerPhone: '',
+    description: '',
+    pieces: '',
+    ratePerPiece: '',
+    amountReceived: ''
+  });
+  const [quickAssignLoading, setQuickAssignLoading] = useState(false);
 
   // expanded shop assignments
   const [expanded, setExpanded] = useState(new Set());
@@ -89,21 +120,47 @@ const FinisherShops = () => {
     return map;
   }, [assignments]);
 
+  const shopStatsMap = useMemo(() => {
+    return shops.reduce((acc, shop) => {
+      acc[String(shop._id)] = summarizeShopAssignments(assignmentsByShop[String(shop._id)] || []);
+      return acc;
+    }, {});
+  }, [shops, assignmentsByShop]);
+
+  const upsertShop = (shop) => {
+    if (!shop?._id) return;
+    setShops((prev) => {
+      const exists = prev.some((item) => String(item._id) === String(shop._id));
+      if (exists) {
+        return prev.map((item) => (String(item._id) === String(shop._id) ? { ...item, ...shop } : item));
+      }
+      return [shop, ...prev];
+    });
+  };
+
+  const upsertAssignment = (assignment) => {
+    if (!assignment?._id) return;
+    setAssignments((prev) => {
+      const filtered = prev.filter((item) => String(item._id) !== String(assignment._id));
+      return [assignment, ...filtered];
+    });
+  };
+
   // ── create shop ──
   const handleCreateShop = async (e) => {
     e.preventDefault();
     setShopLoading(true);
     try {
-      await api.post('/finisher/panel/shops', {
+      const response = await api.post('/finisher/panel/shops', {
         ...shopForm,
         perPieceFinishing: Number(shopForm.perPieceFinishing) || 0,
       });
       toast.success('Shop created');
+      upsertShop(response.data?.shop);
       setShopForm({ shopName: '', ownerName: '', phone: '', perPieceFinishing: '' });
       setCreateOpen(false);
-      fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to create shop');
+      toast.error(getErrorMessage(err, 'Failed to create shop'));
     }
     setShopLoading(false);
   };
@@ -128,29 +185,68 @@ const FinisherShops = () => {
         status: 'assigned',
       });
       const newA = res.data?.assignment;
-      setAssignments((prev) => [newA, ...prev]);
+      if (res.data?.shop) upsertShop(res.data.shop);
+      upsertAssignment(newA);
       setReceivedDrafts((prev) => ({ ...prev, [newA._id]: String(newA.amountReceived ?? 0) }));
       setExpanded((prev) => new Set([...prev, String(assignShopId)]));
       setAssignShopId(null);
+      setAssignForm({ description: '', pieces: '', ratePerPiece: '', amountReceived: '' });
       toast.success('Pieces assigned');
-      fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to assign');
+      toast.error(getErrorMessage(err, 'Failed to assign'));
     }
     setAssignLoading(false);
+  };
+
+  const handleQuickAssign = async (e) => {
+    e.preventDefault();
+    setQuickAssignLoading(true);
+    try {
+      const res = await api.post('/finisher/panel/assignments', {
+        shopName: quickAssignForm.shopName,
+        customerName: quickAssignForm.customerName,
+        customerPhone: quickAssignForm.customerPhone,
+        description: quickAssignForm.description,
+        pieces: Number(quickAssignForm.pieces) || 0,
+        ratePerPiece: Number(quickAssignForm.ratePerPiece) || 0,
+        amountReceived: Number(quickAssignForm.amountReceived) || 0,
+        status: 'assigned'
+      });
+      const createdAssignment = res.data?.assignment;
+      if (res.data?.shop) {
+        upsertShop(res.data.shop);
+        setExpanded((prev) => new Set([String(res.data.shop._id), ...prev]));
+      }
+      upsertAssignment(createdAssignment);
+      setReceivedDrafts((prev) => ({ ...prev, [createdAssignment._id]: String(createdAssignment.amountReceived ?? 0) }));
+      setQuickAssignForm({
+        shopName: '',
+        customerName: '',
+        customerPhone: '',
+        description: '',
+        pieces: '',
+        ratePerPiece: '',
+        amountReceived: ''
+      });
+      setQuickAssignOpen(false);
+      toast.success(res.data?.createdShop ? 'Customer shop created and pieces assigned' : 'Pieces assigned');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to assign'));
+    }
+    setQuickAssignLoading(false);
   };
 
   // ── save received amount ──
   const saveReceived = async (assignmentId) => {
     setSavingIds((prev) => new Set([...prev, assignmentId]));
     try {
-      const res = await api.put(`/finisher/panel/assignments/${assignmentId}`, {
+      const res = await api.put(`/finisher/panel/assignments/${assignmentId}/payment`, {
         amountReceived: Number(receivedDrafts[assignmentId]) || 0,
       });
       setAssignments((prev) => prev.map((a) => (a._id === assignmentId ? res.data.assignment : a)));
       toast.success('Saved');
-    } catch {
-      toast.error('Failed to save');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to save payment'));
     }
     setSavingIds((prev) => { const s = new Set(prev); s.delete(assignmentId); return s; });
   };
@@ -162,8 +258,8 @@ const FinisherShops = () => {
       const res = await api.put(`/finisher/panel/assignments/${assignmentId}`, { status: 'completed' });
       setAssignments((prev) => prev.map((a) => (a._id === assignmentId ? res.data.assignment : a)));
       toast.success('Marked as done');
-    } catch {
-      toast.error('Failed');
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to mark as done'));
     }
     setMarkingIds((prev) => { const s = new Set(prev); s.delete(assignmentId); return s; });
   };
@@ -188,7 +284,7 @@ const FinisherShops = () => {
     <div className="space-y-8 animate-fadeIn">
 
       {/* ── header ── */}
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-100">
             {t('nav.shops', { defaultValue: 'Shops' })}
@@ -197,14 +293,107 @@ const FinisherShops = () => {
             {t('finishers.shopsSubtitle', { defaultValue: 'Create shops, assign pieces, and track received amounts.' })}
           </p>
         </div>
-        <button
-          onClick={() => setCreateOpen((v) => !v)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-semibold rounded-xl shadow-sm transition-all"
-        >
-          {createOpen ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {createOpen ? t('common.cancel', { defaultValue: 'Cancel' }) : t('finishers.newShop', { defaultValue: 'New Shop' })}
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            onClick={() => {
+              setQuickAssignOpen((v) => !v);
+              if (!quickAssignOpen) setCreateOpen(false);
+            }}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700 text-gray-700 dark:text-slate-200 text-sm font-semibold rounded-xl shadow-sm transition-all"
+          >
+            {quickAssignOpen ? <X className="w-4 h-4" /> : <Package className="w-4 h-4" />}
+            {quickAssignOpen ? t('common.cancel', { defaultValue: 'Cancel' }) : 'Quick Assign'}
+          </button>
+          <button
+            onClick={() => {
+              setCreateOpen((v) => !v);
+              if (!createOpen) setQuickAssignOpen(false);
+            }}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-semibold rounded-xl shadow-sm transition-all"
+          >
+            {createOpen ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {createOpen ? t('common.cancel', { defaultValue: 'Cancel' }) : t('finishers.newShop', { defaultValue: 'New Shop' })}
+          </button>
+        </div>
       </div>
+
+      {quickAssignOpen && (
+        <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-4 sm:p-6">
+          <div className="flex flex-col gap-1 mb-5">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100 uppercase tracking-wider">Quick Assign New Customer</h2>
+            <p className="text-xs text-gray-400 dark:text-slate-500">Enter a name and phone. If the customer shop does not exist yet, it will be created automatically.</p>
+          </div>
+          <form onSubmit={handleQuickAssign} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              <Field
+                label="Customer Name *"
+                value={quickAssignForm.customerName}
+                onChange={(e) => setQuickAssignForm((p) => ({ ...p, customerName: e.target.value }))}
+                placeholder="Customer name"
+                required
+              />
+              <Field
+                label="Phone Number *"
+                value={quickAssignForm.customerPhone}
+                onChange={(e) => setQuickAssignForm((p) => ({ ...p, customerPhone: e.target.value }))}
+                placeholder="+966…"
+                required
+              />
+              <Field
+                label="Shop Name"
+                value={quickAssignForm.shopName}
+                onChange={(e) => setQuickAssignForm((p) => ({ ...p, shopName: e.target.value }))}
+                placeholder="Optional shop name"
+              />
+              <Field
+                label="Note"
+                value={quickAssignForm.description}
+                onChange={(e) => setQuickAssignForm((p) => ({ ...p, description: e.target.value }))}
+                placeholder="Description…"
+              />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <Field
+                label="Pieces *"
+                type="number"
+                min="1"
+                value={quickAssignForm.pieces}
+                onChange={(e) => setQuickAssignForm((p) => ({ ...p, pieces: e.target.value }))}
+                placeholder="0"
+                required
+              />
+              <Field
+                label="Rate / Piece"
+                type="number"
+                min="0"
+                step="0.01"
+                value={quickAssignForm.ratePerPiece}
+                onChange={(e) => setQuickAssignForm((p) => ({ ...p, ratePerPiece: e.target.value }))}
+                placeholder="0.00"
+              />
+              <Field
+                label="Received Amount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={quickAssignForm.amountReceived}
+                onChange={(e) => setQuickAssignForm((p) => ({ ...p, amountReceived: e.target.value }))}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={quickAssignLoading}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-white hover:opacity-90 disabled:opacity-60 text-white dark:text-gray-900 text-sm font-semibold rounded-xl transition-all active:scale-95"
+              >
+                {quickAssignLoading ? <span className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" /> : <Package className="w-4 h-4" />}
+                Create & Assign
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* ── create shop panel ── */}
       {createOpen && (
@@ -272,6 +461,7 @@ const FinisherShops = () => {
             const shopAssignments = assignmentsByShop[String(shop._id)] || [];
             const isExpanded      = expanded.has(String(shop._id));
             const isAssigning     = assignShopId === shop._id;
+            const stats           = shopStatsMap[String(shop._id)] || summarizeShopAssignments([]);
 
             return (
               <div
@@ -298,18 +488,18 @@ const FinisherShops = () => {
                   <div className="hidden sm:flex items-center gap-5 text-sm">
                     <div className="text-center">
                       <div className="text-xs text-gray-400 dark:text-slate-500">Pieces</div>
-                      <div className="font-semibold text-gray-900 dark:text-slate-100">{shop.stats?.totalPieces || 0}</div>
+                      <div className="font-semibold text-gray-900 dark:text-slate-100">{stats.totalPieces || 0}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-xs text-gray-400 dark:text-slate-500">Pending</div>
                       <div className="font-semibold text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
-                        {shop.stats?.pendingAmount || 0} <SARIcon className="w-3 h-3" />
+                        {stats.pendingAmount || 0} <SARIcon className="w-3 h-3" />
                       </div>
                     </div>
                     <div className="text-center">
                       <div className="text-xs text-gray-400 dark:text-slate-500">Received</div>
                       <div className="font-semibold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
-                        {shop.stats?.amountReceived || 0} <SARIcon className="w-3 h-3" />
+                        {stats.amountReceived || 0} <SARIcon className="w-3 h-3" />
                       </div>
                     </div>
                   </div>
@@ -318,6 +508,7 @@ const FinisherShops = () => {
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => isAssigning ? setAssignShopId(null) : openAssign(shop)}
+                      type="button"
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95 ${
                         isAssigning
                           ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'
@@ -329,6 +520,7 @@ const FinisherShops = () => {
                     </button>
                     {shopAssignments.length > 0 && (
                       <button
+                        type="button"
                         onClick={() => toggleExpand(shop._id)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all"
                       >
@@ -341,9 +533,9 @@ const FinisherShops = () => {
 
                 {/* sm stats strip */}
                 <div className="sm:hidden flex items-center gap-4 px-5 pb-3 text-xs">
-                  <span className="text-gray-400">{shop.stats?.totalPieces || 0} pcs</span>
-                  <span className="text-amber-500 font-medium inline-flex items-center gap-0.5">{shop.stats?.pendingAmount || 0}<SARIcon className="w-3 h-3" /> pending</span>
-                  <span className="text-emerald-500 font-medium inline-flex items-center gap-0.5">{shop.stats?.amountReceived || 0}<SARIcon className="w-3 h-3" /> received</span>
+                  <span className="text-gray-400">{stats.totalPieces || 0} pcs</span>
+                  <span className="text-amber-500 font-medium inline-flex items-center gap-0.5">{stats.pendingAmount || 0}<SARIcon className="w-3 h-3" /> pending</span>
+                  <span className="text-emerald-500 font-medium inline-flex items-center gap-0.5">{stats.amountReceived || 0}<SARIcon className="w-3 h-3" /> received</span>
                 </div>
 
                 {/* ── inline assign form ── */}
@@ -353,7 +545,7 @@ const FinisherShops = () => {
                     className="border-t border-dashed border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-900/5 px-5 py-4 space-y-4"
                   >
                     <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Assign Pieces to {shop.shopName}</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                       <Field
                         label="Pieces *"
                         type="number"
@@ -426,42 +618,50 @@ const FinisherShops = () => {
                                 {a.ratePerPiece ? <> × <span className="font-semibold text-gray-900 dark:text-slate-100">{a.ratePerPiece}</span></> : null}
                                 <> = <span className="font-semibold text-gray-900 dark:text-slate-100 inline-flex items-center gap-0.5">{a.totalAmount}<SARIcon className="w-3 h-3" /></span></>
                               </span>
-                              {!isDone && (
-                                <span className="text-amber-600 dark:text-amber-400 font-medium inline-flex items-center gap-0.5">
-                                  {a.pendingAmount}<SARIcon className="w-3 h-3" /> pending
-                                </span>
-                              )}
+                              <span className="text-amber-600 dark:text-amber-400 font-medium inline-flex items-center gap-0.5">
+                                {a.pendingAmount}<SARIcon className="w-3 h-3" /> pending
+                              </span>
+                              <span className={`text-xs font-semibold ${a.paymentStatus === 'paid' ? 'text-emerald-600 dark:text-emerald-400' : a.paymentStatus === 'partial' ? 'text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-slate-500'}`}>
+                                {a.paymentStatus === 'paid' ? 'Paid' : a.paymentStatus === 'partial' ? 'Partially Paid' : 'Unpaid'}
+                              </span>
                             </div>
                           </div>
 
                           {/* right: received input + actions */}
-                          {!isDone ? (
-                            <div className="flex items-center gap-2 shrink-0">
-                              <div className="relative">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  value={draft}
-                                  onChange={(e) => setReceivedDrafts((p) => ({ ...p, [a._id]: e.target.value }))}
-                                  className="w-28 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 transition-all pr-7"
-                                  placeholder="Received"
-                                />
-                                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
-                                  <SARIcon className="w-3 h-3 text-gray-400" />
-                                </span>
-                              </div>
+                          <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
+                            <div className="relative flex-1 sm:flex-none">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={draft}
+                                onChange={(e) => setReceivedDrafts((p) => ({ ...p, [a._id]: e.target.value }))}
+                                className="w-full sm:w-32 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 transition-all pr-7"
+                                placeholder="Received"
+                              />
+                              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <SARIcon className="w-3 h-3 text-gray-400" />
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => saveReceived(a._id)}
+                              disabled={isSaving}
+                              title="Save received amount"
+                              className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400 disabled:opacity-50 transition-all active:scale-95"
+                            >
+                              {isSaving
+                                ? <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-current border-t-transparent block" />
+                                : <Check className="w-3.5 h-3.5" />}
+                            </button>
+                            {isDone ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+                                <Check className="w-3.5 h-3.5" />
+                                Done
+                              </span>
+                            ) : (
                               <button
-                                onClick={() => saveReceived(a._id)}
-                                disabled={isSaving}
-                                title="Save received amount"
-                                className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400 disabled:opacity-50 transition-all active:scale-95"
-                              >
-                                {isSaving
-                                  ? <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-current border-t-transparent block" />
-                                  : <Check className="w-3.5 h-3.5" />}
-                              </button>
-                              <button
+                                type="button"
                                 onClick={() => markDone(a._id)}
                                 disabled={isMarking}
                                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-xs font-semibold disabled:opacity-50 transition-all active:scale-95"
@@ -471,13 +671,8 @@ const FinisherShops = () => {
                                   : <Check className="w-3.5 h-3.5" />}
                                 Mark Done
                               </button>
-                            </div>
-                          ) : (
-                            <div className="shrink-0 flex items-center gap-3 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-                              <Check className="w-4 h-4" />
-                              <span className="inline-flex items-center gap-0.5">{a.amountReceived}<SARIcon className="w-3 h-3" /> received</span>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       );
                     })}

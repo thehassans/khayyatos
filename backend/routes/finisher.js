@@ -26,6 +26,25 @@ const summarizeAssignments = (assignments) => {
   });
 };
 
+const normalizeText = (value) => (typeof value === 'string' ? value.trim() : '');
+
+const getPaymentStatus = (assignment) => {
+  const totalAmount = Number(assignment?.totalAmount) || 0;
+  const amountReceived = Number(assignment?.amountReceived) || 0;
+  if (totalAmount <= 0 || amountReceived <= 0) return 'unpaid';
+  if (amountReceived >= totalAmount) return 'paid';
+  return 'partial';
+};
+
+const decorateAssignment = (assignment) => {
+  if (!assignment) return assignment;
+  const base = typeof assignment.toObject === 'function' ? assignment.toObject() : assignment;
+  return {
+    ...base,
+    paymentStatus: getPaymentStatus(base)
+  };
+};
+
 const buildFinisherAuthUser = (finisher) => ({
   id: finisher._id,
   name: finisher.name,
@@ -36,6 +55,60 @@ const buildFinisherAuthUser = (finisher) => ({
 
 const ensureShopOwnership = async ({ finisherId, shopId }) => {
   return await FinisherShop.findOne({ _id: shopId, finisherId });
+};
+
+const resolveAssignmentShop = async ({
+  finisherId,
+  shopId,
+  shopName,
+  customerName,
+  customerPhone,
+  ratePerPiece
+}) => {
+  if (shopId) {
+    const ownedShop = await ensureShopOwnership({ finisherId, shopId });
+    if (!ownedShop) {
+      const error = new Error('Shop not found');
+      error.statusCode = 404;
+      throw error;
+    }
+    return { shop: ownedShop, createdShop: false };
+  }
+
+  const normalizedPhone = normalizeText(customerPhone);
+  const normalizedCustomerName = normalizeText(customerName);
+  const normalizedShopName = normalizeText(shopName) || normalizedCustomerName || normalizedPhone;
+
+  if (!normalizedShopName && !normalizedPhone) {
+    const error = new Error('Shop or customer details are required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (normalizedPhone) {
+    const existingShop = await FinisherShop.findOne({ finisherId, phone: normalizedPhone });
+    if (existingShop) {
+      if (!existingShop.ownerName && normalizedCustomerName) existingShop.ownerName = normalizedCustomerName;
+      if (!existingShop.shopName && normalizedShopName) existingShop.shopName = normalizedShopName;
+      if ((!existingShop.perPieceFinishing || existingShop.perPieceFinishing === 0) && ratePerPiece !== undefined) {
+        existingShop.perPieceFinishing = Number(ratePerPiece) || 0;
+      }
+      await existingShop.save();
+      return { shop: existingShop, createdShop: false };
+    }
+  }
+
+  const createdShop = new FinisherShop({
+    finisherId,
+    shopName: normalizedShopName || 'Customer',
+    ownerName: normalizedCustomerName || '',
+    phone: normalizedPhone || '',
+    perPieceFinishing: Number(ratePerPiece) || 0,
+    isActive: true
+  });
+
+  await createdShop.save();
+  return { shop: createdShop, createdShop: true };
 };
 
 router.get('/panel/dashboard', verifyToken, isFinisher, async (req, res) => {
@@ -57,7 +130,7 @@ router.get('/panel/dashboard', verifyToken, isFinisher, async (req, res) => {
         totalShops: shops.length,
         ...summarizeAssignments(assignments)
       },
-      recentAssignments: assignments,
+      recentAssignments: assignments.map(decorateAssignment),
       shops
     });
   } catch (error) {
@@ -152,7 +225,7 @@ router.get('/panel/assignments', verifyToken, isFinisher, async (req, res) => {
       .populate('shopId', 'shopName ownerName phone perPieceFinishing')
       .lean();
 
-    res.json({ assignments, stats: summarizeAssignments(assignments) });
+    res.json({ assignments: assignments.map(decorateAssignment), stats: summarizeAssignments(assignments) });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -160,15 +233,29 @@ router.get('/panel/assignments', verifyToken, isFinisher, async (req, res) => {
 
 router.post('/panel/assignments', verifyToken, isFinisher, blockDemoWrites, async (req, res) => {
   try {
-    const { shopId, description, pieces, ratePerPiece, amountReceived, status } = req.body || {};
-    if (!shopId || !pieces) {
-      return res.status(400).json({ error: 'shopId and pieces are required' });
+    const {
+      shopId,
+      shopName,
+      customerName,
+      customerPhone,
+      description,
+      pieces,
+      ratePerPiece,
+      amountReceived,
+      status
+    } = req.body || {};
+    if (!pieces) {
+      return res.status(400).json({ error: 'pieces is required' });
     }
 
-    const shop = await ensureShopOwnership({ finisherId: req.finisher._id, shopId });
-    if (!shop) {
-      return res.status(404).json({ error: 'Shop not found' });
-    }
+    const { shop, createdShop } = await resolveAssignmentShop({
+      finisherId: req.finisher._id,
+      shopId,
+      shopName,
+      customerName,
+      customerPhone,
+      ratePerPiece
+    });
 
     const assignment = new FinisherAssignment({
       finisherId: req.finisher._id,
@@ -182,7 +269,41 @@ router.post('/panel/assignments', verifyToken, isFinisher, blockDemoWrites, asyn
 
     await assignment.save();
     await assignment.populate('shopId', 'shopName ownerName phone perPieceFinishing');
-    res.status(201).json({ message: 'Assignment created successfully', assignment });
+    res.status(201).json({
+      message: 'Assignment created successfully',
+      assignment: decorateAssignment(assignment),
+      shop,
+      createdShop
+    });
+  } catch (error) {
+    if (error?.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    if (error?.code === 11000) {
+      return res.status(400).json({ error: 'Shop with this phone already exists' });
+    }
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.put('/panel/assignments/:id/payment', verifyToken, isFinisher, blockDemoWrites, async (req, res) => {
+  try {
+    const assignment = await FinisherAssignment.findOne({
+      _id: req.params.id,
+      finisherId: req.finisher._id
+    });
+    if (!assignment) {
+      return res.status(404).json({ error: 'Assignment not found' });
+    }
+
+    assignment.amountReceived = Number(req.body?.amountReceived) || 0;
+    await assignment.save();
+    await assignment.populate('shopId', 'shopName ownerName phone perPieceFinishing');
+
+    res.json({
+      message: 'Payment updated successfully',
+      assignment: decorateAssignment(assignment)
+    });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -214,7 +335,7 @@ router.put('/panel/assignments/:id', verifyToken, isFinisher, blockDemoWrites, a
 
     await assignment.save();
     await assignment.populate('shopId', 'shopName ownerName phone perPieceFinishing');
-    res.json({ message: 'Assignment updated successfully', assignment });
+    res.json({ message: 'Assignment updated successfully', assignment: decorateAssignment(assignment) });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
