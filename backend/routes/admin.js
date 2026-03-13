@@ -6,6 +6,11 @@ const User = require('../models/User');
 const Worker = require('../models/Worker');
 const Customer = require('../models/Customer');
 const Stitching = require('../models/Stitching');
+const Payment = require('../models/Payment');
+const Laundry = require('../models/Laundry');
+const LaundryPayment = require('../models/LaundryPayment');
+const Fabric = require('../models/Fabric');
+const EmbroideryDesign = require('../models/EmbroideryDesign');
 const Finisher = require('../models/Finisher');
 const FinisherShop = require('../models/FinisherShop');
 const FinisherAssignment = require('../models/FinisherAssignment');
@@ -110,6 +115,39 @@ const buildAdminStyleOptionsCatalog = (doc) => {
         };
       })
     }))
+  };
+};
+
+const wipeUserOwnedData = async (userId) => {
+  const [
+    workersResult,
+    customersResult,
+    stitchingsResult,
+    paymentsResult,
+    laundriesResult,
+    laundryPaymentsResult,
+    fabricsResult,
+    embroideryDesignsResult
+  ] = await Promise.all([
+    Worker.deleteMany({ userId }),
+    Customer.deleteMany({ userId }),
+    Stitching.deleteMany({ userId }),
+    Payment.deleteMany({ userId }),
+    Laundry.deleteMany({ userId }),
+    LaundryPayment.deleteMany({ userId }),
+    Fabric.deleteMany({ userId }),
+    EmbroideryDesign.deleteMany({ userId })
+  ]);
+
+  return {
+    workers: workersResult?.deletedCount || 0,
+    customers: customersResult?.deletedCount || 0,
+    stitchings: stitchingsResult?.deletedCount || 0,
+    payments: paymentsResult?.deletedCount || 0,
+    laundries: laundriesResult?.deletedCount || 0,
+    laundryPayments: laundryPaymentsResult?.deletedCount || 0,
+    fabrics: fabricsResult?.deletedCount || 0,
+    embroideryDesigns: embroideryDesignsResult?.deletedCount || 0
   };
 };
 
@@ -676,13 +714,33 @@ router.delete('/users/:id', async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
-    await Worker.deleteMany({ userId: user._id });
-    await Customer.deleteMany({ userId: user._id });
-    await Stitching.deleteMany({ userId: user._id });
+
+    await wipeUserOwnedData(user._id);
     await User.findByIdAndDelete(req.params.id);
     
     res.json({ message: 'User and all associated data deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/users/:id/reset-data', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const deleted = await wipeUserOwnedData(user._id);
+    user.receiptCounter = 1000;
+    user.onboardingCompleted = false;
+    user.onboardingStep = 0;
+    await user.save();
+
+    res.json({
+      message: 'User data reset successfully',
+      deleted
+    });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }

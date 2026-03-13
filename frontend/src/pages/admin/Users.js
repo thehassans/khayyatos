@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/Badge';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
-import { Plus, Search, LogIn, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, LogIn, Edit, Trash2, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminUsers = () => {
@@ -19,6 +19,7 @@ const AdminUsers = () => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState({ status: '', subscription: '' });
   const [deleteModal, setDeleteModal] = useState({ open: false, user: null, loading: false });
+  const [resetModal, setResetModal] = useState({ open: false, user: null, loading: false });
 
   useEffect(() => {
     fetchUsers();
@@ -73,6 +74,32 @@ const AdminUsers = () => {
     } catch (error) {
       toast.error('Failed to delete user');
       setDeleteModal((p) => ({ ...p, loading: false }));
+    }
+  };
+
+  const requestReset = (u) => {
+    setResetModal({ open: true, user: u, loading: false });
+  };
+
+  const closeReset = () => {
+    setResetModal({ open: false, user: null, loading: false });
+  };
+
+  const confirmReset = async () => {
+    const id = resetModal?.user?._id;
+    if (!id) {
+      closeReset();
+      return;
+    }
+    setResetModal((p) => ({ ...p, loading: true }));
+    try {
+      await api.post(`/admin/users/${id}/reset-data`);
+      toast.success('User data reset successfully');
+      closeReset();
+      fetchUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to reset user data');
+      setResetModal((p) => ({ ...p, loading: false }));
     }
   };
 
@@ -178,6 +205,13 @@ const AdminUsers = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
+                        onClick={() => requestReset(user)}
+                        className="p-2 hover:bg-amber-50 text-amber-600 rounded-lg"
+                        title="Reset user data"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => requestDelete(user)}
                         className="p-2 hover:bg-rose-50 text-rose-600 rounded-lg"
                       >
@@ -196,6 +230,21 @@ const AdminUsers = () => {
           </div>
         )}
       </Card>
+
+      <ConfirmModal
+        isOpen={resetModal.open}
+        onClose={closeReset}
+        title="Reset User Data"
+        message="Delete all business data for this user?"
+        subtitle="This keeps the account but removes customers, invoices, workers, laundry records, payments, fabrics, and embroidery designs."
+        confirmText="Reset Data"
+        cancelText={t('common.cancel', { defaultValue: 'Cancel' })}
+        confirmVariant="danger"
+        loading={resetModal.loading}
+        onConfirm={confirmReset}
+        previewTitle={resetModal?.user?.businessName || ''}
+        previewSubtitle={resetModal?.user?.phone || ''}
+      />
 
       <ConfirmModal
         isOpen={deleteModal.open}

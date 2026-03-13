@@ -10,8 +10,10 @@ const { verifyToken, isUser } = require('../middleware/auth');
 const { blockDemoWrites } = require('../middleware/demoGuard');
 const whatsappService = require('../utils/whatsappService');
 const { mergeMeasurementValues, normalizeMeasurementValues } = require('../utils/measurements');
+const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 
 const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const normalizeText = (value) => (typeof value === 'string' ? value.trim() : '');
 
 const canonicalSaudiMobile = (value) => {
   const digits = String(value || '').replace(/\D/g, '');
@@ -56,6 +58,74 @@ const syncManualReceiptCounter = async (user, receiptNumber) => {
   if (manualCounter <= (Number(user.receiptCounter) || 0)) return;
   user.receiptCounter = manualCounter;
   await user.save();
+};
+
+const resolveOrderCustomer = async ({
+  userId,
+  customerId,
+  customerName,
+  customerPhone,
+  normalizedMeasurements,
+  hasMeasurementsPayload
+}) => {
+  if (customerId) {
+    const customer = await Customer.findOne({
+      _id: customerId,
+      userId
+    });
+    if (!customer) {
+      const error = new Error('Customer not found');
+      error.statusCode = 404;
+      throw error;
+    }
+    return { customer, createdCustomer: false };
+  }
+
+  const normalizedName = normalizeText(customerName);
+  const normalizedPhone = normalizeText(customerPhone);
+
+  if (!normalizedName || !normalizedPhone) {
+    const error = new Error('Customer name and phone are required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  let customer = await Customer.findOne({ userId, phone: normalizedPhone });
+  if (customer) {
+    let shouldSave = false;
+
+    if (normalizedName && normalizedName !== customer.name) {
+      customer.name = normalizedName;
+      const translations = await translateMany({ entries: [{ id: 'name', text: normalizedName }] });
+      customer.nameI18n = translations.name || buildFallbackI18n(normalizedName);
+      shouldSave = true;
+    }
+
+    if (hasMeasurementsPayload && Object.keys(normalizedMeasurements || {}).length) {
+      customer.measurements = mergeMeasurementValues(customer.measurements, normalizedMeasurements);
+      shouldSave = true;
+    }
+
+    if (shouldSave) await customer.save();
+    return { customer, createdCustomer: false };
+  }
+
+  customer = new Customer({
+    userId,
+    name: normalizedName,
+    phone: normalizedPhone,
+    measurements: normalizedMeasurements,
+    notes: '',
+    relations: []
+  });
+
+  if (normalizedName) {
+    const translations = await translateMany({ entries: [{ id: 'name', text: normalizedName }] });
+    customer.nameI18n = translations.name || buildFallbackI18n(normalizedName);
+  }
+
+  await customer.save();
+  return { customer, createdCustomer: true };
 };
 
 router.use(verifyToken, isUser);
@@ -175,6 +245,8 @@ router.post('/', blockDemoWrites, async (req, res) => {
   try {
     const { 
       customerId, 
+      customerName,
+      customerPhone,
       relationId,
       relationName,
       relationType,
@@ -195,15 +267,15 @@ router.post('/', blockDemoWrites, async (req, res) => {
     } = req.body;
     const hasMeasurementsPayload = measurements && typeof measurements === 'object' && !Array.isArray(measurements);
     const normalizedMeasurements = normalizeMeasurementValues(measurements);
-    
-    const customer = await Customer.findOne({ 
-      _id: customerId, 
-      userId: req.user._id 
+
+    const { customer } = await resolveOrderCustomer({
+      userId: req.user._id,
+      customerId,
+      customerName,
+      customerPhone,
+      normalizedMeasurements,
+      hasMeasurementsPayload
     });
-    
-    if (!customer) {
-      return res.status(404).json({ error: 'Customer not found' });
-    }
 
     let relationToSave = null;
     if (relationId) {
@@ -263,7 +335,7 @@ router.post('/', blockDemoWrites, async (req, res) => {
 
     const stitching = new Stitching({
       userId: req.user._id,
-      customerId,
+      customerId: customer._id,
       relationId: relationToSave?._id || null,
       relationName: (relationToSave ? (relationToSave.nameI18n?.en || relationToSave.name) : null) || relationName || null,
       relationType: relationType || null,
@@ -285,10 +357,11 @@ router.post('/', blockDemoWrites, async (req, res) => {
     });
     
     await stitching.save();
-    
-    customer.totalSpent += price;
+
+    const safePrice = Number(price) || 0;
+    customer.totalSpent += safePrice;
     customer.totalOrders += 1;
-    customer.loyaltyPoints += Math.floor(price / 100);
+    customer.loyaltyPoints += Math.floor(safePrice / 100);
     await customer.save();
 
     if (hasMeasurementsPayload && Object.keys(normalizedMeasurements).length) {
@@ -327,9 +400,13 @@ router.post('/', blockDemoWrites, async (req, res) => {
     
     res.status(201).json({ 
       message: 'Stitching order created successfully',
-      stitching 
+      stitching,
+      customer
     });
   } catch (error) {
+    if (error?.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
     if (error.code === 11000) {
       return res.status(400).json({ error: 'Receipt number already exists' });
     }

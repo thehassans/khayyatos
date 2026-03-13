@@ -60,6 +60,8 @@ const StitchingForm = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [quickCustomerOpen, setQuickCustomerOpen] = useState(false);
+  const [quickCustomer, setQuickCustomer] = useState({ name: '', phone: '' });
   const [selectedRelation, setSelectedRelation] = useState(null);
   const selectedRelationIdRef = useRef(null);
   const [createdOrder, setCreatedOrder] = useState(null);
@@ -413,6 +415,8 @@ const StitchingForm = () => {
 
   const handleCustomerSelect = async (customer) => {
     setDropdownOpen(false);
+    setQuickCustomerOpen(false);
+    setQuickCustomer({ name: '', phone: '' });
     setOrderItems([]);
     setFamilyControlsOpen(false);
     setExpandedOrderItemId(null);
@@ -1183,14 +1187,22 @@ const StitchingForm = () => {
     });
   };
 
+  const activeCustomerName = selectedCustomer?.nameI18n?.[langKey] || selectedCustomer?.name || quickCustomer.name || '';
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isDemo) {
       setDemoBlockedOpen(true);
       return;
     }
-    if (!selectedCustomer) {
-      toast.error('Select a customer');
+    const quickName = String(quickCustomer.name || '').trim();
+    const quickPhone = String(quickCustomer.phone || '').trim();
+
+    if (!selectedCustomer && !quickCustomerOpen) {
+      toast.error('Select a customer or use quick customer');
+      return;
+    }
+    if (!selectedCustomer && quickCustomerOpen && (!quickName || !quickPhone)) {
+      toast.error('Enter customer name and phone');
       return;
     }
     setLoading(true);
@@ -1211,12 +1223,13 @@ const StitchingForm = () => {
 
       if (isEdit) {
         const data = {
-          customerId: selectedCustomer._id,
-          customerName: selectedCustomer.name,
+          customerId: selectedCustomer?._id || null,
+          customerName: selectedCustomer?.name || quickName,
+          customerPhone: selectedCustomer?.phone || quickPhone,
           relationId: selectedRelation?._id || null,
           relationName: selectedRelation?.name || null,
           relationType: selectedRelation?.type || null,
-          orderFor: selectedRelation ? selectedRelation.name : selectedCustomer.name,
+          orderFor: selectedRelation ? selectedRelation.name : (selectedCustomer?.name || quickName),
           quantity: formData.quantity,
           price: parseFloat(formData.price) || 0,
           paidAmount: parseFloat(formData.paidAmount) || 0,
@@ -1256,8 +1269,9 @@ const StitchingForm = () => {
           const created = [];
           for (const it of items) {
             const data = {
-              customerId: selectedCustomer._id,
-              customerName: selectedCustomer.name,
+              customerId: selectedCustomer?._id || null,
+              customerName: selectedCustomer?.name || quickName,
+              customerPhone: selectedCustomer?.phone || quickPhone,
               relationId: it.relationId || null,
               relationName: it.relationName || null,
               relationType: it.relationType || null,
@@ -1279,6 +1293,7 @@ const StitchingForm = () => {
 
             const response = await api.post('/stitchings', data);
             const order = response.data?.stitching || response.data;
+            if (response.data?.customer) setSelectedCustomer(response.data.customer);
             created.push(order);
           }
 
@@ -1287,12 +1302,13 @@ const StitchingForm = () => {
           toast.success('Orders created! You can print labels now.');
         } else {
           const data = {
-            customerId: selectedCustomer._id,
-            customerName: selectedCustomer.name,
+            customerId: selectedCustomer?._id || null,
+            customerName: selectedCustomer?.name || quickName,
+            customerPhone: selectedCustomer?.phone || quickPhone,
             relationId: selectedRelation?._id || null,
             relationName: selectedRelation?.name || null,
             relationType: selectedRelation?.type || null,
-            orderFor: selectedRelation ? selectedRelation.name : selectedCustomer.name,
+            orderFor: selectedRelation ? selectedRelation.name : (selectedCustomer?.name || quickName),
             quantity: formData.quantity,
             price: parseFloat(formData.price) || 0,
             paidAmount: parseFloat(formData.paidAmount) || 0,
@@ -1309,6 +1325,7 @@ const StitchingForm = () => {
           };
           const response = await api.post('/stitchings', data);
           const order = response.data?.stitching || response.data;
+          if (response.data?.customer) setSelectedCustomer(response.data.customer);
           setCreatedOrders([]);
           setCreatedOrder(order);
           toast.success('Order created! You can print the label now.');
@@ -1561,6 +1578,8 @@ const StitchingForm = () => {
                 setCreatedOrders([]);
                 setOrderItems([]);
                 setSelectedCustomer(null);
+                setQuickCustomerOpen(false);
+                setQuickCustomer({ name: '', phone: '' });
                 setSelectedRelation(null);
                 setSelectedEmbroideryDesign(null);
                 setCustomerSearch('');
@@ -1592,14 +1611,40 @@ const StitchingForm = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Customer Dropdown */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200">
                 {t('stitchings.customer')} *
-              </label>
+                </label>
+                {!isEdit ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuickCustomerOpen((prev) => !prev);
+                      setDropdownOpen(false);
+                      setSelectedCustomer(null);
+                      setSelectedRelation(null);
+                      selectedRelationIdRef.current = null;
+                      setOrderItems([]);
+                      setFamilyControlsOpen(false);
+                      setExpandedOrderItemId(null);
+                    }}
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
+                      quickCustomerOpen
+                        ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-200'
+                        : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    {quickCustomerOpen ? 'Use Existing Customer' : 'Quick New Customer'}
+                  </button>
+                ) : null}
+              </div>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   data-tutorial="stitching-form-customer-select"
+                  disabled={quickCustomerOpen}
                   className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors"
                 >
                   {selectedCustomer ? (
@@ -1659,6 +1704,35 @@ const StitchingForm = () => {
                   </div>
                 )}
               </div>
+              {quickCustomerOpen ? (
+                <div className="mt-3 rounded-2xl border border-primary-200 dark:border-primary-900/40 bg-primary-50/60 dark:bg-primary-900/10 p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-slate-200 mb-1">Customer Name</label>
+                      <input
+                        type="text"
+                        value={quickCustomer.name}
+                        onChange={(e) => setQuickCustomer((prev) => ({ ...prev, name: e.target.value }))}
+                        placeholder="Customer name"
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-slate-200 mb-1">Phone Number</label>
+                      <input
+                        type="text"
+                        value={quickCustomer.phone}
+                        onChange={(e) => setQuickCustomer((prev) => ({ ...prev, phone: e.target.value }))}
+                        placeholder="+966..."
+                        className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">
+                    A customer will be created automatically when you submit the order if this phone does not already exist.
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {advancedStyleGroups.length > 0 ? (
@@ -1711,7 +1785,7 @@ const StitchingForm = () => {
                     onClick={() => setCustomerMeasurementsOpen((p) => !p)}
                     className="w-full flex items-center justify-between"
                   >
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('customers.measurements')} ({selectedCustomer?.nameI18n?.[langKey] || selectedCustomer?.name || ''})</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t('customers.measurements')} ({activeCustomerName || 'Customer'})</h3>
                     <ChevronDown className={`w-5 h-5 text-gray-400 dark:text-slate-400 transition-transform ${customerMeasurementsOpen ? 'rotate-180' : ''}`} />
                   </button>
 
@@ -1730,7 +1804,7 @@ const StitchingForm = () => {
 
                   {customerMeasurementsOpen ? (
                     renderMeasurementInputs({
-                      title: `${t('customers.measurements')} (${selectedCustomer?.nameI18n?.[langKey] || selectedCustomer?.name || ''})`,
+                      title: `${t('customers.measurements')} (${activeCustomerName || 'Customer'})`,
                       subtitle: selectedRelation ? 'Customer measurements are shown for reference while editing the selected order-for measurements.' : 'Capture a complete set of body measurements with a tailoring-focused workspace.',
                       values: selectedRelation ? (selectedCustomer?.measurements || {}) : (formData.measurements || {}),
                       onChange: (key, value) => {
