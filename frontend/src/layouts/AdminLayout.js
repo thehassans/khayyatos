@@ -11,7 +11,8 @@ import {
   Scissors,
   ChevronDown,
   Sparkles,
-  Settings
+  Settings,
+  Store
 } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -29,6 +30,7 @@ const AdminLayout = () => {
   const navItems = [
     { to: '/admin/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
     { to: '/admin/users', icon: Users, label: t('nav.users') },
+    { to: '/admin/finishers', icon: Store, label: t('nav.finishers', { defaultValue: 'Finishers' }) },
     { to: '/admin/gemini', icon: Sparkles, label: t('nav.gemini', { defaultValue: 'Gemini AI' }) },
     { to: '/admin/settings', icon: Settings, label: t('nav.settings', { defaultValue: 'Settings' }) }
   ];

@@ -800,6 +800,31 @@ router.put('/users/:id/whatsapp-addon', async (req, res) => {
 
 // ─── Admin Finisher Management ────────────────────────────────────────────────
 
+router.get('/finishers', async (req, res) => {
+  try {
+    const { search, userId } = req.query;
+    const query = {};
+    if (userId) query.userId = userId;
+    const finishers = await Finisher.find(query)
+      .sort({ createdAt: -1 })
+      .select('-password')
+      .populate('userId', 'businessName name phone');
+    const result = search
+      ? finishers.filter((f) => {
+          const q = search.toLowerCase();
+          return (
+            f.name?.toLowerCase().includes(q) ||
+            f.phone?.includes(q) ||
+            f.userId?.businessName?.toLowerCase().includes(q)
+          );
+        })
+      : finishers;
+    res.json({ finishers: result });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.get('/users/:userId/finishers', async (req, res) => {
   try {
     const finishers = await Finisher.find({ userId: req.params.userId })

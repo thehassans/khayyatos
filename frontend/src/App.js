@@ -61,6 +61,7 @@ class ChunkErrorBoundary extends Component {
 const AdminDashboard = lazyRetry(() => import('./pages/admin/Dashboard'));
 const AdminUsers = lazyRetry(() => import('./pages/admin/Users'));
 const AdminUserForm = lazyRetry(() => import('./pages/admin/UserForm'));
+const AdminAllFinishers = lazyRetry(() => import('./pages/admin/AllFinishers'));
 const AdminFinishers = lazyRetry(() => import('./pages/admin/Finishers'));
 const AdminFinisherForm = lazyRetry(() => import('./pages/admin/FinisherForm'));
 const AdminGeminiSettings = lazyRetry(() => import('./pages/admin/GeminiSettings'));
@@ -185,6 +186,7 @@ const AppRoutes = () => {
           <Route path="users" element={<LazyPage><AdminUsers /></LazyPage>} />
           <Route path="users/new" element={<LazyPage skeleton="form"><AdminUserForm /></LazyPage>} />
           <Route path="users/:id/edit" element={<LazyPage skeleton="form"><AdminUserForm /></LazyPage>} />
+          <Route path="finishers" element={<LazyPage><AdminAllFinishers /></LazyPage>} />
           <Route path="users/:userId/finishers" element={<LazyPage><AdminFinishers /></LazyPage>} />
           <Route path="users/:userId/finishers/new" element={<LazyPage skeleton="form"><AdminFinisherForm /></LazyPage>} />
           <Route path="users/:userId/finishers/:finisherId/edit" element={<LazyPage skeleton="form"><AdminFinisherForm /></LazyPage>} />
