@@ -3,7 +3,7 @@ const router = express.Router();
 const Finisher = require('../models/Finisher');
 const FinisherShop = require('../models/FinisherShop');
 const FinisherAssignment = require('../models/FinisherAssignment');
-const { verifyToken, isUser, isFinisher, generateToken } = require('../middleware/auth');
+const { verifyToken, isFinisher } = require('../middleware/auth');
 const { blockDemoWrites } = require('../middleware/demoGuard');
 const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 
@@ -35,150 +35,9 @@ const buildFinisherAuthUser = (finisher) => ({
   role: 'finisher'
 });
 
-const ensureFinisherOwnership = async (userId, finisherId) => {
-  return await Finisher.findOne({ _id: finisherId, userId });
-};
-
 const ensureShopOwnership = async ({ userId, finisherId, shopId }) => {
   return await FinisherShop.findOne({ _id: shopId, userId, finisherId });
 };
-
-router.get('/', verifyToken, isUser, async (req, res) => {
-  try {
-    const finishers = await Finisher.find({ userId: req.user._id })
-      .sort({ createdAt: -1 })
-      .select('-password');
-    res.json({ finishers });
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-router.post('/login-as/:id', verifyToken, isUser, async (req, res) => {
-  try {
-    const finisher = await Finisher.findOne({ _id: req.params.id, userId: req.user._id }).select('-password');
-    if (!finisher) {
-      return res.status(404).json({ error: 'Finisher not found' });
-    }
-
-    const token = generateToken(finisher._id, 'finisher');
-    res.json({
-      token,
-      role: 'finisher',
-      user: buildFinisherAuthUser(finisher)
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-router.get('/:id([0-9a-fA-F]{24})', verifyToken, isUser, async (req, res) => {
-  try {
-    const finisher = await Finisher.findOne({ _id: req.params.id, userId: req.user._id }).select('-password');
-    if (!finisher) {
-      return res.status(404).json({ error: 'Finisher not found' });
-    }
-
-    const [shops, assignments] = await Promise.all([
-      FinisherShop.find({ userId: req.user._id, finisherId: finisher._id }).sort({ createdAt: -1 }),
-      FinisherAssignment.find({ userId: req.user._id, finisherId: finisher._id }).sort({ createdAt: -1 }).limit(50)
-    ]);
-
-    res.json({
-      finisher,
-      shops,
-      assignments,
-      stats: summarizeAssignments(assignments)
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-router.post('/', verifyToken, isUser, blockDemoWrites, async (req, res) => {
-  try {
-    const { name, phone, password, language } = req.body || {};
-
-    if (!name || !phone || !password) {
-      return res.status(400).json({ error: 'Name, phone, and password are required' });
-    }
-
-    const existing = await Finisher.findOne({ userId: req.user._id, phone });
-    if (existing) {
-      return res.status(400).json({ error: 'Finisher with this phone already exists' });
-    }
-
-    const finisher = new Finisher({
-      userId: req.user._id,
-      name,
-      phone,
-      password,
-      language: language || 'en'
-    });
-
-    if (typeof name === 'string' && name.trim()) {
-      const translations = await translateMany({ entries: [{ id: 'name', text: name.trim() }] });
-      finisher.nameI18n = translations.name || buildFallbackI18n(name.trim());
-    }
-
-    await finisher.save();
-    res.status(201).json({ message: 'Finisher created successfully', finisher: { ...finisher.toObject(), password: undefined } });
-  } catch (error) {
-    if (error?.code === 11000) {
-      return res.status(400).json({ error: 'Finisher with this phone already exists' });
-    }
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-router.put('/:id([0-9a-fA-F]{24})', verifyToken, isUser, blockDemoWrites, async (req, res) => {
-  try {
-    const { name, phone, password, language, isActive } = req.body || {};
-    const finisher = await Finisher.findOne({ _id: req.params.id, userId: req.user._id });
-    if (!finisher) {
-      return res.status(404).json({ error: 'Finisher not found' });
-    }
-
-    if (name) {
-      finisher.name = name;
-      if (typeof name === 'string' && name.trim()) {
-        const translations = await translateMany({ entries: [{ id: 'name', text: name.trim() }] });
-        finisher.nameI18n = translations.name || buildFallbackI18n(name.trim());
-      }
-    }
-    if (phone) finisher.phone = phone;
-    if (password) finisher.password = password;
-    if (language) finisher.language = language;
-    if (isActive !== undefined) finisher.isActive = !!isActive;
-
-    await finisher.save();
-    res.json({ message: 'Finisher updated successfully', finisher: { ...finisher.toObject(), password: undefined } });
-  } catch (error) {
-    if (error?.code === 11000) {
-      return res.status(400).json({ error: 'Finisher with this phone already exists' });
-    }
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-router.delete('/:id([0-9a-fA-F]{24})', verifyToken, isUser, blockDemoWrites, async (req, res) => {
-  try {
-    const finisher = await Finisher.findOne({ _id: req.params.id, userId: req.user._id });
-    if (!finisher) {
-      return res.status(404).json({ error: 'Finisher not found' });
-    }
-
-    await Promise.all([
-      FinisherAssignment.deleteMany({ userId: req.user._id, finisherId: finisher._id }),
-      FinisherShop.deleteMany({ userId: req.user._id, finisherId: finisher._id }),
-      Finisher.findByIdAndDelete(finisher._id)
-    ]);
-
-    res.json({ message: 'Finisher deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
 
 router.get('/panel/dashboard', verifyToken, isFinisher, async (req, res) => {
   try {
