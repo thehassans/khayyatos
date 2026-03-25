@@ -42,14 +42,44 @@ const stripCodeFences = (text) => {
   return trimmed.replace(/^```[a-zA-Z]*\s*/m, '').replace(/```\s*$/m, '').trim();
 };
 
-const extractJsonObject = (text) => {
+const extractJsonPayload = (text) => {
   const cleaned = stripCodeFences(text);
-  const first = cleaned.indexOf('{');
-  const last = cleaned.lastIndexOf('}');
+  const objectStart = cleaned.indexOf('{');
+  const arrayStart = cleaned.indexOf('[');
+  const useArray = arrayStart !== -1 && (objectStart === -1 || arrayStart < objectStart);
+  const first = useArray ? arrayStart : objectStart;
+  const last = useArray ? cleaned.lastIndexOf(']') : cleaned.lastIndexOf('}');
   if (first === -1 || last === -1 || last <= first) {
-    throw new Error('No JSON object found in model response');
+    throw new Error('No JSON payload found in model response');
   }
   return cleaned.slice(first, last + 1);
+};
+
+const collectResponseText = (resp) => {
+  const parts = resp?.data?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return '';
+  return parts
+    .map((part) => (typeof part?.text === 'string' ? part.text : ''))
+    .filter(Boolean)
+    .join('\n')
+    .trim();
+};
+
+const normalizeParsedTranslations = (parsed) => {
+  if (Array.isArray(parsed)) {
+    return parsed.reduce((acc, item) => {
+      const id = String(item?.id || item?.key || '');
+      if (!id) return acc;
+      acc[id] = item?.translations && typeof item.translations === 'object' ? item.translations : item;
+      return acc;
+    }, {});
+  }
+
+  if (parsed?.translations && typeof parsed.translations === 'object' && !Array.isArray(parsed.translations)) {
+    return parsed.translations;
+  }
+
+  return parsed && typeof parsed === 'object' ? parsed : {};
 };
 
 const buildFallbackI18n = (value, targetLangs = DEFAULT_TARGET_LANGS) => {
@@ -96,7 +126,10 @@ const translateMany = async ({ entries, targetLangs = DEFAULT_TARGET_LANGS, apiK
     'You are a translation engine.',
     `Translate each item text into the following languages: ${targetLangs.join(', ')}.`,
     'Input is a JSON array of objects: {"id": string, "text": string}.',
-    'Return ONLY a valid JSON object mapping each id to an object of translations.',
+    'Return ONLY valid JSON.',
+    'Return a JSON object mapping each id to an object of translations.',
+    'Do not omit any id or requested language.',
+    'If the input is a person name, transliterate it naturally into the target script.',
     'Example output:',
     '{"123": {"en": "...", "ar": "...", "ur": "...", "hi": "...", "bn": "..."}}',
     'Do not include markdown or code fences.',
@@ -114,15 +147,16 @@ const translateMany = async ({ entries, targetLangs = DEFAULT_TARGET_LANGS, apiK
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: 2048
+          maxOutputTokens: 2048,
+          responseMimeType: 'application/json'
         }
       },
       { timeout: 20000 }
     );
 
-    const text = resp?.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const jsonText = extractJsonObject(text);
-    const parsed = JSON.parse(jsonText);
+    const text = collectResponseText(resp);
+    const jsonText = extractJsonPayload(text);
+    const parsed = normalizeParsedTranslations(JSON.parse(jsonText));
 
     const result = {};
     safeEntries.forEach((e) => {
@@ -130,7 +164,13 @@ const translateMany = async ({ entries, targetLangs = DEFAULT_TARGET_LANGS, apiK
       if (fromModel && typeof fromModel === 'object') {
         const out = {};
         targetLangs.forEach((l) => {
-          out[l] = typeof fromModel[l] === 'string' ? fromModel[l] : e.text;
+          if (typeof fromModel[l] === 'string' && fromModel[l].trim()) {
+            out[l] = fromModel[l].trim();
+          } else if (typeof fromModel?.translations?.[l] === 'string' && fromModel.translations[l].trim()) {
+            out[l] = fromModel.translations[l].trim();
+          } else {
+            out[l] = e.text;
+          }
         });
         result[e.id] = out;
       } else {
@@ -140,6 +180,7 @@ const translateMany = async ({ entries, targetLangs = DEFAULT_TARGET_LANGS, apiK
 
     return result;
   } catch (e) {
+    console.error('Gemini translation failed:', e?.response?.data || e?.message || e);
     const fallback = {};
     safeEntries.forEach((x) => {
       fallback[x.id] = buildFallbackI18n(x.text, targetLangs);

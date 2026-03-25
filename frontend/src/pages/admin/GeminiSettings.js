@@ -7,6 +7,8 @@ import { Input } from '../../components/ui/Input';
 import { Key, Sparkles, Send, Save, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+const TEST_LANGS = ['en', 'ar', 'ur', 'hi', 'bn'];
+
 const GeminiSettings = () => {
   const { t, i18n } = useTranslation();
   const { api } = useAuth();
@@ -94,11 +96,11 @@ const GeminiSettings = () => {
       setTestTranslations(null);
       const resp = await api.post('/admin/gemini/translate', {
         text,
-        targetLangs: ['en', 'ar', 'ur', 'hi', 'bn']
+        targetLangs: TEST_LANGS
       });
       const translations = resp.data?.translations?.text || null;
       setTestTranslations(translations);
-      if (!translations) toast.error('No translations returned');
+      if (!translations || !Object.keys(translations).length) toast.error('No translations returned');
     } catch (e) {
       toast.error(e.response?.data?.error || 'Translation failed');
     }
@@ -213,8 +215,20 @@ const GeminiSettings = () => {
 
           {testTranslations ? (
             <div className="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-              <div className="text-sm">
-                {testTranslations[(i18n?.language || 'en').split('-')[0]] || ''}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {TEST_LANGS.map((lang) => {
+                  const value = testTranslations?.[lang] || '';
+                  const activeLang = (i18n?.language || 'en').split('-')[0] === lang;
+                  return (
+                    <div
+                      key={lang}
+                      className={`rounded-xl border p-3 ${activeLang ? 'border-primary-300 bg-primary-50' : 'border-gray-200 bg-white'}`}
+                    >
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">{lang}</div>
+                      <div className="text-sm text-gray-900 break-words">{value || '—'}</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : null}
