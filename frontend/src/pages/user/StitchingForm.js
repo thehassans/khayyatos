@@ -108,6 +108,7 @@ const StitchingForm = () => {
     thawbType: 'saudi',
     fabricColor: '',
     fabricId: '',
+    customFabricName: '',
     rollsUsed: '',
     measurements: {},
     styleOptions: {},
@@ -382,6 +383,7 @@ const StitchingForm = () => {
         thawbType: stitch.thawbType || 'saudi',
         fabricColor: stitch.fabricColor || '',
         fabricId: (typeof stitch.fabricId === 'object' ? stitch.fabricId?._id : stitch.fabricId) || '',
+        customFabricName: stitch.customFabricName || '',
         rollsUsed: (stitch.rollsUsed !== undefined && stitch.rollsUsed !== null) ? String(stitch.rollsUsed) : '',
         measurements: stitch.measurements || {},
         styleOptions: stitch.styleOptions || {},
@@ -939,7 +941,7 @@ const StitchingForm = () => {
     const orderForDisplay = labelLang === 'en' ? orderForNameEn : labelLang === 'ar' ? orderForNameAr : `${orderForNameEn} / ${orderForNameAr}`;
 
     const relTypeValue = order?.relationType ? `${String(order.relationType).charAt(0).toUpperCase()}${String(order.relationType).slice(1)}` : '';
-    const fabricDisplay = order?.fabricId?.name ? `${order.fabricId.name}` : '-';
+    const fabricDisplay = order?.fabricId?.name ? `${order.fabricId.name}` : (order?.customFabricName || '-');
     const rollsUsedDisplay = (order?.rollsUsed !== undefined && order?.rollsUsed !== null) ? String(order.rollsUsed) : '0';
     const thawbTypeDisplay = order?.thawbType || formData.thawbType || '-';
     const dueDateDisplay = order?.dueDate ? new Date(order.dueDate).toLocaleDateString() : (formData.dueDate || '-');
@@ -1215,8 +1217,8 @@ const StitchingForm = () => {
         return;
       }
 
-      if (!formData.fabricId && Number(rollsUsedValue) > 0) {
-        toast.error('Select fabric');
+      if (!formData.fabricId && !String(formData.customFabricName || '').trim() && Number(rollsUsedValue) > 0) {
+        toast.error('Select fabric or enter fabric name');
         setLoading(false);
         return;
       }
@@ -1239,6 +1241,7 @@ const StitchingForm = () => {
           thawbType: formData.thawbType,
           fabricColor: formData.fabricColor || null,
           fabricId: formData.fabricId ? formData.fabricId : null,
+          customFabricName: String(formData.customFabricName || '').trim(),
           rollsUsed: rollsUsedValue,
           measurements: formData.measurements,
           styleOptions: formData.styleOptions,
@@ -1285,6 +1288,7 @@ const StitchingForm = () => {
               thawbType: formData.thawbType,
               fabricColor: formData.fabricColor || null,
               fabricId: formData.fabricId ? formData.fabricId : null,
+              customFabricName: String(formData.customFabricName || '').trim(),
               rollsUsed: Number(rollsAlloc.get(it.id)) || 0,
               measurements: it.measurements || {},
               styleOptions: formData.styleOptions,
@@ -1318,6 +1322,7 @@ const StitchingForm = () => {
             thawbType: formData.thawbType,
             fabricColor: formData.fabricColor || null,
             fabricId: formData.fabricId ? formData.fabricId : null,
+            customFabricName: String(formData.customFabricName || '').trim(),
             rollsUsed: rollsUsedValue,
             measurements: formData.measurements,
             styleOptions: formData.styleOptions,
@@ -1518,7 +1523,9 @@ const StitchingForm = () => {
         onThawbTypeChange={(value) => setFormData((prev) => ({ ...prev, thawbType: value }))}
         fabricOptions={Array.isArray(fabrics) ? fabrics : []}
         selectedFabricId={formData.fabricId || ''}
-        onFabricChange={(value) => setFormData((prev) => ({ ...prev, fabricId: value }))}
+        onFabricChange={(value) => setFormData((prev) => ({ ...prev, fabricId: value, customFabricName: value ? '' : prev.customFabricName }))}
+        customFabricName={formData.customFabricName || ''}
+        onCustomFabricNameChange={(value) => setFormData((prev) => ({ ...prev, customFabricName: value, fabricId: String(value || '').trim() ? '' : prev.fabricId }))}
         rollsUsed={formData.rollsUsed}
         onRollsUsedChange={(value) => setFormData((prev) => ({ ...prev, rollsUsed: value }))}
         fabricColors={fabricColors}
@@ -1583,7 +1590,7 @@ const StitchingForm = () => {
                 setSelectedRelation(null);
                 setSelectedEmbroideryDesign(null);
                 setCustomerSearch('');
-                setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', thawbType: 'saudi', fabricColor: '', measurements: {}, styleOptions: {}, embroideryDesignId: null });
+                setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', thawbType: 'saudi', fabricColor: '', fabricId: '', customFabricName: '', rollsUsed: '', measurements: {}, styleOptions: {}, embroideryDesignId: null });
               }}
               className="w-full"
             >

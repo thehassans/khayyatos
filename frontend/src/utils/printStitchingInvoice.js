@@ -54,6 +54,7 @@ export const printStitchingInvoice = async ({ stitch, user }) => {
   const labels = {
     customer: { en: 'Customer', ar: 'العميل' },
     phone: { en: 'Phone', ar: 'الهاتف' },
+    fabric: { en: 'Fabric', ar: 'القماش' },
     quantity: { en: 'Quantity', ar: 'الكمية' },
     price: { en: 'Price', ar: 'السعر' },
     paid: { en: 'Paid', ar: 'المدفوع' },
@@ -89,6 +90,7 @@ export const printStitchingInvoice = async ({ stitch, user }) => {
   };
 
   const balance = (parseFloat(stitch.price) || 0) - (parseFloat(stitch.paidAmount) || 0);
+  const fabricDisplay = stitch.fabricId?.name || stitch.customFabricName || '-';
 
   const printWindow = window.open('', '_blank', 'width=350,height=600');
   if (!printWindow) return;
@@ -130,6 +132,7 @@ export const printStitchingInvoice = async ({ stitch, user }) => {
       <div class="receipt-no">#${stitch.receiptNumber || stitch._id?.slice(-6) || 'N/A'}</div>
       <div class="info-row"><span class="label">${getLabel('customer')}</span><span class="value">${customerDisplayName}</span></div>
       <div class="info-row"><span class="label">${getLabel('phone')}</span><span class="value">${stitch.customerId?.phone || '-'}</span></div>
+      <div class="info-row"><span class="label">${getLabel('fabric')}</span><span class="value">${fabricDisplay}</span></div>
       <div class="info-row"><span class="label">${getLabel('quantity')}</span><span class="value">${stitch.quantity || 1}</span></div>
       <div class="info-row"><span class="label">${getLabel('price')}</span><span class="value">${stitch.price || 0} ${sarSvg}</span></div>
       <div class="info-row"><span class="label">${getLabel('paid')}</span><span class="value">${stitch.paidAmount || 0} ${sarSvg}</span></div>

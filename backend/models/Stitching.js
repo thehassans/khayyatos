@@ -84,6 +84,10 @@ const stitchingSchema = new mongoose.Schema({
     ref: 'Fabric',
     default: null
   },
+  customFabricName: {
+    type: String,
+    default: ''
+  },
   rollsUsed: {
     type: Number,
     default: 0,

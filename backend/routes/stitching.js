@@ -263,6 +263,7 @@ router.post('/', blockDemoWrites, async (req, res) => {
       thawbType,
       fabricColor,
       fabricId,
+      customFabricName,
       rollsUsed
     } = req.body;
     const hasMeasurementsPayload = measurements && typeof measurements === 'object' && !Array.isArray(measurements);
@@ -314,6 +315,7 @@ router.post('/', blockDemoWrites, async (req, res) => {
     }
     const rollsToUse = Number.isFinite(rollsUsedNum) ? rollsUsedNum : 0;
     const fabricToUse = fabricId ? String(fabricId) : null;
+    const customFabricToUse = normalizeText(customFabricName);
 
     if (fabricToUse && rollsToUse > 0) {
       const updated = await Fabric.findOneAndUpdate(
@@ -330,6 +332,10 @@ router.post('/', blockDemoWrites, async (req, res) => {
       const exists = await Fabric.findOne({ _id: fabricToUse, userId: req.user._id }).select('_id');
       if (!exists) return res.status(400).json({ error: 'Invalid fabric' });
     }
+
+    if (!fabricToUse && !customFabricToUse && rollsToUse > 0) {
+      return res.status(400).json({ error: 'Select fabric or enter fabric name' });
+    }
     
     const defaultMeasurements = normalizeMeasurementValues(relationToSave ? relationToSave.measurements : customer.measurements);
 
@@ -344,6 +350,7 @@ router.post('/', blockDemoWrites, async (req, res) => {
       thawbType: thawbType || 'saudi',
       fabricColor: fabricColor || null,
       fabricId: fabricToUse,
+      customFabricName: fabricToUse ? '' : customFabricToUse,
       rollsUsed: rollsToUse,
       measurements: Object.keys(normalizedMeasurements).length ? normalizedMeasurements : defaultMeasurements,
       styleOptions: styleOptions || {},
@@ -434,6 +441,7 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
       thawbType,
       fabricColor,
       fabricId,
+      customFabricName,
       rollsUsed
     } = req.body;
     const hasMeasurementsPayload = measurements && typeof measurements === 'object' && !Array.isArray(measurements);
@@ -461,6 +469,11 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
       nextFabricId = fabricId ? String(fabricId) : null;
     }
 
+    let nextCustomFabricName = normalizeText(stitching.customFabricName);
+    if (customFabricName !== undefined) {
+      nextCustomFabricName = normalizeText(customFabricName);
+    }
+
     let nextRollsUsed = oldRollsUsed;
     if (rollsUsed !== undefined) {
       const n = Number(rollsUsed);
@@ -473,6 +486,10 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
     if (nextFabricId) {
       const exists = await Fabric.findOne({ _id: nextFabricId, userId: req.user._id }).select('_id');
       if (!exists) return res.status(400).json({ error: 'Invalid fabric' });
+    }
+
+    if (!nextFabricId && !nextCustomFabricName && nextRollsUsed > 0) {
+      return res.status(400).json({ error: 'Select fabric or enter fabric name' });
     }
 
     if (oldFabricId === nextFabricId) {
@@ -537,6 +554,7 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
     if (thawbType) stitching.thawbType = thawbType;
     if (fabricColor !== undefined) stitching.fabricColor = fabricColor;
     if (fabricId !== undefined) stitching.fabricId = nextFabricId;
+    if (customFabricName !== undefined || fabricId !== undefined) stitching.customFabricName = nextFabricId ? '' : nextCustomFabricName;
     if (rollsUsed !== undefined) stitching.rollsUsed = nextRollsUsed;
 
     if (relationId !== undefined || relationName !== undefined || relationType !== undefined || orderFor !== undefined) {

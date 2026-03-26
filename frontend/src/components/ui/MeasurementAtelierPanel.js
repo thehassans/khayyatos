@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BadgeInfo, Building2, CalendarDays, PencilRuler, Phone, Ruler, Shirt, Sparkles } from 'lucide-react';
+import { Building2, CalendarDays, PencilRuler, Phone, Ruler, Shirt, Sparkles } from 'lucide-react';
 
 const thawbImageMap = {
   saudi: '/images/saudi.png',
@@ -493,6 +493,8 @@ const MaterialsPanel = ({
   fabricOptions = [],
   selectedFabricId = '',
   onFabricChange,
+  customFabricName = '',
+  onCustomFabricNameChange,
   rollsUsed = '',
   onRollsUsedChange,
   fabricColors = [],
@@ -531,6 +533,14 @@ const MaterialsPanel = ({
               <option key={`fabric-${choice.value || 'none'}`} value={choice.value}>{choice.label}</option>
             ))}
           </select>
+          <input
+            type="text"
+            value={customFabricName}
+            onChange={(e) => onCustomFabricNameChange?.(e.target.value)}
+            disabled={disabled}
+            placeholder={t('measurementWorkspace.customFabricPlaceholder', { defaultValue: 'Type fabric name if it is not created yet' })}
+            className={`mt-3 w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-stone-50/90 dark:bg-slate-950/80 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none transition-all ${palette.focus} ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
+          />
         </div>
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.rollsUsed', { defaultValue: 'Rolls Used' })}</div>
@@ -644,6 +654,8 @@ const MeasurementAtelierPanel = ({
   fabricOptions = [],
   selectedFabricId = '',
   onFabricChange,
+  customFabricName = '',
+  onCustomFabricNameChange,
   rollsUsed = '',
   onRollsUsedChange,
   fabricColors = [],
@@ -707,18 +719,10 @@ const MeasurementAtelierPanel = ({
   const selectedCollar = collarGroup?.options?.find((option) => option.value === styleValues?.collar)?.label || '';
   const selectedPocket = pocketGroup?.options?.find((option) => option.value === styleValues?.pocket)?.label || '';
   const selectedThawbTypeLabel = thawbTypes.find((option) => option.key === thawbType)?.label || formatTypeLabel(thawbType);
-  const selectedStyleItems = normalizedStyleGroups
-    .map((group) => {
-      const selectedValue = styleValues?.[group.key];
-      const option = (group.options || []).find((item) => item.value === selectedValue);
-      return option ? { label: group.label, value: option.label } : null;
-    })
-    .filter(Boolean);
-  const selectedStyleEntries = selectedStyleItems.map((item) => `${item.label}: ${item.value}`);
   const measurementSnapshotItems = (fields || [])
     .filter((field) => values?.[field.key] !== undefined && values?.[field.key] !== null && String(values?.[field.key]).trim() !== '')
     .map((field) => ({ label: field.label, value: formatValue(values?.[field.key]) }));
-  const snapshotItems = [...selectedStyleItems, ...measurementSnapshotItems].slice(0, 4);
+  const snapshotItems = measurementSnapshotItems.slice(0, 4);
   const currentDate = new Date().toLocaleDateString();
   const headerChips = badges.slice(0, 3);
 
@@ -827,6 +831,8 @@ const MeasurementAtelierPanel = ({
                     fabricOptions={fabricOptions}
                     selectedFabricId={selectedFabricId}
                     onFabricChange={onFabricChange}
+                    customFabricName={customFabricName}
+                    onCustomFabricNameChange={onCustomFabricNameChange}
                     rollsUsed={rollsUsed}
                     onRollsUsedChange={onRollsUsedChange}
                     fabricColors={fabricColors}
@@ -854,18 +860,6 @@ const MeasurementAtelierPanel = ({
                 </div>
               </div>
               <div className="rounded-2xl bg-stone-50/90 dark:bg-slate-950/70 px-4 py-3">
-                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.selectedStyle', { defaultValue: 'Selected Style' })}</div>
-                {selectedStyleEntries.length ? selectedStyleEntries.slice(0, 4).map((entry) => (
-                  <div key={entry} className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {entry}
-                  </div>
-                )) : (
-                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {t('measurementWorkspace.noStyleSelected', { defaultValue: 'No design options selected' })}
-                  </div>
-                )}
-              </div>
-              <div className="rounded-2xl bg-stone-50/90 dark:bg-slate-950/70 px-4 py-3">
                 <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('common.status', { defaultValue: 'Status' })}</div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {headerChips.map((badge) => (
@@ -874,15 +868,6 @@ const MeasurementAtelierPanel = ({
                     </div>
                   ))}
                   <div className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>{completion}% {t('measurementWorkspace.complete', { defaultValue: 'complete' })}</div>
-                </div>
-              </div>
-              <div className="rounded-2xl bg-stone-50/90 dark:bg-slate-950/70 px-4 py-3">
-                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  <BadgeInfo className="w-4 h-4" />
-                  {t('measurementWorkspace.workspaceNote', { defaultValue: 'Workspace note' })}
-                </div>
-                <div className={`mt-2 text-sm leading-6 ${palette.muted}`}>
-                  {t('measurementWorkspace.boardNote', { defaultValue: 'Use this board-style layout to match the visual flow of the sample: measurements on top, garment in the middle, and design selection below.' })}
                 </div>
               </div>
             </div>
@@ -901,14 +886,10 @@ const MeasurementAtelierPanel = ({
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div className="min-w-0">
               <BrandBlock logoSrc={logoSrc} businessName={businessName} businessPhone={businessPhone} />
-              <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-300">
-                <Sparkles className="w-3.5 h-3.5" />
-                Noir Atelier
-              </div>
               <div className="mt-4 text-2xl font-semibold tracking-tight text-white">{title}</div>
               {subtitle ? <div className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{subtitle}</div> : null}
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                 <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{t('common.date', { defaultValue: 'Date' })}</div>
                 <div className="mt-2 text-sm font-semibold text-white">{currentDate}</div>
@@ -920,10 +901,6 @@ const MeasurementAtelierPanel = ({
               <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                 <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{t('measurementWorkspace.complete', { defaultValue: 'Complete' })}</div>
                 <div className="mt-2 text-sm font-semibold text-white">{completion}%</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{t('measurementWorkspace.selectedStyle', { defaultValue: 'Selected Style' })}</div>
-                <div className="mt-2 text-sm font-semibold text-white">{selectedStyleItems.length || 0}</div>
               </div>
             </div>
           </div>
@@ -950,41 +927,6 @@ const MeasurementAtelierPanel = ({
               <div className="rounded-[1.95rem] border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
                 <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} variant="board" />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-[1.7rem] border border-white/10 bg-white/5 p-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <BadgeInfo className="w-4 h-4 text-slate-300" />
-                    {t('measurementWorkspace.selectedStyle', { defaultValue: 'Selected Style' })}
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    {selectedStyleEntries.length ? selectedStyleEntries.slice(0, 5).map((entry) => (
-                      <div key={entry} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-100">
-                        {entry}
-                      </div>
-                    )) : (
-                      <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-slate-400">
-                        {t('measurementWorkspace.noStyleSelected', { defaultValue: 'No design options selected' })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="rounded-[1.7rem] border border-white/10 bg-white/5 p-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <Ruler className="w-4 h-4 text-slate-300" />
-                    {t('measurementWorkspace.workspaceNote', { defaultValue: 'Workspace note' })}
-                  </div>
-                  <div className="mt-3 text-sm leading-6 text-slate-400">
-                    A darker, quieter board for premium orders with every control kept inside a single minimal workspace.
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {headerChips.map((badge) => (
-                      <div key={badge} className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>
-                        {badge}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
             </div>
 
             <div className="space-y-4">
@@ -1002,6 +944,8 @@ const MeasurementAtelierPanel = ({
                   fabricOptions={fabricOptions}
                   selectedFabricId={selectedFabricId}
                   onFabricChange={onFabricChange}
+                  customFabricName={customFabricName}
+                  onCustomFabricNameChange={onCustomFabricNameChange}
                   rollsUsed={rollsUsed}
                   onRollsUsedChange={onRollsUsedChange}
                   fabricColors={fabricColors}
@@ -1066,10 +1010,6 @@ const MeasurementAtelierPanel = ({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
               <BrandBlock logoSrc={logoSrc} businessName={businessName} businessPhone={businessPhone} />
-              <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-violet-200/70 dark:border-violet-800/40 bg-white/85 dark:bg-slate-900/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-200 shadow-sm">
-                <Sparkles className="w-3.5 h-3.5" />
-                Monarch Minimal
-              </div>
               <div className="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{title}</div>
               {subtitle ? <div className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">{subtitle}</div> : null}
             </div>
@@ -1122,27 +1062,6 @@ const MeasurementAtelierPanel = ({
                 palette={palette}
               />
               <SnapshotPanel items={snapshotItems} palette={palette} />
-              <div className="rounded-[1.7rem] border border-violet-100 dark:border-violet-900/30 bg-white/85 dark:bg-slate-900/60 p-4 shadow-sm">
-                <div className="text-sm font-semibold text-slate-900 dark:text-white">{t('measurementWorkspace.sheetDetails', { defaultValue: 'Sheet details' })}</div>
-                <div className="mt-3 space-y-2">
-                  {selectedStyleEntries.length ? selectedStyleEntries.slice(0, 4).map((entry) => (
-                    <div key={entry} className="text-xs font-semibold text-slate-800 dark:text-slate-100">
-                      {entry}
-                    </div>
-                  )) : (
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      {t('measurementWorkspace.readyForTailoring', { defaultValue: 'Ready for tailoring' })}
-                    </div>
-                  )}
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {headerChips.map((badge) => (
-                    <div key={badge} className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>
-                      {badge}
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
 
@@ -1185,6 +1104,8 @@ const MeasurementAtelierPanel = ({
                   fabricOptions={fabricOptions}
                   selectedFabricId={selectedFabricId}
                   onFabricChange={onFabricChange}
+                  customFabricName={customFabricName}
+                  onCustomFabricNameChange={onCustomFabricNameChange}
                   rollsUsed={rollsUsed}
                   onRollsUsedChange={onRollsUsedChange}
                   fabricColors={fabricColors}
@@ -1291,6 +1212,8 @@ const MeasurementAtelierPanel = ({
                 fabricOptions={fabricOptions}
                 selectedFabricId={selectedFabricId}
                 onFabricChange={onFabricChange}
+                customFabricName={customFabricName}
+                onCustomFabricNameChange={onCustomFabricNameChange}
                 rollsUsed={rollsUsed}
                 onRollsUsedChange={onRollsUsedChange}
                 fabricColors={fabricColors}
@@ -1317,28 +1240,6 @@ const MeasurementAtelierPanel = ({
               <div className="rounded-2xl bg-white/88 dark:bg-slate-900/80 px-4 py-3 shadow-sm">
                 <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">{t('measurementWorkspace.badges', { defaultValue: 'Badges' })}</div>
                 <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{headerChips.length}</div>
-              </div>
-            </div>
-            <div className={`rounded-[1.6rem] border ${palette.tile} p-4 shadow-sm`}>
-              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('measurementWorkspace.sheetDetails', { defaultValue: 'Sheet details' })}</div>
-              {selectedStyleEntries.length ? (
-                <div className="mt-3 space-y-1">
-                  {selectedStyleEntries.slice(0, 4).map((entry) => (
-                    <div key={entry} className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-                      {entry}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              <div className="mt-3 flex flex-wrap gap-2">
-                {headerChips.map((badge) => (
-                  <div key={badge} className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>
-                    {badge}
-                  </div>
-                ))}
-                {!headerChips.length ? (
-                  <div className={`rounded-full px-3 py-1 text-xs font-semibold ${palette.soft}`}>{t('measurementWorkspace.readyForTailoring', { defaultValue: 'Ready for tailoring' })}</div>
-                ) : null}
               </div>
             </div>
           </div>

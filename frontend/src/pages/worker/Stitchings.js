@@ -401,7 +401,7 @@ const WorkerStitchings = () => {
                 <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
                   <div className="text-[11px] font-medium text-gray-500">{t('stitchings.fabric', { defaultValue: 'Fabric' })}</div>
                   <div className="mt-1 text-sm font-semibold text-gray-900">
-                    {detailModal.stitching.fabricId?.name || detailModal.stitching.fabricColor || '—'}
+                    {detailModal.stitching.fabricId?.name || detailModal.stitching.customFabricName || detailModal.stitching.fabricColor || '—'}
                   </div>
                 </div>
                 <div className="rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
