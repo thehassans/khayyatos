@@ -110,6 +110,11 @@ const StitchingForm = () => {
     fabricId: '',
     customFabricName: '',
     rollsUsed: '',
+    measurementImage: '',
+    measurementImageUpdatedAt: null,
+    measurementImageFile: null,
+    measurementImagePreview: '',
+    removeMeasurementImage: false,
     measurements: {},
     styleOptions: {},
     embroideryDesignId: null
@@ -147,6 +152,38 @@ const StitchingForm = () => {
     }
     return src;
   }, [api, searchParams]);
+
+  const buildUploadedImageSrc = useCallback((src, updatedAt) => {
+    const resolved = resolveUploadsUrl(src);
+    if (!resolved) return '';
+    const separator = resolved.includes('?') ? '&' : '?';
+    return updatedAt ? `${resolved}${separator}v=${updatedAt}` : resolved;
+  }, [resolveUploadsUrl]);
+
+  const revokeObjectUrl = useCallback((src) => {
+    if (src && typeof src === 'string' && src.startsWith('blob:')) {
+      URL.revokeObjectURL(src);
+    }
+  }, []);
+
+  const buildMultipartPayload = useCallback((payload, measurementImageFile, removeMeasurementImage = false) => {
+    const multipart = new FormData();
+    Object.entries(payload || {}).forEach(([key, value]) => {
+      if (value === undefined) return;
+      if (key === 'measurements' || key === 'styleOptions') {
+        multipart.append(key, JSON.stringify(value || {}));
+        return;
+      }
+      if (value === null) {
+        multipart.append(key, '');
+        return;
+      }
+      multipart.append(key, String(value));
+    });
+    if (measurementImageFile) multipart.append('measurementImage', measurementImageFile);
+    if (removeMeasurementImage) multipart.append('removeMeasurementImage', 'true');
+    return multipart;
+  }, []);
 
   const fetchAllCustomers = async () => {
     try {
@@ -385,6 +422,11 @@ const StitchingForm = () => {
         fabricId: (typeof stitch.fabricId === 'object' ? stitch.fabricId?._id : stitch.fabricId) || '',
         customFabricName: stitch.customFabricName || '',
         rollsUsed: (stitch.rollsUsed !== undefined && stitch.rollsUsed !== null) ? String(stitch.rollsUsed) : '',
+        measurementImage: stitch.measurementImage || '',
+        measurementImageUpdatedAt: stitch.measurementImageUpdatedAt || null,
+        measurementImageFile: null,
+        measurementImagePreview: buildUploadedImageSrc(stitch.measurementImage, stitch.measurementImageUpdatedAt),
+        removeMeasurementImage: false,
         measurements: stitch.measurements || {},
         styleOptions: stitch.styleOptions || {},
         embroideryDesignId: designId || null
@@ -650,6 +692,11 @@ const StitchingForm = () => {
         quantity: 1,
         price: '',
         paidAmount: '',
+        measurementImage: '',
+        measurementImageUpdatedAt: null,
+        measurementImageFile: null,
+        measurementImagePreview: '',
+        removeMeasurementImage: false,
         measurements: measurementsSnap
       });
     });
@@ -709,7 +756,79 @@ const StitchingForm = () => {
     }));
   };
 
+  const handleMeasurementImageChange = (file) => {
+    setFormData((prev) => {
+      revokeObjectUrl(prev.measurementImagePreview);
+      if (!file) {
+        return {
+          ...prev,
+          measurementImageFile: null,
+          measurementImagePreview: prev.measurementImage ? buildUploadedImageSrc(prev.measurementImage, prev.measurementImageUpdatedAt) : '',
+          removeMeasurementImage: false
+        };
+      }
+      return {
+        ...prev,
+        measurementImageFile: file,
+        measurementImagePreview: URL.createObjectURL(file),
+        removeMeasurementImage: false
+      };
+    });
+  };
+
+  const handleMeasurementImageRemove = () => {
+    setFormData((prev) => {
+      revokeObjectUrl(prev.measurementImagePreview);
+      return {
+        ...prev,
+        measurementImageFile: null,
+        measurementImage: '',
+        measurementImageUpdatedAt: null,
+        measurementImagePreview: '',
+        removeMeasurementImage: true
+      };
+    });
+  };
+
+  const updateOrderItemMeasurementImage = (id, file) => {
+    setOrderItems((prev) => prev.map((x) => {
+      if (x.id !== id) return x;
+      revokeObjectUrl(x.measurementImagePreview);
+      if (!file) {
+        return {
+          ...x,
+          measurementImageFile: null,
+          measurementImagePreview: x.measurementImage ? buildUploadedImageSrc(x.measurementImage, x.measurementImageUpdatedAt) : '',
+          removeMeasurementImage: false
+        };
+      }
+      return {
+        ...x,
+        measurementImageFile: file,
+        measurementImagePreview: URL.createObjectURL(file),
+        removeMeasurementImage: false
+      };
+    }));
+  };
+
+  const removeOrderItemMeasurementImage = (id) => {
+    setOrderItems((prev) => prev.map((x) => {
+      if (x.id !== id) return x;
+      revokeObjectUrl(x.measurementImagePreview);
+      return {
+        ...x,
+        measurementImageFile: null,
+        measurementImage: '',
+        measurementImageUpdatedAt: null,
+        measurementImagePreview: '',
+        removeMeasurementImage: true
+      };
+    }));
+  };
+
   const removeOrderItem = (id) => {
+    const target = orderItems.find((x) => x.id === id);
+    if (target?.measurementImagePreview) revokeObjectUrl(target.measurementImagePreview);
     if (String(expandedOrderItemId || '') === String(id)) {
       autoExpandAfterRemoveRef.current = true;
       setExpandedOrderItemId(null);
@@ -846,7 +965,7 @@ const StitchingForm = () => {
     const order = orderToPrint || createdOrder || createdOrders?.[0];
     if (!order) return;
     
-    const logoSrc = user?.logo && user.logo !== 'null' && user.logo !== 'undefined' ? user.logo : '';
+    const logoSrc = user?.logo && user.logo !== 'null' && user.logo !== 'undefined' ? resolveUploadsUrl(user.logo) : '';
     const trackUrl = `${window.location.origin}/track-order?id=${order._id}`;
     const labelLang = user?.labelLanguage || 'both';
     
@@ -945,6 +1064,7 @@ const StitchingForm = () => {
     const rollsUsedDisplay = (order?.rollsUsed !== undefined && order?.rollsUsed !== null) ? String(order.rollsUsed) : '0';
     const thawbTypeDisplay = order?.thawbType || formData.thawbType || '-';
     const dueDateDisplay = order?.dueDate ? new Date(order.dueDate).toLocaleDateString() : (formData.dueDate || '-');
+    const measurementImageSrc = buildUploadedImageSrc(order?.measurementImage, order?.measurementImageUpdatedAt);
     
     const printWindow = window.open('', '_blank', 'width=320,height=650');
     printWindow.document.write(`
@@ -974,6 +1094,9 @@ const StitchingForm = () => {
           .qr-sublabel { font-size: 7px; color: #333; font-weight: bold; margin-top: 2px; }
           .single-qr { text-align: center; margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
           .single-qr img { width: 80px; height: 80px; border: 2px solid #e5e7eb; border-radius: 8px; padding: 4px; background: #fff; }
+          .measurement-photo { margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
+          .measurement-photo img { width: 100%; max-height: 220px; object-fit: cover; border: 2px solid #e5e7eb; border-radius: 10px; display: block; }
+          .measurement-photo-label { font-size: 9px; color: #333; margin-bottom: 6px; font-weight: bold !important; text-align: center; }
         </style>
       </head>
       <body>
@@ -997,6 +1120,7 @@ const StitchingForm = () => {
         <div class="row"><span class="label">${getLabel('balance')}:</span><span class="value">${(Number(order.price) || 0) - (Number(order.paidAmount) || 0)} ${sarSvg}</span></div>
         <div class="row"><span class="label">${getLabel('dueDate')}:</span><span class="value">${dueDateDisplay}</span></div>
         <div class="status">${getLabel('status')}: ${getStatus()}</div>
+        ${measurementImageSrc ? `<div class="measurement-photo"><div class="measurement-photo-label">Measurement Image</div><img src="${measurementImageSrc}" alt="Measurement" /></div>` : ''}
         ${zatcaQrUrl && qrCodeUrl ? `
         <div class="qr-container">
           <div class="qr-box">
@@ -1247,7 +1371,8 @@ const StitchingForm = () => {
           styleOptions: formData.styleOptions,
           embroideryDesignId: formData.embroideryDesignId || null
         };
-        await api.put(`/stitchings/${id}`, data);
+        const multipartData = buildMultipartPayload(data, formData.measurementImageFile, formData.removeMeasurementImage);
+        await api.put(`/stitchings/${id}`, multipartData);
         toast.success('Updated');
         navigate('/user/stitchings');
       } else {
@@ -1295,7 +1420,8 @@ const StitchingForm = () => {
               embroideryDesignId: formData.embroideryDesignId || null
             };
 
-            const response = await api.post('/stitchings', data);
+            const multipartData = buildMultipartPayload(data, it.measurementImageFile, it.removeMeasurementImage);
+            const response = await api.post('/stitchings', multipartData);
             const order = response.data?.stitching || response.data;
             if (response.data?.customer) setSelectedCustomer(response.data.customer);
             created.push(order);
@@ -1328,7 +1454,8 @@ const StitchingForm = () => {
             styleOptions: formData.styleOptions,
             embroideryDesignId: formData.embroideryDesignId || null
           };
-          const response = await api.post('/stitchings', data);
+          const multipartData = buildMultipartPayload(data, formData.measurementImageFile, formData.removeMeasurementImage);
+          const response = await api.post('/stitchings', multipartData);
           const order = response.data?.stitching || response.data;
           if (response.data?.customer) setSelectedCustomer(response.data.customer);
           setCreatedOrders([]);
@@ -1498,7 +1625,7 @@ const StitchingForm = () => {
   const measurementVariant = measurementVariantMap[measurementUi] || 'sheet';
   const measurementLogoSrc = user?.logo ? resolveUploadsUrl(user.logo) : null;
 
-  const renderMeasurementInputs = ({ title, subtitle, values, onChange, disabled = false, loading = false, badges = [], tone = 'slate', showDesignControls = false }) => (
+  const renderMeasurementInputs = ({ title, subtitle, values, onChange, disabled = false, loading = false, badges = [], tone = 'slate', showDesignControls = false, measurementImageSrc = '', measurementImageName = '', onMeasurementImageChange: onMeasurementImageFileChange, onMeasurementImageRemove: onMeasurementImageDelete, showMeasurementImageControl = true }) => (
     <div className="mt-4">
       <MeasurementAtelierPanel
         variant={measurementVariant}
@@ -1532,6 +1659,11 @@ const StitchingForm = () => {
         selectedFabricColor={formData.fabricColor || ''}
         onFabricColorChange={(value) => setFormData((prev) => ({ ...prev, fabricColor: value }))}
         materialsLoading={fabricsLoading || fabricColorsCatalogLoading}
+        measurementImageSrc={measurementImageSrc}
+        measurementImageName={measurementImageName}
+        onMeasurementImageChange={onMeasurementImageFileChange}
+        onMeasurementImageRemove={onMeasurementImageDelete}
+        showMeasurementImageControl={showMeasurementImageControl}
       />
     </div>
   );
@@ -1581,6 +1713,8 @@ const StitchingForm = () => {
             <Button
               variant="secondary"
               onClick={() => {
+                revokeObjectUrl(formData.measurementImagePreview);
+                orderItems.forEach((item) => revokeObjectUrl(item?.measurementImagePreview));
                 setCreatedOrder(null);
                 setCreatedOrders([]);
                 setOrderItems([]);
@@ -1590,7 +1724,7 @@ const StitchingForm = () => {
                 setSelectedRelation(null);
                 setSelectedEmbroideryDesign(null);
                 setCustomerSearch('');
-                setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', thawbType: 'saudi', fabricColor: '', fabricId: '', customFabricName: '', rollsUsed: '', measurements: {}, styleOptions: {}, embroideryDesignId: null });
+                setFormData({ quantity: 1, price: '', paidAmount: '', description: '', dueDate: '', status: 'pending', thawbType: 'saudi', fabricColor: '', fabricId: '', customFabricName: '', rollsUsed: '', measurementImage: '', measurementImageUpdatedAt: null, measurementImageFile: null, measurementImagePreview: '', removeMeasurementImage: false, measurements: {}, styleOptions: {}, embroideryDesignId: null });
               }}
               className="w-full"
             >
@@ -1825,7 +1959,12 @@ const StitchingForm = () => {
                         selectedRelation ? 'Read-only reference' : null
                       ].filter(Boolean),
                       tone: 'slate',
-                      showDesignControls: !selectedRelation
+                      showDesignControls: !selectedRelation,
+                      measurementImageSrc: !selectedRelation ? (formData.measurementImagePreview || '') : '',
+                      measurementImageName: !selectedRelation ? (formData.measurementImageFile?.name || '') : '',
+                      onMeasurementImageChange: !selectedRelation ? handleMeasurementImageChange : undefined,
+                      onMeasurementImageRemove: !selectedRelation ? handleMeasurementImageRemove : undefined,
+                      showMeasurementImageControl: !selectedRelation
                     })
                   ) : null}
                 </div>
@@ -1863,7 +2002,12 @@ const StitchingForm = () => {
                           selectedRelation?.measurements && Object.keys(selectedRelation.measurements).length > 0 ? `Auto-filled from ${selectedRelation.name}` : null
                         ].filter(Boolean),
                         tone: 'amber',
-                        showDesignControls: true
+                        showDesignControls: true,
+                        measurementImageSrc: formData.measurementImagePreview || '',
+                        measurementImageName: formData.measurementImageFile?.name || '',
+                        onMeasurementImageChange: handleMeasurementImageChange,
+                        onMeasurementImageRemove: handleMeasurementImageRemove,
+                        showMeasurementImageControl: true
                       })
                     ) : null}
                   </div>
@@ -2120,7 +2264,12 @@ const StitchingForm = () => {
                                   `Qty ${it.quantity || 1}`
                                 ].filter(Boolean),
                                 tone: 'amber',
-                                showDesignControls: true
+                                showDesignControls: true,
+                                measurementImageSrc: it.measurementImagePreview || '',
+                                measurementImageName: it.measurementImageFile?.name || '',
+                                onMeasurementImageChange: (file) => updateOrderItemMeasurementImage(it.id, file),
+                                onMeasurementImageRemove: () => removeOrderItemMeasurementImage(it.id),
+                                showMeasurementImageControl: true
                               })}
                             </div>
                           ) : null}

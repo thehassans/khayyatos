@@ -1,4 +1,12 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+let sharp = null;
+try {
+  sharp = require('sharp');
+} catch (e) {
+  sharp = null;
+}
 const router = express.Router();
 const Stitching = require('../models/Stitching');
 const Customer = require('../models/Customer');
@@ -8,12 +16,101 @@ const EmbroideryDesign = require('../models/EmbroideryDesign');
 const Fabric = require('../models/Fabric');
 const { verifyToken, isUser } = require('../middleware/auth');
 const { blockDemoWrites } = require('../middleware/demoGuard');
+const upload = require('../middleware/upload');
 const whatsappService = require('../utils/whatsappService');
 const { mergeMeasurementValues, normalizeMeasurementValues } = require('../utils/measurements');
 const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 
 const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const normalizeText = (value) => (typeof value === 'string' ? value.trim() : '');
+const uploadsBaseDir = path.join(__dirname, '..', 'uploads');
+
+const ensureDir = (dirPath) => {
+  fs.mkdirSync(dirPath, { recursive: true });
+};
+
+const safeUnlink = (absPath) => {
+  try {
+    if (fs.existsSync(absPath)) fs.unlinkSync(absPath);
+  } catch (e) {
+
+  }
+};
+
+const moveFile = (from, to) => {
+  try {
+    fs.renameSync(from, to);
+  } catch (e) {
+    try {
+      fs.copyFileSync(from, to);
+      safeUnlink(from);
+    } catch (err) {
+      throw err;
+    }
+  }
+};
+
+const isWebpUpload = (file) => {
+  const mime = (file?.mimetype || '').toLowerCase();
+  const ext = path.extname(file?.originalname || '').toLowerCase();
+  return mime === 'image/webp' || ext === '.webp';
+};
+
+const removeUploadedAssetByUrl = (urlPath) => {
+  if (typeof urlPath !== 'string' || !urlPath.startsWith('/uploads/')) return;
+  const rel = urlPath.replace(/^\/uploads\//, '');
+  const abs = path.join(uploadsBaseDir, rel);
+  safeUnlink(abs);
+};
+
+const parseObjectField = (value) => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return value;
+  if (typeof value !== 'string') return {};
+  const trimmed = value.trim();
+  if (!trimmed) return {};
+  try {
+    const parsed = JSON.parse(trimmed);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (e) {
+    return {};
+  }
+};
+
+const parseBooleanField = (value) => value === true || value === 'true' || value === 1 || value === '1';
+
+const persistMeasurementImage = async ({ userId, stitchingId, file }) => {
+  if (!file || !userId || !stitchingId) return null;
+
+  const relPath = path.join('measurement-images', String(userId));
+  const dirPath = path.join(uploadsBaseDir, relPath);
+  ensureDir(dirPath);
+
+  const fileName = `${String(stitchingId)}.webp`;
+  const absTarget = path.join(dirPath, fileName);
+
+  if (sharp) {
+    await sharp(file.path)
+      .rotate()
+      .resize({ width: 1600, withoutEnlargement: true })
+      .webp({ quality: 85 })
+      .toFile(absTarget);
+
+    safeUnlink(file.path);
+  } else {
+    if (!isWebpUpload(file)) {
+      safeUnlink(file.path);
+      const error = new Error('Image processing is not available on this server');
+      error.statusCode = 500;
+      throw error;
+    }
+    moveFile(file.path, absTarget);
+  }
+
+  return {
+    measurementImage: `/uploads/${path.join(relPath, fileName).replace(/\\/g, '/')}`,
+    measurementImageUpdatedAt: Date.now()
+  };
+};
 
 const canonicalSaudiMobile = (value) => {
   const digits = String(value || '').replace(/\D/g, '');
@@ -241,8 +338,10 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create stitching order
-router.post('/', blockDemoWrites, async (req, res) => {
+router.post('/', blockDemoWrites, upload.single('measurementImage'), async (req, res) => {
   try {
+    const parsedMeasurements = parseObjectField(req.body?.measurements);
+    const parsedStyleOptions = parseObjectField(req.body?.styleOptions);
     const { 
       customerId, 
       customerName,
@@ -251,8 +350,6 @@ router.post('/', blockDemoWrites, async (req, res) => {
       relationName,
       relationType,
       orderFor,
-      measurements, 
-      styleOptions,
       embroideryDesignId,
       quantity, 
       price, 
@@ -266,8 +363,8 @@ router.post('/', blockDemoWrites, async (req, res) => {
       customFabricName,
       rollsUsed
     } = req.body;
-    const hasMeasurementsPayload = measurements && typeof measurements === 'object' && !Array.isArray(measurements);
-    const normalizedMeasurements = normalizeMeasurementValues(measurements);
+    const hasMeasurementsPayload = req.body?.measurements !== undefined;
+    const normalizedMeasurements = normalizeMeasurementValues(parsedMeasurements);
 
     const { customer } = await resolveOrderCustomer({
       userId: req.user._id,
@@ -353,7 +450,7 @@ router.post('/', blockDemoWrites, async (req, res) => {
       customFabricName: fabricToUse ? '' : customFabricToUse,
       rollsUsed: rollsToUse,
       measurements: Object.keys(normalizedMeasurements).length ? normalizedMeasurements : defaultMeasurements,
-      styleOptions: styleOptions || {},
+      styleOptions: parsedStyleOptions,
       embroideryDesignId: designIdToSave,
       embroideryDesign: designSnapshot,
       quantity: quantity || 1,
@@ -362,6 +459,18 @@ router.post('/', blockDemoWrites, async (req, res) => {
       description: description || '',
       dueDate: dueDate || null
     });
+
+    if (req.file) {
+      const imageMeta = await persistMeasurementImage({
+        userId: req.user._id,
+        stitchingId: stitching._id,
+        file: req.file
+      });
+      if (imageMeta) {
+        stitching.measurementImage = imageMeta.measurementImage;
+        stitching.measurementImageUpdatedAt = imageMeta.measurementImageUpdatedAt;
+      }
+    }
     
     await stitching.save();
 
@@ -422,15 +531,15 @@ router.post('/', blockDemoWrites, async (req, res) => {
 });
 
 // Update stitching
-router.put('/:id', blockDemoWrites, async (req, res) => {
+router.put('/:id', blockDemoWrites, upload.single('measurementImage'), async (req, res) => {
   try {
+    const parsedMeasurements = parseObjectField(req.body?.measurements);
+    const parsedStyleOptions = parseObjectField(req.body?.styleOptions);
     const { 
       relationId,
       relationName,
       relationType,
       orderFor,
-      measurements, 
-      styleOptions,
       embroideryDesignId,
       quantity, 
       price, 
@@ -442,10 +551,12 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
       fabricColor,
       fabricId,
       customFabricName,
-      rollsUsed
+      rollsUsed,
+      removeMeasurementImage
     } = req.body;
-    const hasMeasurementsPayload = measurements && typeof measurements === 'object' && !Array.isArray(measurements);
-    const normalizedMeasurements = normalizeMeasurementValues(measurements);
+    const hasMeasurementsPayload = req.body?.measurements !== undefined;
+    const normalizedMeasurements = normalizeMeasurementValues(parsedMeasurements);
+    const shouldRemoveMeasurementImage = parseBooleanField(removeMeasurementImage);
     
     const stitching = await Stitching.findOne({ 
       _id: req.params.id, 
@@ -528,7 +639,7 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
     }
     
     if (hasMeasurementsPayload) stitching.measurements = normalizedMeasurements;
-    if (styleOptions) stitching.styleOptions = styleOptions;
+    if (req.body?.styleOptions !== undefined) stitching.styleOptions = parsedStyleOptions;
     if (embroideryDesignId !== undefined) {
       if (!embroideryDesignId) {
         stitching.embroideryDesignId = null;
@@ -556,6 +667,21 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
     if (fabricId !== undefined) stitching.fabricId = nextFabricId;
     if (customFabricName !== undefined || fabricId !== undefined) stitching.customFabricName = nextFabricId ? '' : nextCustomFabricName;
     if (rollsUsed !== undefined) stitching.rollsUsed = nextRollsUsed;
+    if (req.file) {
+      const imageMeta = await persistMeasurementImage({
+        userId: req.user._id,
+        stitchingId: stitching._id,
+        file: req.file
+      });
+      if (imageMeta) {
+        stitching.measurementImage = imageMeta.measurementImage;
+        stitching.measurementImageUpdatedAt = imageMeta.measurementImageUpdatedAt;
+      }
+    } else if (shouldRemoveMeasurementImage) {
+      removeUploadedAssetByUrl(stitching.measurementImage);
+      stitching.measurementImage = null;
+      stitching.measurementImageUpdatedAt = null;
+    }
 
     if (relationId !== undefined || relationName !== undefined || relationType !== undefined || orderFor !== undefined) {
       let relToSave = null;
@@ -766,6 +892,8 @@ router.delete('/:id', blockDemoWrites, async (req, res) => {
         { new: true }
       );
     }
+
+    removeUploadedAssetByUrl(stitching.measurementImage);
     
     await Stitching.findByIdAndDelete(req.params.id);
     

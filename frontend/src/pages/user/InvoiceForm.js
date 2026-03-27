@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
+import MeasurementImageInput from '../../components/ui/MeasurementImageInput';
 import printStitchingInvoice from '../../utils/printStitchingInvoice';
 
 const computeReceiptPrefix = (businessName) => {
@@ -28,7 +29,9 @@ const initialFormState = {
   price: '',
   paidAmount: '',
   receiptNumber: '',
-  dueDate: ''
+  dueDate: '',
+  measurementImageFile: null,
+  measurementImagePreview: ''
 };
 
 const InvoiceForm = () => {
@@ -76,6 +79,49 @@ const InvoiceForm = () => {
     loadSuggestedReceiptNumber();
   }, [loadSuggestedReceiptNumber]);
 
+  const resolveUploadsUrl = useCallback((src) => {
+    if (!src) return src;
+    if (src.startsWith('http://') || src.startsWith('https://')) return src;
+    if (!src.startsWith('/uploads/')) return src;
+    const baseUrl = api?.defaults?.baseURL;
+    if (!baseUrl || typeof baseUrl !== 'string') return src;
+    try {
+      if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+        return `${new URL(baseUrl).origin}${src}`;
+      }
+    } catch (error) {
+      return src;
+    }
+    return src;
+  }, [api]);
+
+  const buildUploadedImageSrc = useCallback((src, updatedAt) => {
+    const resolved = resolveUploadsUrl(src);
+    if (!resolved) return '';
+    const separator = resolved.includes('?') ? '&' : '?';
+    return updatedAt ? `${resolved}${separator}v=${updatedAt}` : resolved;
+  }, [resolveUploadsUrl]);
+
+  const revokeObjectUrl = useCallback((src) => {
+    if (src && typeof src === 'string' && src.startsWith('blob:')) {
+      URL.revokeObjectURL(src);
+    }
+  }, []);
+
+  const buildMultipartPayload = useCallback((payload, measurementImageFile) => {
+    const multipart = new FormData();
+    Object.entries(payload || {}).forEach(([key, value]) => {
+      if (value === undefined) return;
+      if (value === null) {
+        multipart.append(key, '');
+        return;
+      }
+      multipart.append(key, String(value));
+    });
+    if (measurementImageFile) multipart.append('measurementImage', measurementImageFile);
+    return multipart;
+  }, []);
+
   const balance = useMemo(() => {
     const price = Number(formData.price) || 0;
     const paidAmount = Number(formData.paidAmount) || 0;
@@ -87,6 +133,7 @@ const InvoiceForm = () => {
   };
 
   const resetForm = () => {
+    revokeObjectUrl(formData.measurementImagePreview);
     setCreatedInvoice(null);
     setFormData({
       ...initialFormState,
@@ -156,7 +203,7 @@ const InvoiceForm = () => {
         throw new Error('Customer not created');
       }
 
-      const response = await api.post('/stitchings', {
+      const payload = {
         customerId: customer._id,
         quantity,
         price,
@@ -164,7 +211,8 @@ const InvoiceForm = () => {
         receiptNumber,
         description: 'Invoice',
         dueDate: dueDate || null
-      });
+      };
+      const response = await api.post('/stitchings', buildMultipartPayload(payload, formData.measurementImageFile));
 
       const invoice = response.data?.stitching || response.data;
       await loadSuggestedReceiptNumber({ overwriteReceipt: true });
@@ -175,6 +223,28 @@ const InvoiceForm = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleMeasurementImageChange = (file) => {
+    setFormData((prev) => {
+      revokeObjectUrl(prev.measurementImagePreview);
+      return {
+        ...prev,
+        measurementImageFile: file,
+        measurementImagePreview: file ? URL.createObjectURL(file) : ''
+      };
+    });
+  };
+
+  const handleMeasurementImageRemove = () => {
+    setFormData((prev) => {
+      revokeObjectUrl(prev.measurementImagePreview);
+      return {
+        ...prev,
+        measurementImageFile: null,
+        measurementImagePreview: ''
+      };
+    });
   };
 
   if (createdInvoice) {
@@ -190,7 +260,16 @@ const InvoiceForm = () => {
           </p>
 
           <div className="space-y-3">
-            <Button onClick={() => printStitchingInvoice({ stitch: createdInvoice, user })} icon={Printer} className="w-full">
+            {createdInvoice?.measurementImage ? (
+              <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40">
+                <img
+                  src={buildUploadedImageSrc(createdInvoice.measurementImage, createdInvoice.measurementImageUpdatedAt)}
+                  alt="Measurement"
+                  className="h-56 w-full object-cover"
+                />
+              </div>
+            ) : null}
+            <Button onClick={() => printStitchingInvoice({ stitch: createdInvoice, user, resolveUploadsUrl })} icon={Printer} className="w-full">
               Print Invoice
             </Button>
             <Button variant="outline" onClick={() => navigate('/user/stitchings')} className="w-full">
@@ -348,6 +427,16 @@ const InvoiceForm = () => {
                 </div>
               </div>
             </div>
+
+            <MeasurementImageInput
+              label="Measurement Image"
+              hint="Upload a measurement reference image or take a photo from the camera for this invoice."
+              previewSrc={formData.measurementImagePreview}
+              fileName={formData.measurementImageFile?.name || ''}
+              onFileChange={handleMeasurementImageChange}
+              onRemove={handleMeasurementImageRemove}
+              disabled={loading}
+            />
 
             <div className="flex flex-col sm:flex-row gap-3">
               <Button type="submit" icon={Save} className="sm:flex-1" disabled={loading || receiptLoading}>

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Building2, CalendarDays, PencilRuler, Phone, Ruler, Shirt, Sparkles } from 'lucide-react';
+import MeasurementImageInput from './MeasurementImageInput';
 
 const thawbImageMap = {
   saudi: '/images/saudi.png',
@@ -661,7 +662,12 @@ const MeasurementAtelierPanel = ({
   fabricColors = [],
   selectedFabricColor = '',
   onFabricColorChange,
-  materialsLoading = false
+  materialsLoading = false,
+  measurementImageSrc = '',
+  measurementImageName = '',
+  onMeasurementImageChange,
+  onMeasurementImageRemove,
+  showMeasurementImageControl = true
 }) => {
   const { t } = useTranslation();
   const palette = toneMap[tone] || defaultTone;
@@ -725,6 +731,19 @@ const MeasurementAtelierPanel = ({
   const snapshotItems = measurementSnapshotItems.slice(0, 4);
   const currentDate = new Date().toLocaleDateString();
   const headerChips = badges.slice(0, 3);
+  const shouldShowMeasurementImage = showMeasurementImageControl && (typeof onMeasurementImageChange === 'function' || !!measurementImageSrc);
+  const measurementImagePanel = shouldShowMeasurementImage ? (
+    <MeasurementImageInput
+      label={t('measurementWorkspace.measurementImage', { defaultValue: 'Measurement Image' })}
+      hint={t('measurementWorkspace.measurementImageHint', { defaultValue: 'Upload a measurement reference image or take a photo from the camera.' })}
+      previewSrc={measurementImageSrc}
+      fileName={measurementImageName}
+      onFileChange={onMeasurementImageChange}
+      onRemove={onMeasurementImageRemove}
+      disabled={disabled}
+      className="border-slate-200 dark:border-slate-700 bg-white/85 dark:bg-slate-900/60"
+    />
+  ) : null;
 
   if (variant === 'board') {
     return (
@@ -789,6 +808,7 @@ const MeasurementAtelierPanel = ({
                   palette={palette}
                 />
                 <SnapshotPanel items={snapshotItems} palette={palette} />
+                {measurementImagePanel}
               </div>
             </div>
 
@@ -939,6 +959,7 @@ const MeasurementAtelierPanel = ({
                 palette={palette}
               />
               <SnapshotPanel items={snapshotItems} palette={palette} />
+              {measurementImagePanel}
               {showStyleControls ? (
                 <MaterialsPanel
                   fabricOptions={fabricOptions}
@@ -1062,6 +1083,7 @@ const MeasurementAtelierPanel = ({
                 palette={palette}
               />
               <SnapshotPanel items={snapshotItems} palette={palette} />
+              {measurementImagePanel}
             </div>
           </div>
 
@@ -1170,6 +1192,7 @@ const MeasurementAtelierPanel = ({
               <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} />
             </div>
             <SnapshotPanel items={snapshotItems} palette={palette} />
+            {measurementImagePanel}
           </div>
         </div>
 

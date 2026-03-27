@@ -10,10 +10,13 @@ const buildTlv = (fields) => {
   return btoa(String.fromCharCode(...result));
 };
 
-export const printStitchingInvoice = async ({ stitch, user }) => {
+export const printStitchingInvoice = async ({ stitch, user, resolveUploadsUrl }) => {
   if (!stitch || !user) return;
 
-  const logoSrc = user?.logo && user.logo !== 'null' && user.logo !== 'undefined' ? user.logo : '';
+  const logoBase = user?.logo && user.logo !== 'null' && user.logo !== 'undefined'
+    ? (typeof resolveUploadsUrl === 'function' ? resolveUploadsUrl(user.logo) : user.logo)
+    : '';
+  const logoSrc = logoBase || '';
   const labelLang = user?.labelLanguage || 'both';
   const customerNameEn = stitch.customerId?.nameI18n?.en || stitch.customerId?.name || '-';
   const customerNameAr = stitch.customerId?.nameI18n?.ar || stitch.customerId?.name || '-';
@@ -91,6 +94,12 @@ export const printStitchingInvoice = async ({ stitch, user }) => {
 
   const balance = (parseFloat(stitch.price) || 0) - (parseFloat(stitch.paidAmount) || 0);
   const fabricDisplay = stitch.fabricId?.name || stitch.customFabricName || '-';
+  const measurementImageBase = stitch.measurementImage
+    ? (typeof resolveUploadsUrl === 'function' ? resolveUploadsUrl(stitch.measurementImage) : stitch.measurementImage)
+    : '';
+  const measurementImageSrc = measurementImageBase
+    ? `${measurementImageBase}${stitch.measurementImageUpdatedAt ? `${measurementImageBase.includes('?') ? '&' : '?'}v=${stitch.measurementImageUpdatedAt}` : ''}`
+    : '';
 
   const printWindow = window.open('', '_blank', 'width=350,height=600');
   if (!printWindow) return;
@@ -120,6 +129,9 @@ export const printStitchingInvoice = async ({ stitch, user }) => {
         .qr-sublabel { font-size: 7px; color: #333; font-weight: bold !important; margin-top: 2px; }
         .single-qr { text-align: center; margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
         .single-qr img { width: 80px; height: 80px; border: 2px solid #e5e7eb; border-radius: 8px; padding: 4px; background: #fff; }
+        .measurement-photo { margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
+        .measurement-photo img { width: 100%; max-height: 220px; object-fit: cover; border: 2px solid #e5e7eb; border-radius: 10px; display: block; }
+        .measurement-photo-label { font-size: 9px; color: #333; margin-bottom: 6px; font-weight: bold !important; text-align: center; }
       </style>
     </head>
     <body>
@@ -139,6 +151,7 @@ export const printStitchingInvoice = async ({ stitch, user }) => {
       <div class="info-row"><span class="label">${getLabel('balance')}</span><span class="value" style="color: ${balance > 0 ? '#dc2626' : '#16a34a'}">${balance} ${sarSvg}</span></div>
       <div class="info-row"><span class="label">${getLabel('dueDate')}</span><span class="value">${stitch.dueDate ? new Date(stitch.dueDate).toLocaleDateString() : '-'}</span></div>
       <div class="info-row"><span class="label">${getLabel('status')}</span><span class="value">${getStatusLabel(stitch.status)}</span></div>
+      ${measurementImageSrc ? `<div class="measurement-photo"><div class="measurement-photo-label">Measurement Image</div><img src="${measurementImageSrc}" alt="Measurement" /></div>` : ''}
       ${zatcaQrUrl && qrCodeUrl ? `
       <div class="qr-container">
         <div class="qr-box">

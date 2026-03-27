@@ -33,6 +33,29 @@ const Stitchings = () => {
   const isDemo = !!user?.isDemoSession;
   const langKey = (i18n?.language || 'en').split('-')[0];
 
+  const resolveUploadsUrl = (src) => {
+    if (!src) return src;
+    if (src.startsWith('http://') || src.startsWith('https://')) return src;
+    if (!src.startsWith('/uploads/')) return src;
+    const baseUrl = api?.defaults?.baseURL;
+    if (!baseUrl || typeof baseUrl !== 'string') return src;
+    try {
+      if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+        return `${new URL(baseUrl).origin}${src}`;
+      }
+    } catch (error) {
+      return src;
+    }
+    return src;
+  };
+
+  const buildUploadedImageSrc = (src, updatedAt) => {
+    const resolved = resolveUploadsUrl(src);
+    if (!resolved) return '';
+    const separator = resolved.includes('?') ? '&' : '?';
+    return updatedAt ? `${resolved}${separator}v=${updatedAt}` : resolved;
+  };
+
   useEffect(() => {
     const q = searchParams.get('search') || '';
     setSearch((prev) => (prev === q ? prev : q));
@@ -153,7 +176,7 @@ const Stitchings = () => {
   };
 
   const handlePrintLabel = async (stitch) => {
-    await printStitchingInvoice({ stitch, user });
+    await printStitchingInvoice({ stitch, user, resolveUploadsUrl });
   };
 
   return (
@@ -265,6 +288,16 @@ const Stitchings = () => {
                   </div>
                 </div>
               </div>
+
+              {invoiceModal.stitching.measurementImage ? (
+                <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                  <img
+                    src={buildUploadedImageSrc(invoiceModal.stitching.measurementImage, invoiceModal.stitching.measurementImageUpdatedAt)}
+                    alt="Measurement"
+                    className="h-64 w-full object-cover"
+                  />
+                </div>
+              ) : null}
 
               <div className="flex items-center justify-end gap-2">
                 <Button variant="outline" onClick={() => setInvoiceModal({ open: false, stitching: null, loading: false })}>

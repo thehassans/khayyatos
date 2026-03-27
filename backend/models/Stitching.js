@@ -110,6 +110,14 @@ const stitchingSchema = new mongoose.Schema({
     type: embroideryDesignSnapshotSchema,
     default: () => ({})
   },
+  measurementImage: {
+    type: String,
+    default: null
+  },
+  measurementImageUpdatedAt: {
+    type: Number,
+    default: null
+  },
   quantity: {
     type: Number,
     default: 1,

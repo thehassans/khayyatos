@@ -96,6 +96,29 @@ const WorkerStitchings = () => {
     noum: t('thawbTypes.noum', { defaultValue: 'Noum' })
   };
 
+  const resolveUploadsUrl = (src) => {
+    if (!src) return src;
+    if (src.startsWith('http://') || src.startsWith('https://')) return src;
+    if (!src.startsWith('/uploads/')) return src;
+    const baseUrl = api?.defaults?.baseURL;
+    if (!baseUrl || typeof baseUrl !== 'string') return src;
+    try {
+      if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+        return `${new URL(baseUrl).origin}${src}`;
+      }
+    } catch (error) {
+      return src;
+    }
+    return src;
+  };
+
+  const buildUploadedImageSrc = (src, updatedAt) => {
+    const resolved = resolveUploadsUrl(src);
+    if (!resolved) return '';
+    const separator = resolved.includes('?') ? '&' : '?';
+    return updatedAt ? `${resolved}${separator}v=${updatedAt}` : resolved;
+  };
+
   const renderStyleOptionsGrid = (styleOptions) => {
     const s = styleOptions || {};
     const keys = Object.keys(styleOptionLabels);
@@ -435,6 +458,19 @@ const WorkerStitchings = () => {
               <h4 className="font-medium text-gray-900 mb-3">{t('customers.measurements')}</h4>
               {renderMeasurementsGrid(detailModal.stitching.measurements)}
             </div>
+
+            {detailModal.stitching.measurementImage ? (
+              <div className="rounded-2xl border border-gray-100 bg-white p-4">
+                <h4 className="font-medium text-gray-900 mb-3">Measurement Image</h4>
+                <div className="overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
+                  <img
+                    src={buildUploadedImageSrc(detailModal.stitching.measurementImage, detailModal.stitching.measurementImageUpdatedAt)}
+                    alt="Measurement"
+                    className="h-64 w-full object-cover"
+                  />
+                </div>
+              </div>
+            ) : null}
 
             {/* Style Options */}
             <div>
