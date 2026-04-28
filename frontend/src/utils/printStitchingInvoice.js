@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { formatSaudiRiyal } from './saudi';
 
 const buildTlv = (fields) => {
   const result = [];
@@ -93,6 +94,9 @@ export const printStitchingInvoice = async ({ stitch, user, resolveUploadsUrl })
   };
 
   const balance = (parseFloat(stitch.price) || 0) - (parseFloat(stitch.paidAmount) || 0);
+  const formattedPrice = formatSaudiRiyal(stitch.price || 0);
+  const formattedPaid = formatSaudiRiyal(stitch.paidAmount || 0);
+  const formattedBalance = formatSaudiRiyal(balance);
   const fabricDisplay = stitch.fabricId?.name || stitch.customFabricName || '-';
   const measurementImageBase = stitch.measurementImage
     ? (typeof resolveUploadsUrl === 'function' ? resolveUploadsUrl(stitch.measurementImage) : stitch.measurementImage)
@@ -146,9 +150,9 @@ export const printStitchingInvoice = async ({ stitch, user, resolveUploadsUrl })
       <div class="info-row"><span class="label">${getLabel('phone')}</span><span class="value">${stitch.customerId?.phone || '-'}</span></div>
       <div class="info-row"><span class="label">${getLabel('fabric')}</span><span class="value">${fabricDisplay}</span></div>
       <div class="info-row"><span class="label">${getLabel('quantity')}</span><span class="value">${stitch.quantity || 1}</span></div>
-      <div class="info-row"><span class="label">${getLabel('price')}</span><span class="value">${stitch.price || 0} ${sarSvg}</span></div>
-      <div class="info-row"><span class="label">${getLabel('paid')}</span><span class="value">${stitch.paidAmount || 0} ${sarSvg}</span></div>
-      <div class="info-row"><span class="label">${getLabel('balance')}</span><span class="value" style="color: ${balance > 0 ? '#dc2626' : '#16a34a'}">${balance} ${sarSvg}</span></div>
+      <div class="info-row"><span class="label">${getLabel('price')}</span><span class="value">${formattedPrice} ${sarSvg}</span></div>
+      <div class="info-row"><span class="label">${getLabel('paid')}</span><span class="value">${formattedPaid} ${sarSvg}</span></div>
+      <div class="info-row"><span class="label">${getLabel('balance')}</span><span class="value" style="color: ${balance > 0 ? '#dc2626' : '#16a34a'}">${formattedBalance} ${sarSvg}</span></div>
       <div class="info-row"><span class="label">${getLabel('dueDate')}</span><span class="value">${stitch.dueDate ? new Date(stitch.dueDate).toLocaleDateString() : '-'}</span></div>
       <div class="info-row"><span class="label">${getLabel('status')}</span><span class="value">${getStatusLabel(stitch.status)}</span></div>
       ${measurementImageSrc ? `<div class="measurement-photo"><div class="measurement-photo-label">Measurement Image</div><img src="${measurementImageSrc}" alt="Measurement" /></div>` : ''}

@@ -9,16 +9,7 @@ import { Users, UserPlus, Clock, CheckCircle, AlertCircle, Search, Plus, Calenda
 import SARIcon from '../../components/ui/SARIcon';
 import { Button } from '../../components/ui/Button';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
-
-const canonicalSaudiMobile = (value) => {
-  const digits = String(value || '').replace(/\D/g, '');
-  if (!digits) return '';
-  let d = digits;
-  if (d.startsWith('966')) d = d.slice(3);
-  if (d.startsWith('0')) d = d.slice(1);
-  if (d.length > 9) d = d.slice(-9);
-  return d;
-};
+import { canonicalSaudiMobile, formatSaudiRiyal } from '../../utils/saudi';
 
 const UserDashboard = () => {
   const { t, i18n } = useTranslation();
@@ -36,6 +27,7 @@ const UserDashboard = () => {
   const [workersCache, setWorkersCache] = useState(null);
   const searchWrapRef = useRef(null);
   const debounceRef = useRef(null);
+  const searchRequestIdRef = useRef(0);
 
   const isDemo = !!user?.isDemoSession;
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
@@ -55,15 +47,20 @@ const UserDashboard = () => {
   };
 
   const runGlobalSearch = async (q) => {
+    const requestId = ++searchRequestIdRef.current;
     setSearchLoading(true);
     try {
       const phoneKey = canonicalSaudiMobile(q);
       const isPhone = !!phoneKey && phoneKey.length >= 3;
       const [ordersRes, customersRes, workersRes] = await Promise.all([
-        api.get('/stitchings/search', { params: isPhone ? { receipt: q, phone: phoneKey } : { receipt: q } }),
-        api.get('/customers/search', { params: { q: isPhone ? phoneKey : q } }),
+        api.get('/stitchings/search', { params: { q, ...(isPhone ? { phone: phoneKey } : {}) } }),
+        api.get('/customers/search', { params: { q } }),
         workersCache ? Promise.resolve({ data: { workers: workersCache } }) : api.get('/worker')
       ]);
+
+      if (requestId !== searchRequestIdRef.current) {
+        return;
+      }
 
       const ordersRaw = ordersRes.data?.stitchings || [];
       const customersRaw = customersRes.data?.customers || [];
@@ -94,12 +91,17 @@ const UserDashboard = () => {
       setSearchOpen(true);
       setActiveIndex(-1);
     } catch (error) {
+      if (requestId !== searchRequestIdRef.current) {
+        return;
+      }
       console.error('Global search error:', error);
       setSearchResults({ orders: [], customers: [], workers: [] });
       setSearchOpen(true);
       setActiveIndex(-1);
     }
-    setSearchLoading(false);
+    if (requestId === searchRequestIdRef.current) {
+      setSearchLoading(false);
+    }
   };
 
   const navigateToResult = (result) => {
@@ -131,7 +133,7 @@ const UserDashboard = () => {
     }
     debounceRef.current = setTimeout(() => {
       runGlobalSearch(q);
-    }, 220);
+    }, 120);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -400,14 +402,14 @@ const UserDashboard = () => {
               <div>
                 <p className="text-[11px] font-medium text-white/60">{t('dashboard.totalRevenue')}</p>
                 <p className="mt-1 text-lg sm:text-xl font-bold text-white flex items-center gap-1">
-                  {data?.stats?.totalRevenue?.toLocaleString() || 0}
+                  {formatSaudiRiyal(data?.stats?.totalRevenue || 0)}
                   <SARIcon className="w-4 h-4" color="white" />
                 </p>
               </div>
               <div>
                 <p className="text-[11px] font-medium text-white/60">{t('dashboard.pendingPayments')}</p>
                 <p className="mt-1 text-lg sm:text-xl font-bold text-white flex items-center gap-1">
-                  {data?.stats?.pendingPayments?.toLocaleString() || 0}
+                  {formatSaudiRiyal(data?.stats?.pendingPayments || 0)}
                   <SARIcon className="w-4 h-4" color="white" />
                 </p>
               </div>
@@ -453,7 +455,7 @@ const UserDashboard = () => {
         <StatCard
           icon={() => <SARIcon className="w-6 h-6" />}
           label={t('dashboard.totalRevenue')}
-          value={<span className="flex items-center gap-1">{data?.stats?.totalRevenue?.toLocaleString() || 0} <SARIcon className="w-5 h-5" /></span>}
+          value={<span className="flex items-center gap-1">{formatSaudiRiyal(data?.stats?.totalRevenue || 0)} <SARIcon className="w-5 h-5" /></span>}
           color="violet"
         />
       </div>
@@ -485,7 +487,7 @@ const UserDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 dark:text-slate-400">{t('common.pending')} Payments</p>
-              <p className="text-2xl sm:text-3xl font-bold text-amber-600 mt-1 flex items-center gap-1">{data?.stats?.pendingPayments?.toLocaleString() || 0} <SARIcon className="w-6 h-6" /></p>
+              <p className="text-2xl sm:text-3xl font-bold text-amber-600 mt-1 flex items-center gap-1">{formatSaudiRiyal(data?.stats?.pendingPayments || 0)} <SARIcon className="w-6 h-6" /></p>
             </div>
             <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
               <SARIcon className="w-6 h-6 text-amber-600" />
@@ -599,7 +601,7 @@ const UserDashboard = () => {
                     <Td>{stitch.customerId?.nameI18n?.[langKey] || stitch.customerId?.name || '-'}</Td>
                     <Td>{stitch.workerId?.nameI18n?.[langKey] || stitch.workerId?.name || '-'}</Td>
                     <Td><StatusBadge status={stitch.status} /></Td>
-                    <Td className="flex items-center gap-1">{stitch.price} <SARIcon className="w-3 h-3" /></Td>
+                    <Td className="flex items-center gap-1">{formatSaudiRiyal(stitch.price || 0)} <SARIcon className="w-3 h-3" /></Td>
                   </Tr>
                 ))}
               </Tbody>

@@ -9,6 +9,7 @@ import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import { ArrowLeft, Plus, X, Users } from 'lucide-react';
 import MeasurementCard from '../../components/ui/MeasurementCard';
 import toast from 'react-hot-toast';
+import { normalizeSaudiPhone } from '../../utils/saudi';
 
 const RELATION_TYPES = [
   { value: 'father', label: 'Father / الأب' },
@@ -78,7 +79,7 @@ const CustomerForm = () => {
     if (!isTutorial) return;
 
     const nextName = String(searchParams.get('name') || 'Example Customer');
-    const nextPhone = String(searchParams.get('phone') || '0512456789');
+    const nextPhone = normalizeSaudiPhone(String(searchParams.get('phone') || '0512456789'));
 
     setFormData((prev) => {
       const shouldFill = !prev?.name && (!prev?.phone || prev?.phone === '+966');
@@ -268,7 +269,7 @@ const CustomerForm = () => {
     try {
       const data = {
         name: formData.name,
-        phone: formData.phone,
+        phone: normalizeSaudiPhone(formData.phone),
         notes: formData.notes,
         relations: formData.relations,
         measurements: Object.fromEntries(
@@ -353,7 +354,7 @@ const CustomerForm = () => {
                 label={t('customers.phone')}
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, phone: normalizeSaudiPhone(e.target.value) })}
                 placeholder="+966501234567"
                 data-tutorial="customer-form-phone"
                 required

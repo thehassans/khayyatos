@@ -6,6 +6,7 @@ const { verifyToken, isUser } = require('../middleware/auth');
 const { blockDemoWrites } = require('../middleware/demoGuard');
 const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
 const { mergeMeasurementValues, normalizeMeasurementValues } = require('../utils/measurements');
+const { buildSaudiPhoneNeedles, normalizeSaudiPhone } = require('../utils/saudi');
 
 const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -198,27 +199,6 @@ const syncBrotherRelationsAmongSons = async ({ userId, beforeSonIds, afterSonIds
   }
 };
 
-const buildSaudiPhoneNeedles = (q) => {
-  const raw = String(q || '').trim();
-  const digits = raw.replace(/\D/g, '');
-  if (!digits) return [];
-
-  let d = digits;
-  if (d.startsWith('966')) d = d.slice(3);
-  if (d.startsWith('0')) d = d.slice(1);
-  if (d.length > 9) d = d.slice(-9);
-  if (d.length < 3) return [];
-
-  const set = new Set([
-    digits,
-    d,
-    `0${d}`,
-    `966${d}`,
-    `+966${d}`
-  ]);
-  return Array.from(set);
-};
-
 router.use(verifyToken, isUser);
 
 // Get all customers
@@ -351,8 +331,9 @@ router.post('/', blockDemoWrites, async (req, res) => {
   try {
     const { name, phone, measurements, notes, relations } = req.body;
     const normalizedMeasurements = normalizeMeasurementValues(measurements);
+    const normalizedPhone = normalizeSaudiPhone(phone);
     
-    let customer = await Customer.findOne({ userId: req.user._id, phone });
+    let customer = await Customer.findOne({ userId: req.user._id, phone: normalizedPhone });
     const oldRelations = customer ? (Array.isArray(customer.relations) ? customer.relations.slice() : []) : [];
     
     if (customer) {
@@ -382,7 +363,7 @@ router.post('/', blockDemoWrites, async (req, res) => {
     customer = new Customer({
       userId: req.user._id,
       name,
-      phone,
+      phone: normalizedPhone,
       measurements: normalizedMeasurements,
       notes: notes || '',
       relations: Array.isArray(relations) ? relations : []
@@ -413,6 +394,7 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
   try {
     const { name, phone, measurements, notes, relations } = req.body;
     const normalizedMeasurements = normalizeMeasurementValues(measurements);
+    const normalizedPhone = phone ? normalizeSaudiPhone(phone) : '';
     
     const customer = await Customer.findOne({ 
       _id: req.params.id, 
@@ -432,7 +414,7 @@ router.put('/:id', blockDemoWrites, async (req, res) => {
         customer.nameI18n = translations.name || buildFallbackI18n(name.trim());
       }
     }
-    if (phone) customer.phone = phone;
+    if (phone) customer.phone = normalizedPhone;
     if (measurements && typeof measurements === 'object' && !Array.isArray(measurements)) {
       customer.measurements = mergeMeasurementValues(customer.measurements, normalizedMeasurements);
     }

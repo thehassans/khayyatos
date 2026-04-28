@@ -20,6 +20,7 @@ const upload = require('../middleware/upload');
 const whatsappService = require('../utils/whatsappService');
 const { mergeMeasurementValues, normalizeMeasurementValues } = require('../utils/measurements');
 const { translateMany, buildFallbackI18n } = require('../utils/geminiTranslate');
+const { canonicalSaudiMobile, buildSaudiPhoneNeedles, normalizeSaudiPhone } = require('../utils/saudi');
 
 const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const normalizeText = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -112,31 +113,6 @@ const persistMeasurementImage = async ({ userId, stitchingId, file }) => {
   };
 };
 
-const canonicalSaudiMobile = (value) => {
-  const digits = String(value || '').replace(/\D/g, '');
-  if (!digits) return '';
-  let d = digits;
-  if (d.startsWith('966')) d = d.slice(3);
-  if (d.startsWith('0')) d = d.slice(1);
-  if (d.length > 9) d = d.slice(-9);
-  return d;
-};
-
-const buildSaudiPhoneNeedles = (q) => {
-  const digits = String(q || '').replace(/\D/g, '');
-  if (!digits) return [];
-  const d9 = canonicalSaudiMobile(digits);
-  if (!d9 || d9.length < 3) return [];
-  const set = new Set([
-    digits,
-    d9,
-    `0${d9}`,
-    `966${d9}`,
-    `+966${d9}`
-  ]);
-  return Array.from(set);
-};
-
 const computeReceiptPrefixFromBusinessName = (businessName) => {
   const rawShop = typeof businessName === 'string' ? businessName : '';
   const shop = rawShop.trim().replace(/\s+/g, '-');
@@ -155,6 +131,26 @@ const syncManualReceiptCounter = async (user, receiptNumber) => {
   if (manualCounter <= (Number(user.receiptCounter) || 0)) return;
   user.receiptCounter = manualCounter;
   await user.save();
+};
+
+const findMatchingCustomerIds = async ({ userId, search }) => {
+  const rawSearch = String(search || '').trim();
+  if (!rawSearch) return [];
+
+  const safe = escapeRegex(rawSearch);
+  const needles = buildSaudiPhoneNeedles(rawSearch);
+  const customers = await Customer.find({
+    userId,
+    $or: [
+      { name: { $regex: safe, $options: 'i' } },
+      { phone: { $regex: safe, $options: 'i' } },
+      { 'nameI18n.en': { $regex: safe, $options: 'i' } },
+      { 'nameI18n.ar': { $regex: safe, $options: 'i' } },
+      ...needles.map((needle) => ({ phone: { $regex: escapeRegex(needle), $options: 'i' } }))
+    ]
+  }).select('_id').limit(100).lean();
+
+  return customers.map((customer) => customer._id);
 };
 
 const resolveOrderCustomer = async ({
@@ -179,7 +175,7 @@ const resolveOrderCustomer = async ({
   }
 
   const normalizedName = normalizeText(customerName);
-  const normalizedPhone = normalizeText(customerPhone);
+  const normalizedPhone = normalizeSaudiPhone(customerPhone);
 
   if (!normalizedName || !normalizedPhone) {
     const error = new Error('Customer name and phone are required');
@@ -238,7 +234,15 @@ router.get('/', async (req, res) => {
     if (status) query.status = status;
     if (workerId) query.workerId = workerId;
     if (search) {
-      query.receiptNumber = { $regex: search, $options: 'i' };
+      const rawSearch = String(search || '').trim();
+      const customerIds = await findMatchingCustomerIds({ userId: req.user._id, search: rawSearch });
+      const searchConditions = [
+        { receiptNumber: { $regex: escapeRegex(rawSearch), $options: 'i' } }
+      ];
+      if (customerIds.length) {
+        searchConditions.push({ customerId: { $in: customerIds } });
+      }
+      query.$or = searchConditions;
     }
     
     const [stitchings, total] = await Promise.all([
@@ -268,32 +272,26 @@ router.get('/', async (req, res) => {
 // Search by receipt number
 router.get('/search', async (req, res) => {
   try {
-    const { receipt, phone } = req.query;
+    const { receipt, phone, q } = req.query;
     const query = { userId: req.user._id };
-    
-    if (receipt) {
-      query.receiptNumber = { $regex: receipt, $options: 'i' };
+    const genericSearch = String(q || receipt || phone || '').trim();
+    const explicitPhone = String(phone || '').trim();
+    const customerIds = await findMatchingCustomerIds({
+      userId: req.user._id,
+      search: explicitPhone || genericSearch
+    });
+    const searchConditions = [];
+
+    if (genericSearch) {
+      searchConditions.push({ receiptNumber: { $regex: escapeRegex(genericSearch), $options: 'i' } });
     }
-
-    if (phone) {
-      const safePhone = escapeRegex(phone);
-      const needles = buildSaudiPhoneNeedles(phone);
-      const orPhone = [
-        { phone: { $regex: safePhone, $options: 'i' } },
-        ...needles.map((n) => ({ phone: { $regex: escapeRegex(n), $options: 'i' } }))
-      ];
-
-      const matchedCustomers = await Customer.find({
-        userId: req.user._id,
-        $or: orPhone
-      }).select('_id').limit(50);
-
-      const ids = matchedCustomers.map((c) => c._id);
-      if (!ids.length) {
-        return res.json({ stitchings: [] });
-      }
-      query.customerId = { $in: ids };
+    if (customerIds.length) {
+      searchConditions.push({ customerId: { $in: customerIds } });
     }
+    if (!searchConditions.length) {
+      return res.json({ stitchings: [] });
+    }
+    query.$or = searchConditions;
     
     let stitchings = await Stitching.find(query)
       .sort({ createdAt: -1 })
@@ -302,8 +300,8 @@ router.get('/search', async (req, res) => {
       .populate('relationId', 'name phone nameI18n')
       .populate('workerId', 'name phone nameI18n');
 
-    if (phone) {
-      const p = canonicalSaudiMobile(phone);
+    if (explicitPhone) {
+      const p = canonicalSaudiMobile(explicitPhone);
       if (p) {
         stitchings = stitchings.filter((s) => canonicalSaudiMobile(s.customerId?.phone) === p);
       }

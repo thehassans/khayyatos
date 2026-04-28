@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +13,7 @@ import { Plus, Search, UserPlus, Trash2, Printer } from 'lucide-react';
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
 import printStitchingInvoice from '../../utils/printStitchingInvoice';
+import { formatSaudiRiyal } from '../../utils/saudi';
 
 const Stitchings = () => {
   const { t, i18n } = useTranslation();
@@ -22,6 +23,7 @@ const Stitchings = () => {
   const [stitchings, setStitchings] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') || '');
   const [search, setSearch] = useState(() => searchParams.get('search') || '');
   const [statusFilter, setStatusFilter] = useState('');
   const [assignModal, setAssignModal] = useState({ open: false, stitching: null });
@@ -29,6 +31,8 @@ const Stitchings = () => {
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
   const [invoiceModal, setInvoiceModal] = useState({ open: false, stitching: null, loading: false });
   const tutorialInvoiceOpenedRef = React.useRef(false);
+  const searchDebounceRef = useRef(null);
+  const fetchRequestIdRef = useRef(0);
 
   const isDemo = !!user?.isDemoSession;
   const langKey = (i18n?.language || 'en').split('-')[0];
@@ -58,8 +62,28 @@ const Stitchings = () => {
 
   useEffect(() => {
     const q = searchParams.get('search') || '';
+    setSearchInput((prev) => (prev === q ? prev : q));
     setSearch((prev) => (prev === q ? prev : q));
   }, [searchParams]);
+
+  useEffect(() => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    searchDebounceRef.current = setTimeout(() => {
+      setSearch((prev) => {
+        const next = searchInput.trim();
+        return prev === next ? prev : next;
+      });
+    }, 120);
+
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [searchInput]);
 
   useEffect(() => {
     const isTutorial = (searchParams.get('tutorial') || '') === '1';
@@ -85,12 +109,10 @@ const Stitchings = () => {
     openInvoice();
   }, [api, searchParams]);
 
-  useEffect(() => {
-    fetchData();
-  }, [search, statusFilter]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    const requestId = ++fetchRequestIdRef.current;
     try {
+      setLoading(true);
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (statusFilter) params.append('status', statusFilter);
@@ -99,17 +121,30 @@ const Stitchings = () => {
         api.get(`/stitchings?${params}`),
         api.get('/worker')
       ]);
+      if (requestId !== fetchRequestIdRef.current) {
+        return;
+      }
       const stitchData = stitchRes.data;
       const workerData = workersRes.data;
       setStitchings(Array.isArray(stitchData) ? stitchData : stitchData.stitchings || []);
       setWorkers(Array.isArray(workerData) ? workerData : workerData.workers || []);
     } catch (error) {
+      if (requestId !== fetchRequestIdRef.current) {
+        return;
+      }
       console.error('Error:', error);
       setStitchings([]);
       setWorkers([]);
+    } finally {
+      if (requestId === fetchRequestIdRef.current) {
+        setLoading(false);
+      }
     }
-    setLoading(false);
-  };
+  }, [api, search, statusFilter]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleAssign = async (workerId) => {
     if (isDemo) {
@@ -194,9 +229,9 @@ const Stitchings = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-400" />
             <input
               type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('stitchings.receiptNumber')}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search by invoice, customer, or phone..."
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -271,19 +306,19 @@ const Stitchings = () => {
                   <div>
                     <div className="text-xs text-gray-500 dark:text-slate-400">{t('stitchings.price')}</div>
                     <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-1">
-                      {invoiceModal.stitching.price || 0} <SARIcon className="w-3 h-3" />
+                      {formatSaudiRiyal(invoiceModal.stitching.price || 0)} <SARIcon className="w-3 h-3" />
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 dark:text-slate-400">{t('stitchings.paid', { defaultValue: 'Paid' })}</div>
                     <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-1">
-                      {invoiceModal.stitching.paidAmount || 0} <SARIcon className="w-3 h-3" />
+                      {formatSaudiRiyal(invoiceModal.stitching.paidAmount || 0)} <SARIcon className="w-3 h-3" />
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 dark:text-slate-400">{t('stitchings.pending', { defaultValue: 'Pending' })}</div>
                     <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-1">
-                      {Math.max(0, (Number(invoiceModal.stitching.price) || 0) - (Number(invoiceModal.stitching.paidAmount) || 0))} <SARIcon className="w-3 h-3" />
+                      {formatSaudiRiyal(Math.max(0, (Number(invoiceModal.stitching.price) || 0) - (Number(invoiceModal.stitching.paidAmount) || 0)))} <SARIcon className="w-3 h-3" />
                     </div>
                   </div>
                 </div>
@@ -385,7 +420,7 @@ const Stitchings = () => {
                       );
                     })()}
                   </Td>
-                  <Td className="flex items-center gap-1">{stitch.price} <SARIcon className="w-3 h-3" /></Td>
+                  <Td className="flex items-center gap-1">{formatSaudiRiyal(stitch.price || 0)} <SARIcon className="w-3 h-3" /></Td>
                   <Td>
                     {stitch.status === 'delivered' ? (
                       <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-slate-700 to-slate-900 shadow-lg shadow-slate-500/20">

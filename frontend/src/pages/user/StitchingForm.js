@@ -12,6 +12,7 @@ import MeasurementAtelierPanel from '../../components/ui/MeasurementAtelierPanel
 import SARIcon from '../../components/ui/SARIcon';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
+import { canonicalSaudiMobile, normalizeSaudiPhone } from '../../utils/saudi';
 
 const ORDER_STATUSES = [
   { value: 'pending', label: 'Pending / قيد الانتظار', color: 'gray' },
@@ -123,8 +124,10 @@ const StitchingForm = () => {
   const filteredCustomers = allCustomers.filter(customer => {
     if (!customerSearch) return true;
     const search = customerSearch.toLowerCase();
+    const searchPhone = canonicalSaudiMobile(customerSearch);
     return (customer.nameI18n?.[langKey] || customer.name || '')?.toLowerCase().includes(search) || 
-           customer.phone?.includes(search);
+           customer.phone?.includes(customerSearch) ||
+           (!!searchPhone && canonicalSaudiMobile(customer.phone) === searchPhone);
   });
 
   useEffect(() => {
@@ -559,7 +562,7 @@ const StitchingForm = () => {
 
       if (!target?._id) {
         const nm = String(newFamilyName || '').trim();
-        const ph = String(newFamilyPhone || '').trim();
+        const ph = normalizeSaudiPhone(newFamilyPhone);
         if (!nm || !ph) {
           toast.error('Enter name and phone');
           setFamilySaving(false);
@@ -1321,7 +1324,7 @@ const StitchingForm = () => {
       return;
     }
     const quickName = String(quickCustomer.name || '').trim();
-    const quickPhone = String(quickCustomer.phone || '').trim();
+    const quickPhone = normalizeSaudiPhone(quickCustomer.phone);
 
     if (!selectedCustomer && !quickCustomerOpen) {
       toast.error('Select a customer or use quick customer');
@@ -1863,7 +1866,7 @@ const StitchingForm = () => {
                       <input
                         type="text"
                         value={quickCustomer.phone}
-                        onChange={(e) => setQuickCustomer((prev) => ({ ...prev, phone: e.target.value }))}
+                        onChange={(e) => setQuickCustomer((prev) => ({ ...prev, phone: normalizeSaudiPhone(e.target.value) }))}
                         placeholder="+966..."
                         className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />

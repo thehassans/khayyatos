@@ -7,7 +7,9 @@ import { Card, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import DemoBlockedModal from '../../components/ui/DemoBlockedModal';
 import MeasurementImageInput from '../../components/ui/MeasurementImageInput';
+import SARIcon from '../../components/ui/SARIcon';
 import printStitchingInvoice from '../../utils/printStitchingInvoice';
+import { formatSaudiRiyal, normalizeSaudiPhone } from '../../utils/saudi';
 
 const computeReceiptPrefix = (businessName) => {
   const rawShop = typeof businessName === 'string' ? businessName : '';
@@ -24,7 +26,7 @@ const buildSuggestedReceiptNumber = ({ businessName, receiptCounter }) => {
 
 const initialFormState = {
   customerName: '',
-  phone: '',
+  phone: '+966',
   quantity: 1,
   price: '',
   paidAmount: '',
@@ -45,6 +47,7 @@ const InvoiceForm = () => {
   const [createdInvoice, setCreatedInvoice] = useState(null);
   const [formData, setFormData] = useState(initialFormState);
   const [suggestedReceiptNumber, setSuggestedReceiptNumber] = useState('');
+  const [manualReceiptMode, setManualReceiptMode] = useState(false);
 
   const loadSuggestedReceiptNumber = useCallback(async ({ overwriteReceipt = false } = {}) => {
     setReceiptLoading(true);
@@ -58,7 +61,9 @@ const InvoiceForm = () => {
       setSuggestedReceiptNumber(suggested);
       setFormData((prev) => ({
         ...prev,
-        receiptNumber: overwriteReceipt ? suggested : (prev.receiptNumber || suggested)
+        receiptNumber: overwriteReceipt
+          ? (manualReceiptMode ? prev.receiptNumber : suggested)
+          : (prev.receiptNumber || suggested)
       }));
     } catch (error) {
       const fallback = buildSuggestedReceiptNumber({
@@ -68,12 +73,14 @@ const InvoiceForm = () => {
       setSuggestedReceiptNumber(fallback);
       setFormData((prev) => ({
         ...prev,
-        receiptNumber: overwriteReceipt ? fallback : (prev.receiptNumber || fallback)
+        receiptNumber: overwriteReceipt
+          ? (manualReceiptMode ? prev.receiptNumber : fallback)
+          : (prev.receiptNumber || fallback)
       }));
     } finally {
       setReceiptLoading(false);
     }
-  }, [api, user?.businessName, user?.receiptCounter]);
+  }, [api, manualReceiptMode, user?.businessName, user?.receiptCounter]);
 
   useEffect(() => {
     loadSuggestedReceiptNumber();
@@ -132,9 +139,28 @@ const InvoiceForm = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handlePhoneChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      phone: normalizeSaudiPhone(value)
+    }));
+  };
+
+  const handleReceiptModeToggle = () => {
+    setManualReceiptMode((prev) => {
+      const next = !prev;
+      setFormData((current) => ({
+        ...current,
+        receiptNumber: next ? current.receiptNumber : (suggestedReceiptNumber || current.receiptNumber)
+      }));
+      return next;
+    });
+  };
+
   const resetForm = () => {
     revokeObjectUrl(formData.measurementImagePreview);
     setCreatedInvoice(null);
+    setManualReceiptMode(false);
     setFormData({
       ...initialFormState,
       receiptNumber: suggestedReceiptNumber || buildSuggestedReceiptNumber({
@@ -154,7 +180,7 @@ const InvoiceForm = () => {
     }
 
     const customerName = String(formData.customerName || '').trim();
-    const phone = String(formData.phone || '').trim();
+    const phone = normalizeSaudiPhone(formData.phone);
     const receiptNumber = String(formData.receiptNumber || '').trim();
     const quantity = Math.max(1, Number(formData.quantity) || 1);
     const price = Number(formData.price);
@@ -323,25 +349,40 @@ const InvoiceForm = () => {
                 <input
                   type="text"
                   value={formData.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
                   className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100"
-                  placeholder="Enter phone number"
+                  placeholder="+966501234567"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                  Invoice Number
-                </label>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Invoice Number
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleReceiptModeToggle}
+                    className="text-xs font-medium text-primary-600 dark:text-primary-300 hover:underline"
+                  >
+                    {manualReceiptMode ? 'Use next invoice number' : 'Add old invoice number'}
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={formData.receiptNumber}
                   onChange={(e) => handleChange('receiptNumber', e.target.value)}
                   className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100"
-                  placeholder={receiptLoading ? 'Loading invoice number...' : suggestedReceiptNumber}
+                  placeholder={manualReceiptMode ? 'Enter old invoice number' : (receiptLoading ? 'Loading invoice number...' : suggestedReceiptNumber)}
                   required
+                  readOnly={!manualReceiptMode && !receiptLoading}
                 />
+                {!manualReceiptMode ? (
+                  <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">Auto-generated from your next invoice number.</p>
+                ) : (
+                  <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">Use this if you want to save an older/manual invoice number.</p>
+                )}
               </div>
 
               <div>
@@ -382,7 +423,7 @@ const InvoiceForm = () => {
                   value={formData.price}
                   onChange={(e) => handleChange('price', e.target.value)}
                   className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100"
-                  placeholder="0.00"
+                  placeholder="0"
                   required
                 />
               </div>
@@ -398,7 +439,7 @@ const InvoiceForm = () => {
                   value={formData.paidAmount}
                   onChange={(e) => handleChange('paidAmount', e.target.value)}
                   className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100"
-                  placeholder="0.00"
+                  placeholder="0"
                 />
               </div>
             </div>
@@ -411,7 +452,7 @@ const InvoiceForm = () => {
                 </div>
                 <div>
                   <p className="text-gray-500 dark:text-slate-400">Total</p>
-                  <p className="mt-1 font-bold text-gray-900 dark:text-slate-100">{Number(formData.price || 0).toFixed(2)}</p>
+                  <p className="mt-1 font-bold text-gray-900 dark:text-slate-100 inline-flex items-center gap-1">{formatSaudiRiyal(formData.price || 0)} <SARIcon className="w-3 h-3" /></p>
                 </div>
                 <div>
                   <p className="text-gray-500 dark:text-slate-400">Due Date</p>
@@ -421,8 +462,8 @@ const InvoiceForm = () => {
                 </div>
                 <div>
                   <p className="text-gray-500 dark:text-slate-400">Pending</p>
-                  <p className={`mt-1 font-bold ${balance > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-900 dark:text-slate-100'}`}>
-                    {balance.toFixed(2)}
+                  <p className={`mt-1 font-bold inline-flex items-center gap-1 ${balance > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-900 dark:text-slate-100'}`}>
+                    {formatSaudiRiyal(balance)} <SARIcon className="w-3 h-3" />
                   </p>
                 </div>
               </div>
