@@ -290,7 +290,7 @@ const UserDashboard = () => {
                                 : item.nameI18n?.[langKey] || item.name || '';
                             const secondary =
                               section.type === 'order'
-                                ? `${item.customerId?.nameI18n?.[langKey] || item.customerId?.name || '-'}${item.customerId?.phone ? ` • ${item.customerId.phone}` : ''}`
+                                ? `${item.customerId?.nameI18n?.[langKey] || item.customerId?.name || '-'}${item.customerId?.phone ? ` • ${item.customerId.phone}` : ''}${item.oldInvoiceNumber ? ` • Old: ${item.oldInvoiceNumber}` : ''}`
                                 : String(item.phone || '');
 
                             return (

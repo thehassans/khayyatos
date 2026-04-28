@@ -31,6 +31,7 @@ const initialFormState = {
   price: '',
   paidAmount: '',
   receiptNumber: '',
+  oldInvoiceNumber: '',
   dueDate: '',
   measurementImageFile: null,
   measurementImagePreview: ''
@@ -47,7 +48,7 @@ const InvoiceForm = () => {
   const [createdInvoice, setCreatedInvoice] = useState(null);
   const [formData, setFormData] = useState(initialFormState);
   const [suggestedReceiptNumber, setSuggestedReceiptNumber] = useState('');
-  const [manualReceiptMode, setManualReceiptMode] = useState(false);
+  const [showOldInvoiceField, setShowOldInvoiceField] = useState(false);
 
   const loadSuggestedReceiptNumber = useCallback(async ({ overwriteReceipt = false } = {}) => {
     setReceiptLoading(true);
@@ -61,9 +62,7 @@ const InvoiceForm = () => {
       setSuggestedReceiptNumber(suggested);
       setFormData((prev) => ({
         ...prev,
-        receiptNumber: overwriteReceipt
-          ? (manualReceiptMode ? prev.receiptNumber : suggested)
-          : (prev.receiptNumber || suggested)
+        receiptNumber: overwriteReceipt ? suggested : (prev.receiptNumber || suggested)
       }));
     } catch (error) {
       const fallback = buildSuggestedReceiptNumber({
@@ -73,14 +72,12 @@ const InvoiceForm = () => {
       setSuggestedReceiptNumber(fallback);
       setFormData((prev) => ({
         ...prev,
-        receiptNumber: overwriteReceipt
-          ? (manualReceiptMode ? prev.receiptNumber : fallback)
-          : (prev.receiptNumber || fallback)
+        receiptNumber: overwriteReceipt ? fallback : (prev.receiptNumber || fallback)
       }));
     } finally {
       setReceiptLoading(false);
     }
-  }, [api, manualReceiptMode, user?.businessName, user?.receiptCounter]);
+  }, [api, user?.businessName, user?.receiptCounter]);
 
   useEffect(() => {
     loadSuggestedReceiptNumber();
@@ -146,13 +143,15 @@ const InvoiceForm = () => {
     }));
   };
 
-  const handleReceiptModeToggle = () => {
-    setManualReceiptMode((prev) => {
+  const handleOldInvoiceToggle = () => {
+    setShowOldInvoiceField((prev) => {
       const next = !prev;
-      setFormData((current) => ({
-        ...current,
-        receiptNumber: next ? current.receiptNumber : (suggestedReceiptNumber || current.receiptNumber)
-      }));
+      if (!next) {
+        setFormData((current) => ({
+          ...current,
+          oldInvoiceNumber: ''
+        }));
+      }
       return next;
     });
   };
@@ -160,7 +159,7 @@ const InvoiceForm = () => {
   const resetForm = () => {
     revokeObjectUrl(formData.measurementImagePreview);
     setCreatedInvoice(null);
-    setManualReceiptMode(false);
+    setShowOldInvoiceField(false);
     setFormData({
       ...initialFormState,
       receiptNumber: suggestedReceiptNumber || buildSuggestedReceiptNumber({
@@ -182,6 +181,7 @@ const InvoiceForm = () => {
     const customerName = String(formData.customerName || '').trim();
     const phone = normalizeSaudiPhone(formData.phone);
     const receiptNumber = String(formData.receiptNumber || '').trim();
+    const oldInvoiceNumber = String(formData.oldInvoiceNumber || '').trim();
     const quantity = Math.max(1, Number(formData.quantity) || 1);
     const price = Number(formData.price);
     const paidAmount = Number(formData.paidAmount || 0);
@@ -235,6 +235,7 @@ const InvoiceForm = () => {
         price,
         paidAmount,
         receiptNumber,
+        oldInvoiceNumber: showOldInvoiceField ? oldInvoiceNumber : '',
         description: 'Invoice',
         dueDate: dueDate || null
       };
@@ -363,10 +364,10 @@ const InvoiceForm = () => {
                   </label>
                   <button
                     type="button"
-                    onClick={handleReceiptModeToggle}
+                    onClick={handleOldInvoiceToggle}
                     className="text-xs font-medium text-primary-600 dark:text-primary-300 hover:underline"
                   >
-                    {manualReceiptMode ? 'Use next invoice number' : 'Add old invoice number'}
+                    {showOldInvoiceField ? 'Hide old invoice number' : 'Add old invoice number'}
                   </button>
                 </div>
                 <input
@@ -374,16 +375,28 @@ const InvoiceForm = () => {
                   value={formData.receiptNumber}
                   onChange={(e) => handleChange('receiptNumber', e.target.value)}
                   className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100"
-                  placeholder={manualReceiptMode ? 'Enter old invoice number' : (receiptLoading ? 'Loading invoice number...' : suggestedReceiptNumber)}
+                  placeholder={receiptLoading ? 'Loading invoice number...' : suggestedReceiptNumber}
                   required
-                  readOnly={!manualReceiptMode && !receiptLoading}
+                  readOnly={!receiptLoading}
                 />
-                {!manualReceiptMode ? (
-                  <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">Auto-generated from your next invoice number.</p>
-                ) : (
-                  <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">Use this if you want to save an older/manual invoice number.</p>
-                )}
+                <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">Auto-generated from your next invoice number.</p>
               </div>
+
+              {showOldInvoiceField ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+                    Old Invoice Number
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.oldInvoiceNumber}
+                    onChange={(e) => handleChange('oldInvoiceNumber', e.target.value)}
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100"
+                    placeholder="Enter old invoice number for reference"
+                  />
+                  <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">Saved as a searchable reference without changing the new invoice number.</p>
+                </div>
+              ) : null}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">

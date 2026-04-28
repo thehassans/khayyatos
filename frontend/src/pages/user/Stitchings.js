@@ -268,6 +268,9 @@ const Stitchings = () => {
                   <div>
                     <div className="text-xs text-gray-500 dark:text-slate-400">{t('stitchings.receiptNumber')}</div>
                     <div className="text-lg font-bold text-gray-900 dark:text-slate-100">#{invoiceModal.stitching.receiptNumber || invoiceModal.stitching._id?.slice(-6)}</div>
+                    {invoiceModal.stitching.oldInvoiceNumber ? (
+                      <div className="mt-1 text-xs text-amber-600 dark:text-amber-400">Old invoice: {invoiceModal.stitching.oldInvoiceNumber}</div>
+                    ) : null}
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 dark:text-slate-400">{t('common.status')}</div>
@@ -372,7 +375,12 @@ const Stitchings = () => {
             <Tbody>
               {stitchings.map((stitch) => (
                 <Tr key={stitch._id}>
-                  <Td className="font-medium">{stitch.receiptNumber}</Td>
+                  <Td className="font-medium">
+                    <div>{stitch.receiptNumber}</div>
+                    {stitch.oldInvoiceNumber ? (
+                      <div className="text-xs font-normal text-amber-600 dark:text-amber-400">Old: {stitch.oldInvoiceNumber}</div>
+                    ) : null}
+                  </Td>
                   <Td>
                     <div>
                       <p className="font-medium">{stitch.customerId?.nameI18n?.[langKey] || stitch.customerName || stitch.customerId?.name || '-'}</p>

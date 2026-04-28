@@ -69,6 +69,10 @@ const stitchingSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  oldInvoiceNumber: {
+    type: String,
+    default: ''
+  },
   thawbType: {
     type: String,
     enum: ['saudi', 'qatari', 'emirati', 'kuwaiti', 'omani', 'bahraini', 'noum'],
@@ -193,6 +197,7 @@ const stitchingSchema = new mongoose.Schema({
 });
 
 stitchingSchema.index({ userId: 1, receiptNumber: 1 }, { unique: true });
+stitchingSchema.index({ userId: 1, oldInvoiceNumber: 1 });
 stitchingSchema.index({ userId: 1, status: 1 });
 stitchingSchema.index({ workerId: 1, status: 1 });
 

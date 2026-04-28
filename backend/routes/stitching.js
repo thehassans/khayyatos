@@ -133,6 +133,8 @@ const syncManualReceiptCounter = async (user, receiptNumber) => {
   await user.save();
 };
 
+const normalizeOldInvoiceNumber = (value) => normalizeText(value);
+
 const findMatchingCustomerIds = async ({ userId, search }) => {
   const rawSearch = String(search || '').trim();
   if (!rawSearch) return [];
@@ -237,7 +239,8 @@ router.get('/', async (req, res) => {
       const rawSearch = String(search || '').trim();
       const customerIds = await findMatchingCustomerIds({ userId: req.user._id, search: rawSearch });
       const searchConditions = [
-        { receiptNumber: { $regex: escapeRegex(rawSearch), $options: 'i' } }
+        { receiptNumber: { $regex: escapeRegex(rawSearch), $options: 'i' } },
+        { oldInvoiceNumber: { $regex: escapeRegex(rawSearch), $options: 'i' } }
       ];
       if (customerIds.length) {
         searchConditions.push({ customerId: { $in: customerIds } });
@@ -284,6 +287,7 @@ router.get('/search', async (req, res) => {
 
     if (genericSearch) {
       searchConditions.push({ receiptNumber: { $regex: escapeRegex(genericSearch), $options: 'i' } });
+      searchConditions.push({ oldInvoiceNumber: { $regex: escapeRegex(genericSearch), $options: 'i' } });
     }
     if (customerIds.length) {
       searchConditions.push({ customerId: { $in: customerIds } });
@@ -355,6 +359,7 @@ router.post('/', blockDemoWrites, upload.single('measurementImage'), async (req,
       description, 
       dueDate,
       receiptNumber,
+      oldInvoiceNumber,
       thawbType,
       fabricColor,
       fabricId,
@@ -442,6 +447,7 @@ router.post('/', blockDemoWrites, upload.single('measurementImage'), async (req,
       relationType: relationType || null,
       orderFor: (relationToSave ? (relationToSave.nameI18n?.en || relationToSave.name) : null) || orderFor || null,
       receiptNumber: finalReceiptNumber,
+      oldInvoiceNumber: normalizeOldInvoiceNumber(oldInvoiceNumber),
       thawbType: thawbType || 'saudi',
       fabricColor: fabricColor || null,
       fabricId: fabricToUse,
@@ -545,6 +551,7 @@ router.put('/:id', blockDemoWrites, upload.single('measurementImage'), async (re
       description, 
       dueDate,
       status,
+      oldInvoiceNumber,
       thawbType,
       fabricColor,
       fabricId,
@@ -660,6 +667,7 @@ router.put('/:id', blockDemoWrites, upload.single('measurementImage'), async (re
     if (paidAmount !== undefined) stitching.paidAmount = paidAmount;
     if (description !== undefined) stitching.description = description;
     if (dueDate !== undefined) stitching.dueDate = dueDate;
+    if (oldInvoiceNumber !== undefined) stitching.oldInvoiceNumber = normalizeOldInvoiceNumber(oldInvoiceNumber);
     if (thawbType) stitching.thawbType = thawbType;
     if (fabricColor !== undefined) stitching.fabricColor = fabricColor;
     if (fabricId !== undefined) stitching.fabricId = nextFabricId;
