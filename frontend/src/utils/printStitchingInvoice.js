@@ -41,9 +41,10 @@ export const printStitchingInvoice = async ({ stitch, user, resolveUploadsUrl })
   const customerNameEn = stitch.customerId?.nameI18n?.en || stitch.customerId?.name || '-';
   const customerNameAr = stitch.customerId?.nameI18n?.ar || stitch.customerId?.name || customerNameEn || '-';
   const customerDisplayName = isArabic ? customerNameAr : customerNameEn;
-  const businessTitle = isArabic
-    ? (user?.businessNameAr || user?.businessName || 'Tailor Shop')
-    : (user?.businessName || user?.businessNameAr || 'Tailor Shop');
+  
+  // Strip + from phone for display (show 966XXXXXXXXX format without +)
+  const rawPhone = stitch.customerId?.phone || '';
+  const displayPhone = rawPhone.replace(/^\+/, '');
 
   const labels = {
     customer: { en: 'Customer', ar: 'العميل' },
@@ -134,12 +135,11 @@ export const printStitchingInvoice = async ({ stitch, user, resolveUploadsUrl })
         @page { size: 80mm auto; margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-weight: bold !important; }
         body { font-family: Arial, sans-serif; font-size: 11px; padding: 8px; width: 80mm; font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; }
-        .header { text-align: center; border-bottom: 2px dashed #333; padding-bottom: 10px; margin-bottom: 8px; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 8px; }
         .logo { width: 60px; height: 60px; object-fit: contain; margin: 0 auto 8px; display: block; border-radius: 8px; }
-        .shop-name { font-size: 14px; font-weight: bold !important; margin-bottom: 2px; }
-        .shop-address { font-size: 9px; color: #333; font-weight: bold !important; margin-top: 4px; word-break: break-word; overflow-wrap: break-word; }
-        .receipt-no { font-size: 16px; font-weight: bold !important; margin: 8px 0; text-align: center; }
-        .info-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; padding: 4px 0; border-bottom: 1px dotted #ccc; }
+        .receipt-no { font-size: 18px; font-weight: bold !important; margin: 8px 0; text-align: center; border-bottom: 2px solid #333; padding-bottom: 8px; }
+        .details-section { border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 8px; }
+        .info-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; padding: 6px 0; border-bottom: 1px solid #333; }
         .label { color: #333; font-weight: bold !important; }
         .value { font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; text-align: ${labelLang === 'ar' ? 'left' : 'right'}; }
         .notes-block { margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
@@ -160,20 +160,20 @@ export const printStitchingInvoice = async ({ stitch, user, resolveUploadsUrl })
     <body>
       <div class="header">
         ${logoSrc ? `<img src="${escapeHtml(logoSrc)}" class="logo" />` : ''}
-        <div class="shop-name">${escapeHtml(businessTitle)}</div>
-        ${user?.businessAddress ? `<div class="shop-address">${escapeHtml(user.businessAddress)}</div>` : ''}
       </div>
-      <div class="receipt-no">#${escapeHtml(stitch.receiptNumber || stitch._id?.slice(-6) || 'N/A')}</div>
-      <div class="info-row"><span class="label">${escapeHtml(getLabel('customer'))}</span><span class="value">${escapeHtml(customerDisplayName)}</span></div>
-      <div class="info-row"><span class="label">${escapeHtml(getLabel('phone'))}</span><span class="value">${escapeHtml(stitch.customerId?.phone || '-')}</span></div>
-      <div class="info-row"><span class="label">${escapeHtml(getLabel('fabric'))}</span><span class="value">${escapeHtml(fabricDisplay)}</span></div>
-      <div class="info-row"><span class="label">${escapeHtml(getLabel('quantity'))}</span><span class="value">${escapeHtml(String(stitch.quantity || 1))}</span></div>
-      <div class="info-row"><span class="label">${escapeHtml(getLabel('price'))}</span><span class="value">${formattedPrice} ${sarSvg}</span></div>
-      <div class="info-row"><span class="label">${escapeHtml(getLabel('paid'))}</span><span class="value">${formattedPaid} ${sarSvg}</span></div>
-      <div class="info-row"><span class="label">${escapeHtml(getLabel('balance'))}</span><span class="value" style="color: ${balance > 0 ? '#dc2626' : '#16a34a'}">${formattedBalance} ${sarSvg}</span></div>
-      <div class="info-row"><span class="label">${escapeHtml(getLabel('dueDate'))}</span><span class="value">${escapeHtml(formattedDueDate)}</span></div>
-      <div class="info-row"><span class="label">${escapeHtml(getLabel('status'))}</span><span class="value">${escapeHtml(getStatusLabel(stitch.status))}</span></div>
-      ${stitch.oldInvoiceNumber ? `<div class="info-row"><span class="label">${escapeHtml(getLabel('oldInvoice'))}</span><span class="value">${escapeHtml(stitch.oldInvoiceNumber)}</span></div>` : ''}
+      <div class="receipt-no">${escapeHtml(stitch.receiptNumber || stitch._id?.slice(-6) || 'N/A')}</div>
+      <div class="details-section">
+        <div class="info-row"><span class="label">${escapeHtml(getLabel('customer'))}</span><span class="value">${escapeHtml(customerDisplayName)}</span></div>
+        <div class="info-row"><span class="label">${escapeHtml(getLabel('phone'))}</span><span class="value">${escapeHtml(displayPhone || '-')}</span></div>
+        <div class="info-row"><span class="label">${escapeHtml(getLabel('fabric'))}</span><span class="value">${escapeHtml(fabricDisplay)}</span></div>
+        <div class="info-row"><span class="label">${escapeHtml(getLabel('quantity'))}</span><span class="value">${escapeHtml(String(stitch.quantity || 1))}</span></div>
+        <div class="info-row"><span class="label">${escapeHtml(getLabel('price'))}</span><span class="value">${formattedPrice} ${sarSvg}</span></div>
+        <div class="info-row"><span class="label">${escapeHtml(getLabel('paid'))}</span><span class="value">${formattedPaid} ${sarSvg}</span></div>
+        <div class="info-row"><span class="label">${escapeHtml(getLabel('balance'))}</span><span class="value" style="color: ${balance > 0 ? '#dc2626' : '#16a34a'}">${formattedBalance} ${sarSvg}</span></div>
+        <div class="info-row"><span class="label">${escapeHtml(getLabel('dueDate'))}</span><span class="value">${escapeHtml(formattedDueDate)}</span></div>
+        <div class="info-row"><span class="label">${escapeHtml(getLabel('status'))}</span><span class="value">${escapeHtml(getStatusLabel(stitch.status))}</span></div>
+        ${stitch.oldInvoiceNumber ? `<div class="info-row"><span class="label">${escapeHtml(getLabel('oldInvoice'))}</span><span class="value">${escapeHtml(stitch.oldInvoiceNumber)}</span></div>` : ''}
+      </div>
       ${notesHtml ? `
       <div class="notes-block">
         <div class="notes-label">${escapeHtml(getLabel('notes'))}</div>

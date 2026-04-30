@@ -34,6 +34,7 @@ const initialFormState = {
   oldInvoiceNumber: '',
   notes: '',
   dueDate: '',
+  customFabricName: '',
   measurementImageFile: null,
   measurementImagePreview: ''
 };
@@ -184,6 +185,7 @@ const InvoiceForm = () => {
     const receiptNumber = String(formData.receiptNumber || '').trim();
     const oldInvoiceNumber = String(formData.oldInvoiceNumber || '').trim();
     const notes = String(formData.notes || '').trim();
+    const customFabricName = String(formData.customFabricName || '').trim();
     const quantity = Math.max(1, Number(formData.quantity) || 1);
     const price = Number(formData.price);
     const paidAmount = Number(formData.paidAmount || 0);
@@ -240,6 +242,7 @@ const InvoiceForm = () => {
         oldInvoiceNumber: showOldInvoiceField ? oldInvoiceNumber : '',
         description: 'Invoice',
         notes,
+        customFabricName,
         dueDate: dueDate || null
       };
       const response = await api.post('/stitchings', buildMultipartPayload(payload, formData.measurementImageFile));
@@ -412,6 +415,19 @@ const InvoiceForm = () => {
                   onChange={(e) => handleChange('quantity', e.target.value)}
                   className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+                  Fabric Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.customFabricName}
+                  onChange={(e) => handleChange('customFabricName', e.target.value)}
+                  className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100"
+                  placeholder="Enter fabric name"
                 />
               </div>
 
