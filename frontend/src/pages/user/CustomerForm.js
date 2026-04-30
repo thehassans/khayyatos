@@ -411,7 +411,7 @@ const CustomerForm = () => {
                   <button
                     type="button"
                     onClick={addRelation}
-                    className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex-shrink-0"
+                    className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex-shrink-0"
                   >
                     <Plus className="w-5 h-5" />
                   </button>

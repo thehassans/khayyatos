@@ -113,7 +113,7 @@ const UserLayout = () => {
   }, [user, user?.role, user?.isDemoSession, user?.onboardingCompleted, onboardingDismissed, onboardingSource]);
 
   // Theme customization
-  const primaryColor = user?.primaryColor || 'sky';
+  const primaryColor = 'emerald';
   const navStyle = user?.navStyle || 'default';
   const headerStyle = user?.headerStyle || 'default';
   const sidebarStyle = user?.sidebarStyle || 'default';
