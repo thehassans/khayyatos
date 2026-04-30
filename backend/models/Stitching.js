@@ -145,6 +145,10 @@ const stitchingSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  notes: {
+    type: String,
+    default: ''
+  },
   dueDate: {
     type: Date,
     default: null

@@ -23,6 +23,7 @@ const Settings = () => {
   const [settings, setSettings] = useState({
     language: user?.language || 'en',
     theme: user?.theme || 'light',
+    invoiceLanguage: user?.invoiceLanguage || 'both',
     measurementUi: user?.measurementUi || 'cards',
     receiptPrefix: '',
     receiptCounter: 0,
@@ -76,6 +77,24 @@ const Settings = () => {
     { code: 'hi', label: 'हिन्दी', flag: '🇮🇳' },
     { code: 'ur', label: 'اردو', flag: '🇵🇰' },
     { code: 'bn', label: 'বাংলা', flag: '🇧🇩' }
+  ];
+
+  const invoiceLanguageOptions = [
+    {
+      value: 'en',
+      title: 'English',
+      description: 'Left-to-right invoice in English only.'
+    },
+    {
+      value: 'ar',
+      title: 'العربية',
+      description: 'فاتورة عربية كاملة من اليمين إلى اليسار.'
+    },
+    {
+      value: 'both',
+      title: 'English + العربية',
+      description: 'Bilingual invoice with both languages.'
+    }
   ];
 
   const measurementUiOptions = [
@@ -286,6 +305,7 @@ const Settings = () => {
         ...prev,
         language: response.data.settings.language,
         theme: response.data.settings.theme || prev.theme || user?.theme || 'light',
+        invoiceLanguage: response.data.settings.invoiceLanguage || prev.invoiceLanguage || user?.invoiceLanguage || 'both',
         measurementUi: response.data.settings.measurementUi || prev.measurementUi || user?.measurementUi || 'cards',
         receiptPrefix: response.data.settings.receiptPrefix,
         receiptCounter: response.data.settings.receiptCounter,
@@ -440,6 +460,7 @@ const Settings = () => {
       const data = new FormData();
       data.append('language', settings.language);
       data.append('theme', settings.theme);
+      data.append('invoiceLanguage', settings.invoiceLanguage);
       data.append('measurementUi', settings.measurementUi);
       data.append('receiptPrefix', autoReceiptPrefix);
       data.append('businessName', settings.businessName);
@@ -458,6 +479,7 @@ const Settings = () => {
         ...prev,
         language: savedSettings.language || prev.language,
         theme: savedSettings.theme || prev.theme,
+        invoiceLanguage: savedSettings.invoiceLanguage || prev.invoiceLanguage,
         measurementUi: savedSettings.measurementUi || prev.measurementUi,
         receiptPrefix: savedSettings.receiptPrefix,
         receiptCounter: savedSettings.receiptCounter,
@@ -468,6 +490,7 @@ const Settings = () => {
       updateUser({
         language: savedSettings.language || settings.language,
         theme: savedSettings.theme || settings.theme,
+        invoiceLanguage: savedSettings.invoiceLanguage || settings.invoiceLanguage,
         measurementUi: savedSettings.measurementUi || settings.measurementUi,
         businessName: savedSettings.businessName || settings.businessName,
         logo: savedLogo,
@@ -940,11 +963,38 @@ const Settings = () => {
                         <span className="text-xs font-medium">{lang.label}</span>
                       </button>
                     ))}
+                </div>
+              </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Invoice Language</h2>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {invoiceLanguageOptions.map((option) => {
+                      const active = settings.invoiceLanguage === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setSettings((prev) => ({ ...prev, invoiceLanguage: option.value }))}
+                          className={`rounded-2xl border px-4 py-4 text-left transition-all ${
+                            active
+                              ? 'border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg'
+                              : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-900 dark:text-white'
+                          }`}
+                        >
+                          <div className="text-sm font-semibold">{option.title}</div>
+                          <div className={`mt-1 text-xs ${active ? 'text-white/80 dark:text-gray-600' : 'text-gray-500 dark:text-slate-400'}`}>{option.description}</div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
-              {/* Receipt Settings */}
               <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
                 <div className="p-6 border-b border-gray-100 dark:border-slate-700">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('settings.receiptSettings', { defaultValue: 'Receipt Settings' })}</h2>

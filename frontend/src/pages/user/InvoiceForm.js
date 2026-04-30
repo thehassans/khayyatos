@@ -32,6 +32,7 @@ const initialFormState = {
   paidAmount: '',
   receiptNumber: '',
   oldInvoiceNumber: '',
+  notes: '',
   dueDate: '',
   measurementImageFile: null,
   measurementImagePreview: ''
@@ -182,6 +183,7 @@ const InvoiceForm = () => {
     const phone = normalizeSaudiPhone(formData.phone);
     const receiptNumber = String(formData.receiptNumber || '').trim();
     const oldInvoiceNumber = String(formData.oldInvoiceNumber || '').trim();
+    const notes = String(formData.notes || '').trim();
     const quantity = Math.max(1, Number(formData.quantity) || 1);
     const price = Number(formData.price);
     const paidAmount = Number(formData.paidAmount || 0);
@@ -237,6 +239,7 @@ const InvoiceForm = () => {
         receiptNumber,
         oldInvoiceNumber: showOldInvoiceField ? oldInvoiceNumber : '',
         description: 'Invoice',
+        notes,
         dueDate: dueDate || null
       };
       const response = await api.post('/stitchings', buildMultipartPayload(payload, formData.measurementImageFile));
@@ -377,9 +380,8 @@ const InvoiceForm = () => {
                   className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100"
                   placeholder={receiptLoading ? 'Loading invoice number...' : suggestedReceiptNumber}
                   required
-                  readOnly={!receiptLoading}
                 />
-                <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">Auto-generated from your next invoice number.</p>
+                <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">Starts with your next invoice number, but you can edit it before saving.</p>
               </div>
 
               {showOldInvoiceField ? (
@@ -455,6 +457,18 @@ const InvoiceForm = () => {
                   placeholder="0"
                 />
               </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+                  Notes
+                </label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => handleChange('notes', e.target.value)}
+                  className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-slate-100 min-h-[110px]"
+                  placeholder="Add any invoice notes or extra details"
+                />
+              </div>
             </div>
 
             <div className="rounded-2xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-900/10 p-4">
@@ -493,7 +507,7 @@ const InvoiceForm = () => {
             />
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button type="submit" icon={Save} className="sm:flex-1" disabled={loading || receiptLoading}>
+              <Button type="submit" icon={Save} className="sm:flex-1" disabled={loading}>
                 {loading ? 'Saving...' : 'Save Invoice'}
               </Button>
               <Button type="button" variant="outline" icon={Printer} className="sm:flex-1" disabled>

@@ -357,6 +357,7 @@ router.post('/', blockDemoWrites, upload.single('measurementImage'), async (req,
       price, 
       paidAmount,
       description, 
+      notes,
       dueDate,
       receiptNumber,
       oldInvoiceNumber,
@@ -461,6 +462,7 @@ router.post('/', blockDemoWrites, upload.single('measurementImage'), async (req,
       price,
       paidAmount: paidAmount || 0,
       description: description || '',
+      notes: normalizeText(notes),
       dueDate: dueDate || null
     });
 
@@ -549,6 +551,7 @@ router.put('/:id', blockDemoWrites, upload.single('measurementImage'), async (re
       price, 
       paidAmount,
       description, 
+      notes,
       dueDate,
       status,
       oldInvoiceNumber,
@@ -666,6 +669,7 @@ router.put('/:id', blockDemoWrites, upload.single('measurementImage'), async (re
     if (price !== undefined) stitching.price = price;
     if (paidAmount !== undefined) stitching.paidAmount = paidAmount;
     if (description !== undefined) stitching.description = description;
+    if (notes !== undefined) stitching.notes = normalizeText(notes);
     if (dueDate !== undefined) stitching.dueDate = dueDate;
     if (oldInvoiceNumber !== undefined) stitching.oldInvoiceNumber = normalizeOldInvoiceNumber(oldInvoiceNumber);
     if (thawbType) stitching.thawbType = thawbType;

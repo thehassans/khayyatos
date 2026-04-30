@@ -762,10 +762,13 @@ router.post('/users/:id/login-as', async (req, res) => {
         id: user._id,
         name: user.name,
         businessName: user.businessName,
+        businessNameAr: user.businessNameAr,
+        businessAddress: user.businessAddress,
         phone: user.phone,
         logo: user.logo,
         language: user.language,
         theme: user.theme,
+        invoiceLanguage: user.invoiceLanguage || 'both',
         role: 'user',
         isAdminSession: true
       }

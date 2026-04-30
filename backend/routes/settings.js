@@ -359,6 +359,7 @@ router.get('/', async (req, res) => {
         onboardingCompleted: !!req.user.onboardingCompleted,
         onboardingStep: Number(req.user.onboardingStep) || 0,
         theme: req.user.theme,
+        invoiceLanguage: req.user.invoiceLanguage || 'both',
         measurementUi: req.user.measurementUi || 'cards',
         receiptPrefix: req.user.receiptPrefix,
         receiptCounter: req.user.receiptCounter,
@@ -918,8 +919,9 @@ router.delete('/style-options/option', async (req, res) => {
 // Update settings
 router.put('/', upload.single('logo'), async (req, res) => {
   try {
-    const { language, businessName, theme, measurementUi } = req.body;
+    const { language, businessName, theme, measurementUi, invoiceLanguage } = req.body;
     const allowedMeasurementUis = ['cards', 'atelier', 'monarch', 'noir'];
+    const allowedInvoiceLanguages = ['en', 'ar', 'both'];
     
     if (language) req.user.language = language;
     if (businessName) {
@@ -942,6 +944,7 @@ router.put('/', upload.single('logo'), async (req, res) => {
       }
     }
     if (theme) req.user.theme = theme;
+    if (invoiceLanguage && allowedInvoiceLanguages.includes(invoiceLanguage)) req.user.invoiceLanguage = invoiceLanguage;
     if (measurementUi && allowedMeasurementUis.includes(measurementUi)) req.user.measurementUi = measurementUi;
     if (req.file) req.user.logo = `/uploads/${req.file.filename}`;
     
@@ -954,6 +957,7 @@ router.put('/', upload.single('logo'), async (req, res) => {
         logo: req.user.logo,
         language: req.user.language,
         theme: req.user.theme,
+        invoiceLanguage: req.user.invoiceLanguage || 'both',
         measurementUi: req.user.measurementUi || 'cards',
         receiptPrefix: req.user.receiptPrefix,
         receiptCounter: req.user.receiptCounter,

@@ -327,6 +327,15 @@ const Stitchings = () => {
                 </div>
               </div>
 
+              {invoiceModal.stitching.notes ? (
+                <div className="rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/10 p-4">
+                  <div className="text-xs text-amber-700 dark:text-amber-300">Notes</div>
+                  <div className="mt-2 whitespace-pre-wrap text-sm text-amber-950 dark:text-amber-100">
+                    {invoiceModal.stitching.notes}
+                  </div>
+                </div>
+              ) : null}
+
               {invoiceModal.stitching.measurementImage ? (
                 <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                   <img
@@ -342,7 +351,7 @@ const Stitchings = () => {
                   {t('common.close', { defaultValue: 'Close' })}
                 </Button>
                 <Button onClick={() => handlePrintLabel(invoiceModal.stitching)} icon={Printer}>
-                  {t('stitchings.printLabel', { defaultValue: 'Print label' })}
+                  {t('stitchings.printLabel', { defaultValue: 'Print invoice' })}
                 </Button>
               </div>
             </div>

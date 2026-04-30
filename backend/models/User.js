@@ -155,6 +155,11 @@ const userSchema = new mongoose.Schema({
     enum: ['light', 'dark'],
     default: 'light'
   },
+  invoiceLanguage: {
+    type: String,
+    enum: ['en', 'ar', 'both'],
+    default: 'both'
+  },
   measurementUi: {
     type: String,
     enum: ['cards', 'atelier', 'monarch', 'noir'],
