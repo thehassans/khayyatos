@@ -139,16 +139,18 @@ export const printStitchingInvoice = async ({ stitch, user, resolveUploadsUrl })
       <style>
         @page { size: 80mm auto; margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-weight: bold !important; }
-        body { font-family: Arial, sans-serif; font-size: 11px; padding: 8px; width: 80mm; font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; }
+        html, body { width: 80mm; }
+        body { font-family: Arial, sans-serif; font-size: 11px; padding: 4mm 3mm; font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 8px; }
         .logo { width: 60px; height: 60px; object-fit: contain; margin: 0 auto 8px; display: block; border-radius: 8px; }
-        .shop-name { font-size: 14px; font-weight: bold !important; margin-bottom: 4px; text-align: center; }
-        .invoice-box { border: 2px solid #333; margin: 8px 0; }
-        .invoice-number { font-size: 16px; font-weight: bold !important; text-align: center; padding: 8px; border-bottom: 2px solid #333; }
+        .shop-name { font-size: 13px; font-weight: bold !important; margin: 0 0 4px; text-align: center; white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
+        .invoice-box { border: 1.5px solid #333; margin: 8px 0; width: 100%; }
+        .invoice-number { font-size: 15px; font-weight: bold !important; text-align: center; padding: 8px 4px; border-bottom: 1.5px solid #333; white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
         .details-table { border-top: 2px solid #333; }
-        .info-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; padding: 6px 8px; border-bottom: 1px solid #333; }
-        .label { color: #333; font-weight: bold !important; }
-        .value { font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; text-align: ${labelLang === 'ar' ? 'left' : 'right'}; }
+        .info-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; padding: 6px 5px; border-bottom: 1px solid #333; }
+        .info-row:last-child { border-bottom: 0; }
+        .label { color: #333; font-weight: bold !important; flex: 0 0 42%; }
+        .value { font-weight: bold !important; word-break: break-word; overflow-wrap: anywhere; text-align: ${labelLang === 'ar' ? 'left' : 'right'}; flex: 1 1 58%; min-width: 0; }
         .notes-block { margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
         .notes-label { font-size: 9px; color: #333; margin-bottom: 6px; font-weight: bold !important; }
         .notes-value { font-size: 10px; line-height: 1.5; color: #111827; font-weight: bold !important; white-space: normal; word-break: break-word; overflow-wrap: break-word; }
