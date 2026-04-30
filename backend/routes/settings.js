@@ -359,7 +359,7 @@ router.get('/', async (req, res) => {
         onboardingCompleted: !!req.user.onboardingCompleted,
         onboardingStep: Number(req.user.onboardingStep) || 0,
         theme: req.user.theme,
-        invoiceLanguage: req.user.invoiceLanguage || 'both',
+        invoiceLanguage: req.user.invoiceLanguage === 'ar' ? 'ar' : 'en',
         measurementUi: req.user.measurementUi || 'cards',
         receiptPrefix: req.user.receiptPrefix,
         receiptCounter: req.user.receiptCounter,
@@ -921,7 +921,7 @@ router.put('/', upload.single('logo'), async (req, res) => {
   try {
     const { language, businessName, theme, measurementUi, invoiceLanguage } = req.body;
     const allowedMeasurementUis = ['cards', 'atelier', 'monarch', 'noir'];
-    const allowedInvoiceLanguages = ['en', 'ar', 'both'];
+    const allowedInvoiceLanguages = ['en', 'ar'];
     
     if (language) req.user.language = language;
     if (businessName) {
@@ -957,7 +957,7 @@ router.put('/', upload.single('logo'), async (req, res) => {
         logo: req.user.logo,
         language: req.user.language,
         theme: req.user.theme,
-        invoiceLanguage: req.user.invoiceLanguage || 'both',
+        invoiceLanguage: req.user.invoiceLanguage === 'ar' ? 'ar' : 'en',
         measurementUi: req.user.measurementUi || 'cards',
         receiptPrefix: req.user.receiptPrefix,
         receiptCounter: req.user.receiptCounter,

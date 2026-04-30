@@ -158,7 +158,7 @@ const userSchema = new mongoose.Schema({
   invoiceLanguage: {
     type: String,
     enum: ['en', 'ar', 'both'],
-    default: 'both'
+    default: 'en'
   },
   measurementUi: {
     type: String,

@@ -768,7 +768,7 @@ router.post('/users/:id/login-as', async (req, res) => {
         logo: user.logo,
         language: user.language,
         theme: user.theme,
-        invoiceLanguage: user.invoiceLanguage || 'both',
+        invoiceLanguage: user.invoiceLanguage === 'ar' ? 'ar' : 'en',
         role: 'user',
         isAdminSession: true
       }

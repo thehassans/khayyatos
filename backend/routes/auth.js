@@ -94,7 +94,7 @@ router.post('/login', async (req, res) => {
               logo: user.logo,
               language: user.language,
               theme: user.theme,
-              invoiceLanguage: user.invoiceLanguage || 'both',
+              invoiceLanguage: user.invoiceLanguage === 'ar' ? 'ar' : 'en',
               onboardingCompleted: !!user.onboardingCompleted,
               onboardingStep: Number(user.onboardingStep) || 0,
               subscriptionType: user.subscriptionType,
@@ -180,7 +180,7 @@ router.post('/demo', async (req, res) => {
         logo: user.logo,
         language: user.language,
         theme: user.theme,
-        invoiceLanguage: user.invoiceLanguage || 'both',
+        invoiceLanguage: user.invoiceLanguage === 'ar' ? 'ar' : 'en',
         onboardingCompleted: !!user.onboardingCompleted,
         onboardingStep: Number(user.onboardingStep) || 0,
         subscriptionType: user.subscriptionType,
@@ -259,7 +259,7 @@ router.post('/user/login', async (req, res) => {
         logo: user.logo,
         language: user.language,
         theme: user.theme,
-        invoiceLanguage: user.invoiceLanguage || 'both',
+        invoiceLanguage: user.invoiceLanguage === 'ar' ? 'ar' : 'en',
         onboardingCompleted: !!user.onboardingCompleted,
         onboardingStep: Number(user.onboardingStep) || 0,
         subscriptionType: user.subscriptionType,
@@ -330,7 +330,11 @@ router.get('/verify', verifyToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    res.json({ user: { ...user.toObject(), role: req.userRole, isDemoSession: !!req?.tokenClaims?.demo } });
+    const userObject = user.toObject();
+    if (Object.prototype.hasOwnProperty.call(userObject, 'invoiceLanguage')) {
+      userObject.invoiceLanguage = userObject.invoiceLanguage === 'ar' ? 'ar' : 'en';
+    }
+    res.json({ user: { ...userObject, role: req.userRole, isDemoSession: !!req?.tokenClaims?.demo } });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }

@@ -23,7 +23,7 @@ const Settings = () => {
   const [settings, setSettings] = useState({
     language: user?.language || 'en',
     theme: user?.theme || 'light',
-    invoiceLanguage: user?.invoiceLanguage || 'both',
+    invoiceLanguage: user?.invoiceLanguage === 'ar' ? 'ar' : 'en',
     measurementUi: user?.measurementUi || 'cards',
     receiptPrefix: '',
     receiptCounter: 0,
@@ -89,11 +89,6 @@ const Settings = () => {
       value: 'ar',
       title: 'العربية',
       description: 'فاتورة عربية كاملة من اليمين إلى اليسار.'
-    },
-    {
-      value: 'both',
-      title: 'English + العربية',
-      description: 'Bilingual invoice with both languages.'
     }
   ];
 
@@ -305,7 +300,7 @@ const Settings = () => {
         ...prev,
         language: response.data.settings.language,
         theme: response.data.settings.theme || prev.theme || user?.theme || 'light',
-        invoiceLanguage: response.data.settings.invoiceLanguage || prev.invoiceLanguage || user?.invoiceLanguage || 'both',
+        invoiceLanguage: response.data.settings.invoiceLanguage === 'ar' ? 'ar' : 'en',
         measurementUi: response.data.settings.measurementUi || prev.measurementUi || user?.measurementUi || 'cards',
         receiptPrefix: response.data.settings.receiptPrefix,
         receiptCounter: response.data.settings.receiptCounter,
@@ -479,7 +474,7 @@ const Settings = () => {
         ...prev,
         language: savedSettings.language || prev.language,
         theme: savedSettings.theme || prev.theme,
-        invoiceLanguage: savedSettings.invoiceLanguage || prev.invoiceLanguage,
+        invoiceLanguage: savedSettings.invoiceLanguage === 'ar' ? 'ar' : 'en',
         measurementUi: savedSettings.measurementUi || prev.measurementUi,
         receiptPrefix: savedSettings.receiptPrefix,
         receiptCounter: savedSettings.receiptCounter,
@@ -490,7 +485,7 @@ const Settings = () => {
       updateUser({
         language: savedSettings.language || settings.language,
         theme: savedSettings.theme || settings.theme,
-        invoiceLanguage: savedSettings.invoiceLanguage || settings.invoiceLanguage,
+        invoiceLanguage: savedSettings.invoiceLanguage === 'ar' ? 'ar' : 'en',
         measurementUi: savedSettings.measurementUi || settings.measurementUi,
         businessName: savedSettings.businessName || settings.businessName,
         logo: savedLogo,
@@ -972,7 +967,7 @@ const Settings = () => {
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Invoice Language</h2>
                 </div>
                 <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {invoiceLanguageOptions.map((option) => {
                       const active = settings.invoiceLanguage === option.value;
                       return (
